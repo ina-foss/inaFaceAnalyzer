@@ -1,6 +1,6 @@
 # inaFaceGender
 
-Should you need details regarding this work, please refer to the following report:
+Should you need further details regarding this work, please refer to the following report:
 
 
 ```bibtex
