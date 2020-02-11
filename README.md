@@ -4,7 +4,7 @@ Should you need further details regarding this work, please refer to the followi
 
 
 ```bibtex
-@techreport{techreport,
+@techreport{rezgui2019carthage,
   type = {Msc. Thesis},
   author = {Zohra Rezgui},
   title = {Détection et classification de visages pour la description de l’égalité femme-homme dans les archives télévisuelles},
