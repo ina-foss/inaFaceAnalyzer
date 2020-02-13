@@ -71,7 +71,11 @@ def _label_decision_fun(x):
         return 'f'
     
 def _smooth_labels(df):
-    
+    if len(df) == 0:
+        df['smoothed_decision'] = []
+        df['smoothed_label'] = []
+        return df
+        
     byfaceid = pd.DataFrame(df.groupby('faceid')['decision'].mean())
     byfaceid.rename(columns = {'decision':'smoothed_decision'}, inplace=True)
     new_df = df.merge(byfaceid, on= 'faceid')
@@ -79,6 +83,42 @@ def _smooth_labels(df):
 
     return new_df
 
+
+def _match_bbox_tracker(bbox, tracker):
+    # bbox info
+    x = bbox.left()
+    y = bbox.top()
+    width = bbox.width()
+    height = bbox.height()
+
+    x_center = x + 0.5 * width
+    y_center = y + 0.5 * height
+
+    # tracker info
+    tracked_position =  tracker.get_position()
+
+    t_x = int(tracked_position.left())
+    t_y = int(tracked_position.top())
+    t_w = int(tracked_position.width())
+    t_h = int(tracked_position.height())
+    
+    t_x_center = t_x + 0.5 * t_w
+    t_y_center = t_y + 0.5 * t_h
+    
+    return ( ( t_x <= x_center   <= (t_x + t_w)) and 
+         ( t_y <= y_center   <= (t_y + t_h)) and 
+         ( x  <= t_x_center <= (x + width)) and 
+         ( y   <= t_y_center <= (y + height)))
+
+    
+def is_tracker_pos_in_frame(tracker, frame):
+    fheight, fwidth, _ = frame.shape
+    pos = tracker.get_position()
+    #print('tracker pos in frame', pos.right(), pos.left(), pos.top(), pos.bottom())
+    return (pos.right() > 0) and (pos.left() < fwidth) and (pos.top() < fheight) and (pos.bottom() > 0)
+
+    
+    
 class GenderVideo:
     """ 
     This is a class regrouping all phases of a pipeline designed for gender classification from video.
@@ -90,7 +130,7 @@ class GenderVideo:
         vgg_feature_extractor: VGGFace neural model used for feature extraction.
         threshold: quality of face detection considered acceptable, value between 0 and 1.
     """
-    def __init__(self, threshold = 0.65):
+    def __init__(self, threshold = 0.65, verbose = False):
         
         """ 
         The constructor for GenderVideo class. 
@@ -106,38 +146,47 @@ class GenderVideo:
         self.gender_svm = joblib.load(p + 'svm_classifier.joblib')
         self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = (224, 224, 3), pooling ='avg')
         self.threshold = threshold
+        self.verbose = verbose
+
+    def _gender_from_face(self, img):
+        """
+        Face is supposed to be aligned and cropped and resized to 224*224
+        it is for regulard detection __call__
+        we should check if it is done in the tracking implementation
+        """
+        img = image.img_to_array(img)
+        img = utils.preprocess_input(img, version=1)
+        img = np.expand_dims(img, axis=0)
+        features = self.vgg_feature_extractor.predict(img)
+        label = self.gender_svm.predict(features)[0]
+        decision_value = round(self.gender_svm.decision_function(features)[0], 3)
+        return label, decision_value
+
         
-    def _process_tracked_face(self, face_id, trackers, frame):
+    def _process_tracked_face(self, cur_tracker, frame):
         
-        tracked_position =  trackers[face_id].get_position()
+        ## There is no rotation in this function... results may be suspicious
+        
+        
+        tracked_position =  cur_tracker.get_position()
+        #print('tracked position', tracked_position)
+        #print('frame_shape', frame.shape)
+#        print('cur_tracker', cur_tracker)
 
         t_x = int(tracked_position.left())
         t_y = int(tracked_position.top())
         t_w = int(tracked_position.width())
         t_h = int(tracked_position.height())
-
-        if t_y < 0 and t_x < 0:
-            copy_img = frame[0:(t_y+t_h), 0:(t_x+t_w)]
-        elif t_y < 0:
-            copy_img = frame[0:(t_y+t_h), t_x:(t_x+t_w)]    
-        elif t_x < 0:
-            copy_img = frame[t_y:(t_y+t_h), 0:(t_x+t_w)]     
-        else:
-            copy_img = frame[t_y:(t_y+t_h), t_x:(t_x+t_w)]
-
-        copy_img = cv2.resize(copy_img, (224,224))    
-        face_img = image.img_to_array(copy_img)
-
-        face_img = utils.preprocess_input(face_img, version=1)
-        face_img = np.expand_dims(face_img, axis=0)
-      
-        features = self.vgg_feature_extractor.predict(face_img)
         
+#        print('tracked face: id, x, y, w, h', face_id, t_x, t_y, t_w, t_h)
+
+        copy_img = frame[max(0, t_y):(t_y + t_h), max(0, t_x):(t_x + t_w)]
+
         
-       
-        label = self.gender_svm.predict(features)[0]
-        
-        decision_value = round(self.gender_svm.decision_function(features)[0], 3)
+        #print('simage shape', copy_img.shape)
+        copy_img = cv2.resize(copy_img, (224,224))
+
+        label, decision_value = self._gender_from_face(copy_img)
         
         return (t_x, t_y, t_w, t_h, label, decision_value)
 
@@ -171,7 +220,7 @@ class GenderVideo:
                 
                 cropped_res = cv2.resize(cropped, (desired_width, desired_height))
             except:
-                print(det)
+                print('except in align_and_crop_faces', det)
                 print(img.shape)
                 cropped_res = cv2.resize(rotated_img,(desired_width, desired_height))
             cropped_img = cropped_res[:, :, ::-1]
@@ -231,25 +280,27 @@ class GenderVideo:
 
         return faces_data
     
-    
-    def detect_with_tracking(self, video_path, k_frames, per_frames = 1, offset = None):
+
+
+    def detect_with_tracking(self, video_path, k_frames, subsamp_coeff = 1, offset = -1):
         """
         Pipeline for gender classification from videos using correlation filters based tracking (dlib's).
   
         Parameters: 
             video_path (string): Path for input video.
             k_frames (int) : Number of frames for which continue tracking the faces without renewing face detection.
-            per_frames (int) : Number of frames to skip processing.
+            subsamp_coeff (int) : only 1/subsamp_coeff frames will be processed
             offset (float) : Time in milliseconds to skip at the beginning of the video.
           
         Returns: 
             info (DataFrame): A Dataframe with frame and face information (coordinates, decision function, smoothed and non smoothed labels)
         """
 
+        assert (k_frames % subsamp_coeff) == 0
+
         font = cv2.FONT_HERSHEY_SIMPLEX
         
         current_face_id = 0
-        current_frame = 0
         
         face_trackers = {}
         confidence = {}
@@ -260,82 +311,88 @@ class GenderVideo:
         
         if not cap.isOpened():
             raise Exception("Video file does not exist or is invalid")
-
-        if offset:
-            cap.set(cv2.CAP_PROP_POS_MSEC, offset)
         
         while cap.isOpened() :
             ret, frame = cap.read()
-            if ret:
-                if cap.get(cv2.CAP_PROP_POS_FRAMES) % per_frames == 0:
-                    face_ids_to_delete = []
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    for fid in face_trackers.keys():
-                        tracking_quality = face_trackers[ fid ].update( frame )
-
-                        if tracking_quality < 7:
-                            face_ids_to_delete.append( fid )
-
-                    for fid in face_ids_to_delete:
-                        face_trackers.pop(fid)
-
-                    if (cap.get(cv2.CAP_PROP_POS_FRAMES) % k_frames)==0 or cap.get(cv2.CAP_PROP_POS_FRAMES)  == 1:
-                        faces_info = self.detect_faces_from_image(frame,
-                                              desired_width=224,  desired_height=224) 
-                        if faces_info:
-                            for element in faces_info:
-                                bbox = element[0][0]
-                                confidence[ current_face_id ] = round(element[5], 3)
-                                x = bbox.left()
-                                y = bbox.top()
-                                width = bbox.width()
-                                height = bbox.height()
-
-                                x_center = x + 0.5 * width
-                                y_center = y + 0.5 * height
-
-                                matched_fid = None
-
-                                for fid in face_trackers.keys():
-                                    tracked_position =  face_trackers[fid].get_position()
-
-                                    t_x = int(tracked_position.left())
-                                    t_y = int(tracked_position.top())
-                                    t_w = int(tracked_position.width())
-                                    t_h = int(tracked_position.height())
-
-                                    t_x_center = t_x + 0.5 * t_w
-                                    t_y_center = t_y + 0.5 * t_h
-
-                                    if ( ( t_x <= x_center   <= (t_x + t_w)) and 
-                                         ( t_y <= y_center   <= (t_y + t_h)) and 
-                                         ( x  <= t_x_center <= (x + width)) and 
-                                         ( y   <= t_y_center <= (y + height))):
-                                        matched_fid = fid
-
-                                if matched_fid is None:
-
-                                    tracker = dlib.correlation_tracker()
-                                    tracker.start_track(frame,
-                                                        dlib.rectangle( x,
-                                                                        y,
-                                                                        x+width,
-                                                                        y+height))
-
-                                    face_trackers[ current_face_id ] = tracker
-                                    current_face_id += 1
-
-                    for fid in face_trackers.keys():
-                        t_x, t_y, t_w, t_h, label, decision_value = self._process_tracked_face(fid, face_trackers, frame)
-                        t_bbox = dlib.rectangle(t_x, t_y, t_x+t_w, t_y+t_h)
-                        info.append([
-                                cap.get(cv2.CAP_PROP_POS_FRAMES), fid,  t_bbox, (t_w, t_h), label,
-                                decision_value, confidence[fid]
-                            ])
-
-
-            else: 
+            if not ret:
                 break
+
+            # skip frames until offset is reached or for subsampling reasons
+            if (cap.get(cv2.CAP_PROP_POS_MSEC) < offset) or (cap.get(cv2.CAP_PROP_POS_FRAMES) % subsamp_coeff != 0):
+                continue
+
+            #if ((cap.get(cv2.CAP_PROP_POS_FRAMES)) % 1000 == 0) or True:
+            #    print(cap.get(cv2.CAP_PROP_POS_FRAMES))
+            #    print('dface trackers before update', face_trackers)
+                
+                
+            # track faces in current frame
+            face_ids_to_delete = []
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            
+            for fid in face_trackers:
+                tracking_quality = face_trackers[fid].update(frame)
+
+                if (tracking_quality < 7) or (not is_tracker_pos_in_frame(face_trackers[fid], frame)):
+                    face_ids_to_delete.append(fid)
+
+            for fid in face_ids_to_delete:
+                face_trackers.pop(fid)
+            #print('dface trackers after update', face_trackers)
+
+            # detect faces every k frames
+            if (cap.get(cv2.CAP_PROP_POS_FRAMES) % k_frames)==0:
+                faces_info = self.detect_faces_from_image(frame,
+                                      desired_width=224,  desired_height=224) 
+                if faces_info:
+                    for element in faces_info:
+                        bbox = element[0][0]
+                        confidence[ current_face_id ] = round(element[5], 3)
+
+                        matched_fid = None
+
+                        # match detected face to previously tracked faces
+                        for fid in face_trackers:
+                            ## TODO/BUG: several elements may match using this condition
+                            ## This loop should be debugged to use the closest match found,
+                            ## instead of the last match found
+                            if _match_bbox_tracker(bbox, face_trackers[fid]):
+                                matched_fid = fid
+
+                        # if detected face is not corresponding to previously tracked faces
+                        # create a new face id and a new face tracker
+                        # BUG: in the current implementation, the newly detected face bounding box
+                        # is not used to update the tracker bounding box
+                        if matched_fid is None:
+
+                            tracker = dlib.correlation_tracker()
+                            tracker.start_track(frame, bbox)
+
+                            face_trackers[ current_face_id ] = tracker
+                            current_face_id += 1
+                #print('dface trackers after face detection ', face_trackers)
+
+            # delete invalide face positions
+            face_ids_to_delete = []
+            for fid in face_trackers:
+                if not is_tracker_pos_in_frame(face_trackers[fid], frame):
+                    face_ids_to_delete.append(fid)
+            for fid in face_ids_to_delete:
+                face_trackers.pop(fid)                
+                
+                
+                
+            # process faces based on position found in trackers
+            for fid in face_trackers:
+                t_x, t_y, t_w, t_h, label, decision_value = self._process_tracked_face(face_trackers[fid], frame)
+                t_bbox = dlib.rectangle(t_x, t_y, t_x+t_w, t_y+t_h)
+                info.append([
+                        cap.get(cv2.CAP_PROP_POS_FRAMES), fid,  t_bbox, (t_w, t_h), label,
+                        decision_value, confidence[fid]
+                    ])
+
+
+
         cap.release()
         track_res = pd.DataFrame.from_records(info, columns = ['frame', 'faceid', 'bb', 'size','label', 'decision', 'conf'])
         info = _smooth_labels(track_res)
@@ -343,14 +400,14 @@ class GenderVideo:
         return info
 
 
-    def __call__(self, video_path, per_frames = 1 ,  offset = None):
+    def __call__(self, video_path, subsamp_coeff = 1 ,  offset = -1):
         
         """
         Pipeline function for gender classification from videos without tracking.
   
         Parameters: 
             video_path (string): Path for input video. 
-            per_frames (int) : Number of frames to skip processing.
+            subsamp_coeff (int) : only 1/subsamp_coeff frames will be processed
             offset (float) : Time in milliseconds to skip at the beginning of the video.
           
           
@@ -362,43 +419,34 @@ class GenderVideo:
         
         if not cap.isOpened():
             raise Exception("Video file does not exist or is invalid")
-
-        
-        if offset:
-            cap.set(cv2.CAP_PROP_POS_MSEC, offset)
-        
         
         info = []
 
         while cap.isOpened():
             ret, frame = cap.read()
-            if ret:
-                if cap.get(cv2.CAP_PROP_POS_FRAMES) % per_frames == 0:
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    faces_info = self.detect_faces_from_image(frame,
-                                                              desired_width=224,  desired_height=224)      
-                    if faces_info:
-                        for element in faces_info:
-                            face_img = image.img_to_array(element[1])
-
-                            face_img = utils.preprocess_input(face_img, version=1)
-                            face_img = np.expand_dims(face_img, axis=0)
-
-                            features = self.vgg_feature_extractor.predict(face_img)
-                            label = self.gender_svm.predict(features)[0]
-                            decision_value = round(self.gender_svm.decision_function(features)[0], 3)
-
-                            bounding_box = element[0][0]
-                            detection_score = round(element[5], 3)
-                            bbox_length = bounding_box.bottom() - bounding_box.top()
-
-                            info.append([
-                                cap.get(cv2.CAP_PROP_POS_FRAMES), bounding_box, (bbox_length, bbox_length), label,
-                                decision_value, detection_score
-                            ])
-
-            else:
+            if not ret:
                 break
+                
+            # skip frames until offset is reached or for subsampling reasons
+            if (cap.get(cv2.CAP_PROP_POS_MSEC) < offset) or (cap.get(cv2.CAP_PROP_POS_FRAMES) % subsamp_coeff != 0):
+                continue
+
+
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            faces_info = self.detect_faces_from_image(frame,
+                                                      desired_width=224,  desired_height=224)      
+            if faces_info:
+                for element in faces_info:
+                    label, decision_value = self._gender_from_face(element[1])
+                    bounding_box = element[0][0]
+                    detection_score = round(element[5], 3)
+                    bbox_length = bounding_box.bottom() - bounding_box.top()
+
+                    info.append([
+                        cap.get(cv2.CAP_PROP_POS_FRAMES), bounding_box, (bbox_length, bbox_length), label,
+                        decision_value, detection_score
+                    ])
+
         cap.release()
         info = pd.DataFrame.from_records(info, columns = ['frame', 'bb', 'size','label', 'decision', 'conf'])
         return info
