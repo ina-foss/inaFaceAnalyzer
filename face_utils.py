@@ -3,7 +3,7 @@
 
 # The MIT License
 
-# Copyright (c) 2018 Ina (Author - http://www.ina.fr/)
+# Copyright (c) 2018 Ina (Thomas Petit - http://www.ina.fr/)
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# This code is a modification of nlhkh's work in github.com/nlhkh/face-alignment-dlib/blob/master/utils.py
+# This code is a modification of nlhkh's project face-alignment-dlib
+# See github.com/nlhkh/face-alignment-dlib/blob/master/utils.py
 # It has been adapted by Thomas PETIT (github.com/w2ex)
 
 
