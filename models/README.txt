@@ -1,7 +1,7 @@
 The models stored in this repository were obtained from several sources:
 
 *** svm_classifier.joblib ***
-
+Gender classification from face neural representation
 This model was trained by Zohra Rezgui for the purpose of this project. Training details & evaluations can be found in her internship report:
 @techreport{rezgui2019carthage,
   type = {Msc. Thesis},
@@ -14,10 +14,13 @@ This model was trained by Zohra Rezgui for the purpose of this project. Training
 }
 
 *** shape_predictor_68_face_landmarks.dat ***
+Face landmarks prediction
 http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
 
 ***  opencv_face_detector_uint8.pb ***
+Face detection
 ttps://raw.githubusercontent.com/opencv/opencv_3rdparty/dnn_samples_face_detector_20180220_uint8/opencv_face_detector_uint8.pb
 
 *** opencv_face_detector.pbtxt ***
+Face detection
 https://github.com/opencv/opencv/blob/4eb296655958e9241f43a7bd144d5e63759f6cea/samples/dnn/face_detector/opencv_face_detector.pbtxt
