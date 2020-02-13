@@ -23,6 +23,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+# This code is a modification of nlhkh's work in github.com/nlhkh/face-alignment-dlib/blob/master/utils.py
+# It has been adapted by Thomas PETIT (github.com/w2ex)
+
 
 import numpy as np
 import cv2
