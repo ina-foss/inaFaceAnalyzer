@@ -83,7 +83,7 @@ setup(
     keywords = KEYWORDS,
     #packages = find_packages(),
     #package_data = {'inaSpeechSegmenter': ['*.hdf5']},
-    #include_package_data = True,
+    include_package_data = True,
     data_files = ['LICENSE'],
     long_description=LONGDESCRIPTION,
     long_description_content_type='text/markdown',
