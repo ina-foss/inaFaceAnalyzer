@@ -28,7 +28,7 @@ import numpy as np
 import pandas as pd
 import os
 import csv
-from face_utils import extract_left_eye_center, extract_right_eye_center, get_rotation_matrix, crop_image
+from .face_utils import extract_left_eye_center, extract_right_eye_center, get_rotation_matrix, crop_image
 from sklearn.externals import joblib
 from keras_vggface.vggface import VGGFace
 from keras_vggface import utils

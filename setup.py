@@ -77,7 +77,7 @@ setup(
     test_suite="run_tests.py",
     description = DESCRIPTION,
     license = "MIT",
-    install_requires=[opencv-contrib-python, dlib, keras-vggface],
+    install_requires=['opencv-contrib-python', 'dlib', 'keras-vggface', 'pandas', 'sklearn'],
     url = "https://github.com/ina-foss/inaFaceGenderSegmenter",
     packages=['inaFaceGender'],
     keywords = KEYWORDS,
