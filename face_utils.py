@@ -3,7 +3,7 @@
 
 # The MIT License
 
-# Copyright (c) 2018 Ina (Thomas Petit - http://www.ina.fr/)
+# Copyright (c) 2019 Ina (Thomas Petit - http://www.ina.fr/)
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
