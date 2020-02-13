@@ -14,3 +14,9 @@ Should you need further details regarding this work, please refer to the followi
   institution = {Higher School of Statistics and Information Analysis, University of Carthage}
 }
 ```
+## CREDITS
+
+This work was realized in the framework of MeMAD project.
+https://memad.eu/
+MeMAD is an EU funded H2020 research project.
+It has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 780069.
