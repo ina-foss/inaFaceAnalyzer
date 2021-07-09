@@ -29,7 +29,8 @@ import pandas as pd
 import os
 import csv
 from .face_utils import extract_left_eye_center, extract_right_eye_center, get_rotation_matrix, crop_image
-from sklearn.externals import joblib
+#import sklearn.externals.joblib as extjoblib
+import joblib as jblib
 from keras_vggface.vggface import VGGFace
 from keras_vggface import utils
 from keras.preprocessing import image 
@@ -43,8 +44,6 @@ def write_to_video(frames_list, file_name, fps):
     frames_list (list): List of the frames to write
     file_name (string): video output path
     fps (int) : Number of frames per second used in output video
-  
-  
     """
     frame_width = frames_list[0].shape[0]
     frame_height = frames_list[0].shape[1]
@@ -156,22 +155,22 @@ class GenderVideo:
         threshold: quality of face detection considered acceptable, value between 0 and 1.
     """
     def __init__(self, threshold = 0.65, verbose = False):
-        
+
         """ 
         The constructor for GenderVideo class. 
   
         Parameters: 
            threshold (float): quality of face detection considered acceptable, value between 0 and 1. 
         """
-        
         p = os.path.dirname(os.path.realpath(__file__)) + '/models/'
         self.face_detector = cv2.dnn.readNetFromTensorflow(p + "opencv_face_detector_uint8.pb",
                                                            p + "opencv_face_detector.pbtxt")
         self.align_predictor = dlib.shape_predictor(p +'shape_predictor_68_face_landmarks.dat')
-        self.gender_svm = joblib.load(p + 'svm_classifier.joblib')
+        self.gender_svm = jblib.load(p + 'svm_classifier.joblib')
         self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = (224, 224, 3), pooling ='avg')
         self.threshold = threshold
         self.verbose = verbose
+
 
     def _gender_from_face(self, img):
         """
@@ -191,8 +190,7 @@ class GenderVideo:
     def _process_tracked_face(self, cur_tracker, frame):
         
         ## There is no rotation in this function... results may be suspicious
-        
-        
+
         tracked_position =  cur_tracker.get_position()
         #print('tracked position', tracked_position)
         #print('frame_shape', frame.shape)
@@ -426,7 +424,7 @@ class GenderVideo:
 
 
     def __call__(self, video_path, subsamp_coeff = 1 ,  offset = -1):
-        
+
         """
         Pipeline function for gender classification from videos without tracking.
   
@@ -441,12 +439,10 @@ class GenderVideo:
         """
         
         cap = cv2.VideoCapture(video_path)
-        
         if not cap.isOpened():
             raise Exception("Video file does not exist or is invalid")
         
         info = []
-
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
@@ -455,7 +451,6 @@ class GenderVideo:
             # skip frames until offset is reached or for subsampling reasons
             if (cap.get(cv2.CAP_PROP_POS_MSEC) < offset) or (cap.get(cv2.CAP_PROP_POS_FRAMES) % subsamp_coeff != 0):
                 continue
-
 
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             faces_info = self.detect_faces_from_image(frame,
