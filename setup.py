@@ -71,13 +71,13 @@ LONGDESCRIPTION='''Detect faces in video streams and does gender classification.
 
 setup(
     name = "inaFaceGender",
-    version = "0.0.1",
+    version = "0.0.2",
     author = "Zohra Rezgui, David Doukhan",
     author_email = "zohra.rzg@gmail.com, david.doukhan@gmail.com",
     test_suite="run_tests.py",
     description = DESCRIPTION,
     license = "MIT",
-    install_requires=['opencv-contrib-python', 'dlib', 'keras-vggface', 'pandas', 'sklearn'],
+    install_requires=['opencv-contrib-python', 'dlib', 'pandas', 'sklearn', 'h5py', 'matplotlib'],
     url = "https://github.com/ina-foss/inaFaceGenderSegmenter",
     packages=['inaFaceGender'],
     keywords = KEYWORDS,
@@ -90,5 +90,5 @@ setup(
     #scripts=[os.path.join('scripts', script) for script in \
     #         ['ina_speech_segmenter.py', 'ina_speech_segmenter_pyro_client.py']],
     classifiers=CLASSIFIERS,
-    python_requires='>=3.6',
+    python_requires='>=3.8',
 )

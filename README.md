@@ -14,6 +14,24 @@ Should you need further details regarding this work, please refer to the followi
   institution = {Higher School of Statistics and Information Analysis, University of Carthage}
 }
 ```
+
+## Installation
+
+```
+apt-get install cmake
+```
+
+Before installation, you should install a fork of keras-vggface
+```
+git clone git@github.com:DavidDoukhan/keras-vggface.git
+cd keras-vggface
+pip install .
+```
+Then return to the base dir and
+```
+pip install .
+```
+
 ## CREDITS
 
 This work was realized in the framework of MeMAD project.
