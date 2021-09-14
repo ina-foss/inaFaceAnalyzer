@@ -28,8 +28,10 @@ import numpy as np
 import pandas as pd
 import os
 import csv
+import h5py
+from sklearn.svm import LinearSVC
+
 from .face_utils import extract_left_eye_center, extract_right_eye_center, get_rotation_matrix, crop_image
-from sklearn.externals import joblib
 from keras_vggface.vggface import VGGFace
 from keras_vggface import utils
 from keras.preprocessing import image 
@@ -168,7 +170,15 @@ class GenderVideo:
         self.face_detector = cv2.dnn.readNetFromTensorflow(p + "opencv_face_detector_uint8.pb",
                                                            p + "opencv_face_detector.pbtxt")
         self.align_predictor = dlib.shape_predictor(p +'shape_predictor_68_face_landmarks.dat')
-        self.gender_svm = joblib.load(p + 'svm_classifier.joblib')
+
+        
+        f = h5py.File(p + 'svm_classifier.hdf5', 'r')
+        svm = LinearSVC()
+        svm.classes_ = np.array(f['linearsvc/classes'][:])
+        svm.intercept_ = f['linearsvc/intercept'][:]
+        svm.coef_ = f['linearsvc/coef'][:]
+        self.gender_svm = svm
+        
         self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = (224, 224, 3), pooling ='avg')
         self.threshold = threshold
         self.verbose = verbose
