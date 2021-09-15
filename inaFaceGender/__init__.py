@@ -24,3 +24,4 @@
 # THE SOFTWARE.
 
 from .inaFaceGender import GenderVideo
+from .display_utils import incrust_faces_in_video

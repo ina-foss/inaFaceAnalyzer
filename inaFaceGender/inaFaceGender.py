@@ -37,27 +37,7 @@ from keras_vggface import utils
 from keras.preprocessing import image 
 
 
-def write_to_video(frames_list, file_name, fps):
-    """ 
-    Writes a list of frames into a video using MP4V encoding. 
-  
-    Parameters: 
-    frames_list (list): List of the frames to write
-    file_name (string): video output path
-    fps (int) : Number of frames per second used in output video
-  
-  
-    """
-    frame_width = frames_list[0].shape[0]
-    frame_height = frames_list[0].shape[1]
-    fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-    out = cv2.VideoWriter(file_name,fourcc,
-                      fps, (frame_height,frame_width))
 
-    for frame in frames_list:
-        
-        out.write(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-    out.release()
 
     
 def _get_bbox_pts(detections, face_idx, frame_width, frame_height):
@@ -174,7 +154,7 @@ class GenderVideo:
         
         f = h5py.File(p + 'svm_classifier.hdf5', 'r')
         svm = LinearSVC()
-        svm.classes_ = np.array(f['linearsvc/classes'][:])
+        svm.classes_ = np.array(f['linearsvc/classes'][:]).astype('<U1')
         svm.intercept_ = f['linearsvc/intercept'][:]
         svm.coef_ = f['linearsvc/coef'][:]
         self.gender_svm = svm
