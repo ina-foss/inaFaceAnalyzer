@@ -25,16 +25,24 @@
 
 
 import unittest
+import pandas as pd
 from inaFaceGender import GenderVideo
+from pandas.util.testing import assert_frame_equal
+import numpy as np
+
 
 class TestInaFaceGender(unittest.TestCase):
     
     def test_init(self):
         gv = GenderVideo()
 
-    def test_noface_smooth(self):
+    def test_basic(self):
         gv = GenderVideo()
-        results = gv.detect_with_tracking('./media/102000.mp4', k_frames=12)
-            
+        ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=25)
+        ret.bb = ret.bb.map(str)
+        df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv',
+                        dtype={'conf': np.float32})
+        assert_frame_equal(ret, df)
+
 if __name__ == '__main__':
     unittest.main()

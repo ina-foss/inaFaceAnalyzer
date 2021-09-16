@@ -207,11 +207,6 @@ class GenderVideo:
 
     
     def align_and_crop_face(self, img, rect_list, desired_width, desired_height):
-        #### Warning: this return a single element
-	#### only the 1st element of rect_list is processed
-
-	assert(len(rect_list) == 1)
-        
         """ 
         Aligns and resizes face to desired shape.
   
@@ -227,6 +222,10 @@ class GenderVideo:
             left_eye: left eye position coordinates.
             right_eye: right eye position coordinates.
         """
+
+        #### Warning: this return a single element
+        #### only the 1st element of rect_list is processed
+        assert len(rect_list) == 1
         
         for j, det in enumerate(rect_list):
             shape = self.align_predictor(img, det)
@@ -408,14 +407,14 @@ class GenderVideo:
                 t_x, t_y, t_w, t_h, label, decision_value = self._process_tracked_face(face_trackers[fid], frame)
                 t_bbox = dlib.rectangle(t_x, t_y, t_x+t_w, t_y+t_h)
                 info.append([
-                        cap.get(cv2.CAP_PROP_POS_FRAMES)-1, fid,  t_bbox, (t_w, t_h), label,
+                        cap.get(cv2.CAP_PROP_POS_FRAMES)-1, fid,  t_bbox, label,
                         decision_value, confidence[fid]
                     ])
 
 
 
         cap.release()
-        track_res = pd.DataFrame.from_records(info, columns = ['frame', 'faceid', 'bb', 'size','label', 'decision', 'conf'])
+        track_res = pd.DataFrame.from_records(info, columns = ['frame', 'faceid', 'bb','label', 'decision', 'conf'])
         info = _smooth_labels(track_res)
         
         return info
@@ -461,15 +460,14 @@ class GenderVideo:
                     label, decision_value = self._gender_from_face(element[1])
                     bounding_box = element[0][0]
                     detection_score = round(element[5], 3)
-                    bbox_length = bounding_box.bottom() - bounding_box.top()
-
+                    
                     info.append([
-                        cap.get(cv2.CAP_PROP_POS_FRAMES)-1, bounding_box, (bbox_length, bbox_length), label,
+                        cap.get(cv2.CAP_PROP_POS_FRAMES)-1, bounding_box, label,
                         decision_value, detection_score
                     ])
 
         cap.release()
-        info = pd.DataFrame.from_records(info, columns = ['frame', 'bb', 'size','label', 'decision', 'conf'])
+        info = pd.DataFrame.from_records(info, columns = ['frame', 'bb','label', 'decision', 'conf'])
         return info
     
 
