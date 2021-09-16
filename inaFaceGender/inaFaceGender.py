@@ -223,7 +223,7 @@ class GenderVideo:
         return (t_x, t_y, t_w, t_h, label, decision_value)
 
     
-    def align_and_crop_face(self, img, rect_list, desired_width, desired_height, display=True):
+    def align_and_crop_face(self, img, rect_list, desired_width, desired_height, display=False):
         """ 
         Aligns and resizes face to desired shape.
   
