@@ -57,7 +57,23 @@ def _get_bbox_pts(detections, face_idx, frame_width, frame_height):
 
     return x1, y1, x2, y2
 
-        
+
+def _scale_bbox(x1, y1, x2, y2, scale, frame_shape=None):
+    w = x2 - x1
+    h = y2 - y1
+    
+    x1 = int(x1 - (w*scale - w)/2)
+    y1 = int(y1 - (h*scale -h)/2)
+    x2 = int(x2 + (w*scale - w)/2)
+    y2 = int(y2 + (h*scale -h)/2)
+
+    if frame_shape is not None:
+        x1 = max(x1, 0)
+        y1 = max(y1, 0)
+        x2 = min(x2, frame_shape[1])
+        y2 = min(y2, frame_shape[0])
+
+    return x1, y1, x2, y2
 
 def info2csv(df, csv_path):
     """ 
@@ -207,7 +223,7 @@ class GenderVideo:
         return (t_x, t_y, t_w, t_h, label, decision_value)
 
     
-    def align_and_crop_face(self, img, rect_list, desired_width, desired_height):
+    def align_and_crop_face(self, img, rect_list, desired_width, desired_height, display=True):
         """ 
         Aligns and resizes face to desired shape.
   
@@ -242,6 +258,14 @@ class GenderVideo:
             except:
                 print('except in align_and_crop_faces', det)
                 print(img.shape)
+                if display:
+                    print('rottated')
+                    plt.imshow(rotated_img)
+                    plt.show()
+                    
+                    print('cropped', det)
+                    plt.imshow(cropped)
+                    plt.show()
                 cropped_res = cv2.resize(rotated_img,(desired_width, desired_height))
             cropped_img = cropped_res[:, :, ::-1]
 
@@ -273,6 +297,7 @@ class GenderVideo:
 
         frame_height = img.shape[0]
         frame_width = img.shape[1]
+        # TODO/BUG ? is it possible to avoid resizing to 300*300 and send real dimensions ??
         blob = cv2.dnn.blobFromImage(img, 1.0, (300, 300), [104, 117, 123], True, False)
         self.face_detector.setInput(blob)
         detections = self.face_detector.forward()
@@ -283,8 +308,15 @@ class GenderVideo:
             if confidence > self.threshold:
                 n_face += 1
                 bbox = _get_bbox_pts(detections, i, frame_width, frame_height)
-                x1, y1 = [int(i * abs(bbox_scaling//1 - bbox_scaling%1)) for i in bbox[:2]]
-                x2, y2 = [int(i*bbox_scaling) for i in bbox[2:]]
+                ## TODO BUG - reimplement scaling using a common method
+                ## This method is bugged
+                #x1, y1 = [int(i * abs(bbox_scaling//1 - bbox_scaling%1)) for i in bbox[:2]]
+                #x2, y2 = [int(i*bbox_scaling) for i in bbox[2:]]
+                
+                x1, y1, x2, y2 = bbox[:]
+                x1, y1, x2, y2 = _scale_bbox(x1, y1, x2, y2, bbox_scaling, img.shape)
+                
+                
                 if x1 < x2 and y1 < y2:
                     dets = [dlib.rectangle(x1, y1, x2, y2)]
                 else:
@@ -326,23 +358,7 @@ class GenderVideo:
 
         info = []
         
-        cap = cv2.VideoCapture(video_path)
-        
-        if not cap.isOpened():
-            raise Exception("Video file does not exist or is invalid")
-        
-        while cap.isOpened() :
-            ret, frame = cap.read()
-            if not ret:
-                break
-
-            # skip frames until offset is reached or for subsampling reasons
-            if (cap.get(cv2.CAP_PROP_POS_MSEC) < offset) or (cap.get(cv2.CAP_PROP_POS_FRAMES) % subsamp_coeff != 0):
-                continue
-
-            #if ((cap.get(cv2.CAP_PROP_POS_FRAMES)) % 1000 == 0) or True:
-            #    print(cap.get(cv2.CAP_PROP_POS_FRAMES))
-            #    print('dface trackers before update', face_trackers)
+        for iframe, frame in video_iterator(video_path,subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0)):
                 
                 
             # track faces in current frame
@@ -360,7 +376,7 @@ class GenderVideo:
             #print('dface trackers after update', face_trackers)
 
             # detect faces every k frames
-            if (cap.get(cv2.CAP_PROP_POS_FRAMES) % k_frames)==0:
+            if (iframe % k_frames)==0:
                 faces_info = self.detect_faces_from_image(frame,
                                       desired_width=224,  desired_height=224) 
                 if faces_info:
@@ -406,13 +422,12 @@ class GenderVideo:
                 t_x, t_y, t_w, t_h, label, decision_value = self._process_tracked_face(face_trackers[fid], frame)
                 t_bbox = dlib.rectangle(t_x, t_y, t_x+t_w, t_y+t_h)
                 info.append([
-                        cap.get(cv2.CAP_PROP_POS_FRAMES)-1, fid,  t_bbox, label,
+                        iframe, fid,  t_bbox, label,
                         decision_value, confidence[fid]
                     ])
 
 
 
-        cap.release()
         track_res = pd.DataFrame.from_records(info, columns = ['frame', 'faceid', 'bb','label', 'decision', 'conf'])
         info = _smooth_labels(track_res)
         
@@ -464,12 +479,8 @@ class GenderVideo:
             plt.show()
         
         x1, y1, x2, y2 = [e for e in bb]
-        w = x2 - x1
-        h = y2 - y1
-        x1 = int(max(x1 - (w*scale - w)/2, 0))
-        y1 = int(max(y1 - (h*scale -h)/2, 0))
-        x2 = int(min(x2 + (w*scale - w)/2, frame.shape[1]))
-        y2 = int(min(y2 + (h*scale -h)/2, frame.shape[0]))
+        # TODO: check the result without the frame.shape argument
+        x1, y1, x2, y2 = _scale_bbox(x1, y1, x2, y2, scale, frame.shape)
         
         dets = [dlib.rectangle(x1, y1, x2, y2)]
         
