@@ -27,7 +27,6 @@ import dlib, cv2
 import numpy as np
 import pandas as pd
 import os
-import csv
 import h5py
 from sklearn.svm import LinearSVC
 
@@ -182,7 +181,7 @@ class GenderVideo:
         
     def _process_tracked_face(self, cur_tracker, frame):
         
-        ## There is no rotation in this function... results may be suspicious
+        ## There is no rotation in this function... results may be suspicious
         
         
         tracked_position =  cur_tracker.get_position()
@@ -319,8 +318,6 @@ class GenderVideo:
         """
 
         assert (k_frames % subsamp_coeff) == 0
-
-        font = cv2.FONT_HERSHEY_SIMPLEX
         
         current_face_id = 0
         
@@ -339,7 +336,7 @@ class GenderVideo:
             if not ret:
                 break
 
-            # skip frames until offset is reached or for subsampling reasons
+            # skip frames until offset is reached or for subsampling reasons
             if (cap.get(cv2.CAP_PROP_POS_MSEC) < offset) or (cap.get(cv2.CAP_PROP_POS_FRAMES) % subsamp_coeff != 0):
                 continue
 
@@ -362,7 +359,7 @@ class GenderVideo:
                 face_trackers.pop(fid)
             #print('dface trackers after update', face_trackers)
 
-            # detect faces every k frames
+            # detect faces every k frames
             if (cap.get(cv2.CAP_PROP_POS_FRAMES) % k_frames)==0:
                 faces_info = self.detect_faces_from_image(frame,
                                       desired_width=224,  desired_height=224) 
@@ -373,18 +370,18 @@ class GenderVideo:
 
                         matched_fid = None
 
-                        # match detected face to previously tracked faces
+                        # match detected face to previously tracked faces
                         for fid in face_trackers:
                             ## TODO/BUG: several elements may match using this condition
                             ## This loop should be debugged to use the closest match found,
-                            ## instead of the last match found
+                            ## instead of the last match found
                             if _match_bbox_tracker(bbox, face_trackers[fid]):
                                 matched_fid = fid
 
                         # if detected face is not corresponding to previously tracked faces
-                        # create a new face id and a new face tracker
-                        # BUG: in the current implementation, the newly detected face bounding box
-                        # is not used to update the tracker bounding box
+                        # create a new face id and a new face tracker
+                        # BUG: in the current implementation, the newly detected face bounding box
+                        # is not used to update the tracker bounding box
                         if matched_fid is None:
 
                             tracker = dlib.correlation_tracker()
@@ -394,7 +391,7 @@ class GenderVideo:
                             current_face_id += 1
                 #print('dface trackers after face detection ', face_trackers)
 
-            # delete invalide face positions
+            # delete invalide face positions
             face_ids_to_delete = []
             for fid in face_trackers:
                 if not is_tracker_pos_in_frame(face_trackers[fid], frame):
@@ -404,7 +401,7 @@ class GenderVideo:
                 
                 
                 
-            # process faces based on position found in trackers
+            # process faces based on position found in trackers
             for fid in face_trackers:
                 t_x, t_y, t_w, t_h, label, decision_value = self._process_tracked_face(face_trackers[fid], frame)
                 t_bbox = dlib.rectangle(t_x, t_y, t_x+t_w, t_y+t_h)
