@@ -32,6 +32,8 @@ import h5py
 from sklearn.svm import LinearSVC
 
 from .face_utils import extract_left_eye_center, extract_right_eye_center, get_rotation_matrix, crop_image
+from .opencv_utils import video_iterator
+
 from keras_vggface.vggface import VGGFace
 from keras_vggface import utils
 from keras.preprocessing import image 
@@ -435,24 +437,10 @@ class GenderVideo:
             info: A Dataframe with frame and face information (coordinates, decision function,labels..)
         """
         
-        cap = cv2.VideoCapture(video_path)
-        
-        if not cap.isOpened():
-            raise Exception("Video file does not exist or is invalid")
-        
         info = []
 
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-                
-            # skip frames until offset is reached or for subsampling reasons
-            if (cap.get(cv2.CAP_PROP_POS_MSEC) < offset) or (cap.get(cv2.CAP_PROP_POS_FRAMES) % subsamp_coeff != 0):
-                continue
+        for iframe, frame in video_iterator(video_path,subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0)):
 
-
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             faces_info = self.detect_faces_from_image(frame,
                                                       desired_width=224,  desired_height=224)      
             if faces_info:
@@ -460,13 +448,12 @@ class GenderVideo:
                     label, decision_value = self._gender_from_face(element[1])
                     bounding_box = element[0][0]
                     detection_score = round(element[5], 3)
-                    
+
                     info.append([
-                        cap.get(cv2.CAP_PROP_POS_FRAMES)-1, bounding_box, label,
+                        iframe, bounding_box, label,
                         decision_value, detection_score
                     ])
 
-        cap.release()
         info = pd.DataFrame.from_records(info, columns = ['frame', 'bb','label', 'decision', 'conf'])
         return info
     

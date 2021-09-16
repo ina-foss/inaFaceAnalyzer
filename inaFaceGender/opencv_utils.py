@@ -66,6 +66,6 @@ def video_iterator(src, time_unit='frame', start=None, stop=None, subsamp_coeff=
 
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        yield frame
+        yield cap.get(cv2.CAP_PROP_POS_FRAMES) - 1, frame
 
     cap.release()
