@@ -207,6 +207,11 @@ class GenderVideo:
 
     
     def align_and_crop_face(self, img, rect_list, desired_width, desired_height):
+        #### Warning: this return a single element
+	#### only the 1st element of rect_list is processed
+
+	assert(len(rect_list) == 1)
+        
         """ 
         Aligns and resizes face to desired shape.
   
@@ -283,6 +288,7 @@ class GenderVideo:
                 if x1 < x2 and y1 < y2:
                     dets = [dlib.rectangle(x1, y1, x2, y2)]
                 else:
+                    ## WARNING - THIS HACK IS STRANGE
                     dets = [dlib.rectangle(0, 0, frame_width, frame_height)]
 
                   
@@ -402,7 +408,7 @@ class GenderVideo:
                 t_x, t_y, t_w, t_h, label, decision_value = self._process_tracked_face(face_trackers[fid], frame)
                 t_bbox = dlib.rectangle(t_x, t_y, t_x+t_w, t_y+t_h)
                 info.append([
-                        cap.get(cv2.CAP_PROP_POS_FRAMES), fid,  t_bbox, (t_w, t_h), label,
+                        cap.get(cv2.CAP_PROP_POS_FRAMES)-1, fid,  t_bbox, (t_w, t_h), label,
                         decision_value, confidence[fid]
                     ])
 
@@ -458,7 +464,7 @@ class GenderVideo:
                     bbox_length = bounding_box.bottom() - bounding_box.top()
 
                     info.append([
-                        cap.get(cv2.CAP_PROP_POS_FRAMES), bounding_box, (bbox_length, bbox_length), label,
+                        cap.get(cv2.CAP_PROP_POS_FRAMES)-1, bounding_box, (bbox_length, bbox_length), label,
                         decision_value, detection_score
                     ])
 
