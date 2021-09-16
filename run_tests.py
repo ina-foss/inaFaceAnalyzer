@@ -29,7 +29,7 @@ import pandas as pd
 from inaFaceGender import GenderVideo
 from pandas.util.testing import assert_frame_equal
 import numpy as np
-
+from inaFaceGender.opencv_utils import video_iterator
 
 class TestInaFaceGender(unittest.TestCase):
     
@@ -43,6 +43,17 @@ class TestInaFaceGender(unittest.TestCase):
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv',
                         dtype={'conf': np.float32})
         assert_frame_equal(ret, df)
+        
+        
+    def test_video_iterator(self):
+        src = './media/pexels-artem-podrez-5725953.mp4'
+        self.assertEqual(len([e for e in video_iterator(src,start=10, stop=20)]), 11)
+        self.assertEqual(len([e for e in video_iterator(src)]), 358)
+        self.assertEqual(len([e for e in video_iterator(src, time_unit='ms', start=500, stop=1000)]), 16)
+
+                     
+                             
+                             
 
 if __name__ == '__main__':
     unittest.main()
