@@ -39,7 +39,7 @@ from keras_vggface import utils
 from keras.preprocessing import image 
 
 
-
+from matplotlib import pyplot as plt
 
     
 def _get_bbox_pts(detections, face_idx, frame_width, frame_height):
@@ -458,4 +458,41 @@ class GenderVideo:
         return info
     
 
+    def pred_from_frame_and_bb(self, frame, bb, scale=1, display=False): ## add bounding box scaling
+        # frame should be obtained from opencv
+        # bounding box is x1, y1, x2, y2
+
+        if display:
+            plt.imshow(frame)
+            plt.show()
+        
+        x1, y1, x2, y2 = [e for e in bb]
+        w = x2 - x1
+        h = y2 - y1
+        x1 = int(max(x1 - (w*scale - w)/2, 0))
+        y1 = int(max(y1 - (h*scale -h)/2, 0))
+        x2 = int(min(x2 + (w*scale - w)/2, frame.shape[1]))
+        y2 = int(min(y2 + (h*scale -h)/2, frame.shape[0]))
+        
+        dets = [dlib.rectangle(x1, y1, x2, y2)]
+        
+        if display:
+            plt.imshow(frame[y1:y2, x1:x2,:])
+            plt.show()
+        
+        frame = self.align_and_crop_face(frame, dets, 224, 224)[0]
+        if display:
+            plt.imshow(frame)
+            plt.show()
+
+        ret = self._gender_from_face(frame)
+        if display:
+            print(ret)
+        return ret
+    
+    def pred_from_vid_and_bblist(self, vidsrc, lbox, subsamp_coeff=1, start_frame=0, scale=1., display=False):
+        lret = []
+        for (iframe, frame), bbox in zip(video_iterator(vidsrc, subsamp_coeff=subsamp_coeff, start=start_frame),lbox):
+            lret.append(self.pred_from_frame_and_bb(frame, bbox, scale, display))
+        return lret
 
