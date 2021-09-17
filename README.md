@@ -19,18 +19,13 @@ Should you need further details regarding this work, please refer to the followi
 
 ```
 apt-get install cmake
+git clone https://github.com/ina-foss/inaFaceGender.git
+cd inaFaceGender
+pip install .
+python run_tests.py # to check that the installation is ok
 ```
 
-Before installation, you should install a fork of keras-vggface
-```
-git clone git@github.com:DavidDoukhan/keras-vggface.git
-cd keras-vggface
-pip install .
-```
-Then return to the base dir and
-```
-pip install .
-```
+
 
 ## CREDITS
 
