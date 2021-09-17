@@ -42,12 +42,16 @@ from matplotlib import pyplot as plt
 
     
 def _get_bbox_pts(detections, face_idx, frame_width, frame_height):
-    
+    # TODO: refactor
+    # this code is 100% dependent on the face detection method used
+    # build a face detection class ???
     
     x1 = int(detections[0, 0, face_idx, 3] * frame_width)
     y1 = int(detections[0, 0, face_idx, 4] * frame_height)
     x2 = int(detections[0, 0, face_idx, 5] * frame_width)
     y2 = int(detections[0, 0, face_idx, 6] * frame_height)
+
+    # TODO: check here if x1 < x2 ???
 
     width = x2 - x1
     height = y2 - y1
@@ -197,7 +201,7 @@ class GenderVideo:
         
     def _process_tracked_face(self, cur_tracker, frame):
         
-        ## There is no rotation in this function... results may be suspicious
+        ## TODO BUG There is no rotation in this function... results may be suspicious
         
         
         tracked_position =  cur_tracker.get_position()
@@ -223,7 +227,7 @@ class GenderVideo:
         return (t_x, t_y, t_w, t_h, label, decision_value)
 
     
-    def align_and_crop_face(self, img, rect_list, desired_width, desired_height, display=False):
+    def align_and_crop_face(self, img, rect_list, desired_width, desired_height):
         """ 
         Aligns and resizes face to desired shape.
   
@@ -252,21 +256,7 @@ class GenderVideo:
 
             rotated_img = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]), flags=cv2.INTER_CUBIC)
             cropped = crop_image(rotated_img, det)
-            try:
-                
-                cropped_res = cv2.resize(cropped, (desired_width, desired_height))
-            except:
-                print('except in align_and_crop_faces', det)
-                print(img.shape)
-                if display:
-                    print('rottated')
-                    plt.imshow(rotated_img)
-                    plt.show()
-                    
-                    print('cropped', det)
-                    plt.imshow(cropped)
-                    plt.show()
-                cropped_res = cv2.resize(rotated_img,(desired_width, desired_height))
+            cropped_res = cv2.resize(cropped, (desired_width, desired_height))
             cropped_img = cropped_res[:, :, ::-1]
 
             return cropped_img, left_eye, right_eye
@@ -308,10 +298,6 @@ class GenderVideo:
             if confidence > self.threshold:
                 n_face += 1
                 bbox = _get_bbox_pts(detections, i, frame_width, frame_height)
-                ## TODO BUG - reimplement scaling using a common method
-                ## This method is bugged
-                #x1, y1 = [int(i * abs(bbox_scaling//1 - bbox_scaling%1)) for i in bbox[:2]]
-                #x2, y2 = [int(i*bbox_scaling) for i in bbox[2:]]
                 
                 x1, y1, x2, y2 = bbox[:]
                 x1, y1, x2, y2 = _scale_bbox(x1, y1, x2, y2, bbox_scaling, img.shape)
@@ -320,7 +306,7 @@ class GenderVideo:
                 if x1 < x2 and y1 < y2:
                     dets = [dlib.rectangle(x1, y1, x2, y2)]
                 else:
-                    ## WARNING - THIS HACK IS STRANGE
+                    ## TODO WARNING - THIS HACK IS STRANGE
                     dets = [dlib.rectangle(0, 0, frame_width, frame_height)]
 
                   
