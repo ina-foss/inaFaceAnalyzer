@@ -77,7 +77,7 @@ setup(
     test_suite="run_tests.py",
     description = DESCRIPTION,
     license = "MIT",
-    install_requires=['opencv-contrib-python', 'dlib', 'pandas', 'sklearn', 'h5py', 'matplotlib'],
+    install_requires=['opencv-contrib-python', 'dlib', 'pandas', 'sklearn', 'h5py', 'matplotlib', 'keras-vggface @ https://github.com/DavidDoukhan/keras-vggface/archive/refs/tags/vddk-0.1.tar.gz'],
     url = "https://github.com/ina-foss/inaFaceGenderSegmenter",
     packages=['inaFaceGender'],
     keywords = KEYWORDS,
@@ -91,4 +91,5 @@ setup(
     #         ['ina_speech_segmenter.py', 'ina_speech_segmenter_pyro_client.py']],
     classifiers=CLASSIFIERS,
     python_requires='>=3.8',
+
 )
