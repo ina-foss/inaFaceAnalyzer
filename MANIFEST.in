@@ -3,4 +3,5 @@ include *.py LICENSE *.md *.ipynb *.txt
 include inaFaceGender/models/opencv_face_detector.pbtxt
 include inaFaceGender/models/opencv_face_detector_uint8.pb
 include inaFaceGender/models/shape_predictor_68_face_landmarks.dat
-include inaFaceGender/models/svm_classifier.joblib
+include inaFaceGender/models/svm_classifier.hdf5
+
