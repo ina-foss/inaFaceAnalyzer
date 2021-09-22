@@ -33,6 +33,7 @@ from sklearn.svm import LinearSVC
 from .face_utils import extract_left_eye_center, extract_right_eye_center, get_rotation_matrix, crop_image
 from .opencv_utils import video_iterator
 from .face_tracking import TrackerList
+from .face_detector import OcvCnnFacedetector
 
 from keras_vggface.vggface import VGGFace
 from keras_vggface import utils
@@ -42,43 +43,6 @@ from keras.preprocessing import image
 from matplotlib import pyplot as plt
 
     
-def _get_bbox_pts(detections, face_idx, frame_width, frame_height):
-    # TODO: refactor
-    # this code is 100% dependent on the face detection method used
-    # build a face detection class ???
-    
-    x1 = int(detections[0, 0, face_idx, 3] * frame_width)
-    y1 = int(detections[0, 0, face_idx, 4] * frame_height)
-    x2 = int(detections[0, 0, face_idx, 5] * frame_width)
-    y2 = int(detections[0, 0, face_idx, 6] * frame_height)
-
-    # TODO: check here if x1 < x2 ???
-
-    width = x2 - x1
-    height = y2 - y1
-    max_size = max(width, height)
-    x1, x2 = max(0, (x1 + x2) // 2 - max_size // 2), min(frame_width, (x1 + x2) // 2 + max_size // 2)
-    y1, y2 = max(0, (y1 + y2) // 2 - max_size // 2), min(frame_height, (y1 + y2) // 2 + max_size // 2)
-
-    return x1, y1, x2, y2
-
-
-def _scale_bbox(x1, y1, x2, y2, scale, frame_shape=None):
-    w = x2 - x1
-    h = y2 - y1
-    
-    x1 = int(x1 - (w*scale - w)/2)
-    y1 = int(y1 - (h*scale -h)/2)
-    x2 = int(x2 + (w*scale - w)/2)
-    y2 = int(y2 + (h*scale -h)/2)
-
-    if frame_shape is not None:
-        x1 = max(x1, 0)
-        y1 = max(y1, 0)
-        x2 = min(x2, frame_shape[1])
-        y2 = min(y2, frame_shape[0])
-
-    return x1, y1, x2, y2
 
 def info2csv(df, csv_path):
     """ 
@@ -129,7 +93,7 @@ class GenderVideo:
         vgg_feature_extractor: VGGFace neural model used for feature extraction.
         threshold: quality of face detection considered acceptable, value between 0 and 1.
     """
-    def __init__(self, threshold = 0.65, verbose = False):
+    def __init__(self, face_detector = OcvCnnFacedetector(bbox_scaling=1.1), verbose = False):
         
         """ 
         The constructor for GenderVideo class. 
@@ -139,8 +103,9 @@ class GenderVideo:
         """
         
         p = os.path.dirname(os.path.realpath(__file__)) + '/models/'
-        self.face_detector = cv2.dnn.readNetFromTensorflow(p + "opencv_face_detector_uint8.pb",
-                                                           p + "opencv_face_detector.pbtxt")
+        #self.face_detector = cv2.dnn.readNetFromTensorflow(p + "opencv_face_detector_uint8.pb",
+        #                                                   p + "opencv_face_detector.pbtxt")
+        self.face_detector = face_detector
         self.align_predictor = dlib.shape_predictor(p +'shape_predictor_68_face_landmarks.dat')
 
         
@@ -152,7 +117,6 @@ class GenderVideo:
         self.gender_svm = svm
         
         self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = (224, 224, 3), pooling ='avg')
-        self.threshold = threshold
         self.verbose = verbose
 
     def _gender_from_face(self, img):
@@ -198,49 +162,6 @@ class GenderVideo:
 
         return cropped_img, left_eye, right_eye
         
-    def detect_faces_from_image(self, img, bbox_scaling=1.1):
-        """ 
-        Detect faces from an image
-  
-        Parameters: 
-            img (array): Image to detect faces from.
-            bbox_scaling (float): scaling factor to the bounding box around the face.
-          
-        Returns: 
-            faces_data (list) : List containing :
-                                - the bounding box after scaling
-                                - face detection confidence score
-        """
-        
-        n_face = 0
-        faces_data = []
-
-        frame_height = img.shape[0]
-        frame_width = img.shape[1]
-        # The CNN is intended to work images resized to 300*300
-        blob = cv2.dnn.blobFromImage(img, 1.0, (300, 300), [104, 117, 123], True, False)
-        self.face_detector.setInput(blob)
-        detections = self.face_detector.forward()
-        
-        
-        for i in range(detections.shape[2]):
-            confidence = detections[0, 0, i, 2]
-            if confidence > self.threshold:
-                n_face += 1
-                bbox = _get_bbox_pts(detections, i, frame_width, frame_height)
-                
-                x1, y1, x2, y2 = bbox[:]
-                x1, y1, x2, y2 = _scale_bbox(x1, y1, x2, y2, bbox_scaling, img.shape)
-                
-                
-                if x1 < x2 and y1 < y2:
-                    dets = (x1, y1, x2, y2)
-                else:
-                    ## TODO WARNING - THIS HACK IS STRANGE
-                    dets = (0, 0, frame_width, frame_height)
-
-                faces_data.append((dets, confidence))
-        return faces_data
 
 
 
@@ -271,7 +192,7 @@ class GenderVideo:
 
             # detect faces every k frames
             if (iframe % k_frames)==0:
-                faces_info = self.detect_faces_from_image(frame) 
+                faces_info = self.face_detector(frame) 
                 
                 tl.ingest_detection(frame, [dlib.rectangle(*e[0]) for e in faces_info])                
                 
@@ -326,7 +247,7 @@ class GenderVideo:
 
         for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0)):
 
-            faces_info = self.detect_faces_from_image(frame)
+            faces_info = self.face_detector(frame)
 
             for bb, detect_conf in faces_info:
                 face_img, left_eye, right_eye = self.align_and_crop_face(frame, dlib.rectangle(*bb), 224, 224)
