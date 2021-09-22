@@ -211,8 +211,7 @@ class GenderVideo:
                 face_img, left_eye, right_eye = self.align_and_crop_face(frame, bb, 224, 224)
                 label, decision_value = self._gender_from_face(face_img)
                 
-                #bb = bb[0]
-                bb = '[(%d, %d) (%d, %d)]' % (bb.left(), bb.top(), bb.right(), bb.bottom())
+                bb =  (bb.left(), bb.top(), bb.right(), bb.bottom())
                 
                 # TODO - ADD CONFIDENCE
                 info.append([
@@ -253,9 +252,6 @@ class GenderVideo:
                 face_img, left_eye, right_eye = self.align_and_crop_face(frame, dlib.rectangle(*bb), 224, 224)
                 label, decision_value = self._gender_from_face(face_img)
 
-
-                bb = '[(%d, %d) (%d, %d)]' % bb
-#                print(bb, type(bb), str(bb))
                 info.append([iframe, bb, label, decision_value, round(detect_conf, 3)])
 
         info = pd.DataFrame.from_records(info, columns = ['frame', 'bb','label', 'decision', 'conf'])
