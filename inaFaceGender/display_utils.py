@@ -27,9 +27,8 @@ import cv2
 import tempfile
 import os
 import pandas as pd
+from .opencv_utils import video_iterator
 
-def string2list(string):
-    return [int(v) for v in string.lstrip('[(').rstrip('])').replace(') (', ', ').split(', ')]
 
 def frames2mp4v(frames_list, file_name, fps):
     """ 
@@ -60,14 +59,11 @@ def incrust_faces_in_video(invid, incsv, outvid, collabel='label', coldecision='
     assert outvid[-4:].lower() == '.mp4', outvid
     
     df = pd.read_csv(incsv)
-    flist = df['frame'].to_list()
     
     cap = cv2.VideoCapture(invid)
-    #cap.set(cv2.CAP_PROP_POS_MSEC, 0)
     ret = True
 
 
-    #currentsecond = 0
     font = cv2.FONT_HERSHEY_SIMPLEX
     processed_frames = []
 
@@ -78,40 +74,30 @@ def incrust_faces_in_video(invid, incsv, outvid, collabel='label', coldecision='
             break
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        if currentframe in flist:
+            
+        sdf = df[df.frame == currentframe]      
 
-            bbox = list(df['bb'].loc[df['frame'] == currentframe].items())
+        for _, e in sdf.T.iteritems():
 
-            #label = list(df['smoothed_label'].loc[df['frame'] == currentframe].items())
-            #decision = list(df['smoothed_decision'].loc[df['frame'] == currentframe].items())
-
-            label = list(df['label'].loc[df['frame'] == currentframe].items())
-            decision = list(df['decision'].loc[df['frame'] == currentframe].items())
-
-
-
-            conf  = list(df['conf'].loc[df['frame'] == currentframe].items())
-            for i in range(len(bbox)):
-
-                x1, y1, x2, y2 = string2list(bbox[i][1]) 
-                text1 = 'det: ' + str(round(conf[i][1], 3)) 
-                text3 = label[i][1] + ' Decision_func_value: '+ str(round(decision[i][1],3))
+            x1, y1, x2, y2 = eval(e.bb)
+#                text1 = 'det: ' + str(round(conf[i][1], 3)) 
+#            text3 = label[i][1] + ' Decision_func_value: '+ str(round(decision[i][1],3))
+            label = e[collabel]
+            text3 = label + ' Decision_func_value: '+ str(round(e.decision,3))
 
 
 
 
-                cv2.putText(frame,str(text1),(x1 - 100, y1 - 30 ), font, 0.7, (255,255,255),2,cv2.LINE_AA)
+          #  cv2.putText(frame,str(text1),(x1 - 100, y1 - 30 ), font, 0.7, (255,255,255),2,cv2.LINE_AA)
 
-                tmplab = label[i][1]
+            #print(tmplab, type(tmplab), len(tmplab.strip()), 'm', type('m'), tmplab == 'm', len('m'))
 
-                #print(tmplab, type(tmplab), len(tmplab.strip()), 'm', type('m'), tmplab == 'm', len('m'))
-
-                if label[i][1]== 'm': # blue
-                    color = (0,0,255)
-                else: # red
-                    color = (255,0,0)
-                cv2.putText(frame,text3,(x1 - 100, y1 - 10 ), font, 0.7, color,2,cv2.LINE_AA)
-                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 8)
+            if label == 'm': # blue
+                color = (0,0,255)
+            else: # red
+                color = (255,0,0)
+            cv2.putText(frame,text3,(x1 - 100, y1 - 10 ), font, 0.7, color,2,cv2.LINE_AA)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 8)
 
         processed_frames.append(frame)
 
