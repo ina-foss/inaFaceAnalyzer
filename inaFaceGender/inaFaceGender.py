@@ -236,13 +236,13 @@ class GenderVideo:
         return label, decision_value
 
     
-    def align_and_crop_face(self, img, rect_list, desired_width, desired_height):
+    def align_and_crop_face(self, img, bb, desired_width, desired_height):
         """ 
         Aligns and resizes face to desired shape.
   
         Parameters: 
             img  : Image to be aligned and resized.
-            rect_list: Bounding box coordinates tuples.
+            bb: Bounding box coordinates tuples. (dlib.rectangle)
             desired_width: output image width.
             desired_height: output image height.
             
@@ -251,24 +251,18 @@ class GenderVideo:
             cropped_img: Image aligned and resized.
             left_eye: left eye position coordinates.
             right_eye: right eye position coordinates.
-        """
+        """        
+        shape = self.align_predictor(img, bb)
+        left_eye = extract_left_eye_center(shape)
+        right_eye = extract_right_eye_center(shape)
+        M = get_rotation_matrix(left_eye, right_eye)
 
-        #### TODO Warning: this return a single element
-        #### only the 1st element of rect_list is processed
-        assert len(rect_list) == 1
-        
-        for j, det in enumerate(rect_list):
-            shape = self.align_predictor(img, det)
-            left_eye = extract_left_eye_center(shape)
-            right_eye = extract_right_eye_center(shape)
-            M = get_rotation_matrix(left_eye, right_eye)
+        rotated_img = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]), flags=cv2.INTER_CUBIC)
+        cropped = crop_image(rotated_img, bb)
+        cropped_res = cv2.resize(cropped, (desired_width, desired_height))
+        cropped_img = cropped_res[:, :, ::-1]
 
-            rotated_img = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]), flags=cv2.INTER_CUBIC)
-            cropped = crop_image(rotated_img, det)
-            cropped_res = cv2.resize(cropped, (desired_width, desired_height))
-            cropped_img = cropped_res[:, :, ::-1]
-
-            return cropped_img, left_eye, right_eye
+        return cropped_img, left_eye, right_eye
         
     def detect_faces_from_image(self, img, bbox_scaling=1.1):
         """ 
@@ -276,17 +270,11 @@ class GenderVideo:
   
         Parameters: 
             img (array): Image to detect faces from.
-            desired_width (int): desired output width of the image.
-            desired_height (int): desired output height of the image.
             bbox_scaling (float): scaling factor to the bounding box around the face.
           
         Returns: 
             faces_data (list) : List containing :
                                 - the bounding box after scaling
-                                - image cropped around the face and resized
-                                - left eye coordinates
-                                - right eye coordinates
-                                - index of the face in the image 
                                 - face detection confidence score
         """
         
@@ -312,10 +300,10 @@ class GenderVideo:
                 
                 
                 if x1 < x2 and y1 < y2:
-                    dets = [dlib.rectangle(x1, y1, x2, y2)]
+                    dets = (x1, y1, x2, y2)
                 else:
                     ## TODO WARNING - THIS HACK IS STRANGE
-                    dets = [dlib.rectangle(0, 0, frame_width, frame_height)]
+                    dets = (0, 0, frame_width, frame_height)
 
                 faces_data.append((dets, confidence))
         return faces_data
@@ -351,7 +339,7 @@ class GenderVideo:
             if (iframe % k_frames)==0:
                 faces_info = self.detect_faces_from_image(frame) 
                 
-                tl.ingest_detection(frame, [e[0][0] for e in faces_info])                
+                tl.ingest_detection(frame, [dlib.rectangle(*e[0]) for e in faces_info])                
                 
             # process faces based on position found in trackers
             for fid in tl.d:
@@ -359,16 +347,16 @@ class GenderVideo:
                 
                 x1, y1, x2, y2 = _scale_bbox(bb.left(), bb.top(), bb.right(), bb.bottom(), 1, frame.shape)
                 if x1 < x2 and y1 < y2:
-                    bb = [dlib.rectangle(x1, y1, x2, y2)]
+                    bb = dlib.rectangle(x1, y1, x2, y2)
                 else:
                     ## TODO WARNING - THIS HACK IS STRANGE
-                    bb = [dlib.rectangle(0, 0, frame.shape[1], frame.shape[0])]
+                    bb = dlib.rectangle(0, 0, frame.shape[1], frame.shape[0])
                 
                 
                 face_img, left_eye, right_eye = self.align_and_crop_face(frame, bb, 224, 224)
                 label, decision_value = self._gender_from_face(face_img)
                 
-                bb = bb[0]
+                #bb = bb[0]
                 bb = '[(%d, %d) (%d, %d)]' % (bb.left(), bb.top(), bb.right(), bb.bottom())
                 
                 # TODO - ADD CONFIDENCE
@@ -407,12 +395,11 @@ class GenderVideo:
             faces_info = self.detect_faces_from_image(frame)
 
             for bb, detect_conf in faces_info:
-                face_img, left_eye, right_eye = self.align_and_crop_face(frame, bb, 224, 224)
+                face_img, left_eye, right_eye = self.align_and_crop_face(frame, dlib.rectangle(*bb), 224, 224)
                 label, decision_value = self._gender_from_face(face_img)
 
 
-                bb = bb[0]
-                bb = '[(%d, %d) (%d, %d)]' % (bb.left(), bb.top(), bb.right(), bb.bottom()) 
+                bb = '[(%d, %d) (%d, %d)]' % bb
 #                print(bb, type(bb), str(bb))
                 info.append([iframe, bb, label, decision_value, round(detect_conf, 3)])
 
