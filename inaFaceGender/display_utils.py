@@ -27,7 +27,7 @@ import cv2
 import tempfile
 import os
 import pandas as pd
-from .opencv_utils import video_iterator
+from .opencv_utils import video_iterator, get_fps
 
 
 def frames2mp4v(frames_list, file_name, fps):
@@ -53,29 +53,37 @@ def frames2mp4v(frames_list, file_name, fps):
     out.release()
 
 
-def incrust_faces_in_video(invid, incsv, outvid, collabel='label', coldecision='decision'):    
-    # collabel can also be 'smoothed_label', and coldecision can be smoothed_decision
-    
+def incrust_faces_in_video(invid, incsv, outvid, collabel='label', coldecision='decision'):
+    """
+    Use a video and its inafacegender analysis in CSV to generate a video
+    with incrusted faces bounding boxes and predictions informations
+    Parameters
+    ----------
+    invid : str
+        path to the input video.
+    incsv : str
+        path to the csv corresponding to the analysis of the input video.
+    outvid : str
+        output path which will store the corresponding video.
+    collabel : str, optional
+        Column to be used for classification label between label and smoothed_label.
+        The default is 'label'.
+    coldecision : str, optional
+        Column corresponding to classification decision function.
+        Can be 'decision' or 'smoothed_decision'
+        The default is 'decision'.
+    """    
     assert outvid[-4:].lower() == '.mp4', outvid
     
     df = pd.read_csv(incsv)
-    
-    cap = cv2.VideoCapture(invid)
-    ret = True
-
-
+ 
     font = cv2.FONT_HERSHEY_SIMPLEX
     processed_frames = []
-
-    while (cap.isOpened()) and ret: #cap.get(cv2.CAP_PROP_POS_FRAMES) < 100:#NUMBER_OF_FRAMES : 
-        currentframe = cap.get(cv2.CAP_PROP_POS_FRAMES)
-        ret,frame = cap.read()  
-        if not ret:
-            break
-
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            
-        sdf = df[df.frame == currentframe]      
+   
+ 
+    for iframe, frame in video_iterator(invid):
+                
+        sdf = df[df.frame == iframe]      
 
         for _, e in sdf.T.iteritems():
 
@@ -84,9 +92,6 @@ def incrust_faces_in_video(invid, incsv, outvid, collabel='label', coldecision='
 #            text3 = label[i][1] + ' Decision_func_value: '+ str(round(decision[i][1],3))
             label = e[collabel]
             text3 = label + ' Decision_func_value: '+ str(round(e.decision,3))
-
-
-
 
           #  cv2.putText(frame,str(text1),(x1 - 100, y1 - 30 ), font, 0.7, (255,255,255),2,cv2.LINE_AA)
 
@@ -103,5 +108,5 @@ def incrust_faces_in_video(invid, incsv, outvid, collabel='label', coldecision='
 
     with tempfile.TemporaryDirectory() as p:
         tmpout = '%s/%s.mp4' % (p, os.path.splitext(os.path.basename(invid))[0])
-        frames2mp4v(processed_frames, tmpout, cap.get(cv2.CAP_PROP_FPS))
+        frames2mp4v(processed_frames, tmpout, get_fps(invid))
         os.system('ffmpeg -y -i %s -i %s -map 0:v:0 -map 1:a? -vcodec libx264 -acodec copy %s' % (tmpout, invid, outvid))

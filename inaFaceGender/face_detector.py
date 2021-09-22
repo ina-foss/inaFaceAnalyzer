@@ -42,7 +42,9 @@ def _opencv_get_bbox_pts(detections, face_idx, frame_width, frame_height):
     height = y2 - y1
     max_size = max(width, height)
     
-    # TODO : are these 4 lines usefull ??
+    # Make the box square, except if it goes beyond de screen...
+    # TODO: since it will be streched after, we should have a look to the
+    # performances for faces that goes beyond screen
     x1, x2 = max(0, (x1 + x2) // 2 - max_size // 2), min(frame_width, (x1 + x2) // 2 + max_size // 2)
     y1, y2 = max(0, (y1 + y2) // 2 - max_size // 2), min(frame_height, (y1 + y2) // 2 + max_size // 2)
 

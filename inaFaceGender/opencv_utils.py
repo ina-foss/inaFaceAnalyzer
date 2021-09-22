@@ -69,3 +69,13 @@ def video_iterator(src, time_unit='frame', start=None, stop=None, subsamp_coeff=
         yield cap.get(cv2.CAP_PROP_POS_FRAMES) - 1, frame
 
     cap.release()
+
+def get_fps(src):
+    cap = cv2.VideoCapture(src)
+
+    if not cap.isOpened():
+        raise Exception("Video file %s does not exist or is invalid" % src)
+    
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    cap.release()
+    return fps
