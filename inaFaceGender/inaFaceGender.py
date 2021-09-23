@@ -162,6 +162,7 @@ class AbstractGender:
             label, decision_value = self.classifier(face_img)
             ret.append([bb, label, decision_value, detect_conf])
             if self.verbose:
+                print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function, face detection confidence')
                 print(ret[-1])
                 print()
         return ret

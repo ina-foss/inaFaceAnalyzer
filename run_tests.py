@@ -26,7 +26,7 @@
 
 import unittest
 import pandas as pd
-from inaFaceGender import GenderVideo
+from inaFaceGender import GenderVideo, GenderImage
 from pandas.util.testing import assert_frame_equal
 import numpy as np
 from inaFaceGender.opencv_utils import video_iterator
@@ -35,10 +35,28 @@ import cv2
 
 class TestInaFaceGender(unittest.TestCase):
     
-    def test_init(self):
-        gv = GenderVideo()
+    def test_image_all_diallo(self):
+        gi = GenderImage()
+        ret = gi('./media/Europa21_-_2.jpg')
+        self.assertEqual(len(ret), 1)
+        ret = ret[0]
+        self.assertEqual(ret[0], (431, 245, 988, 802))
+        self.assertEqual(ret[1], 'f')
+        self.assertAlmostEqual(ret[2], -3.24866205721505)
+        self.assertAlmostEqual(ret[3], 0.99964356)
 
-    def test_basic(self):
+    def test_image_knuth(self):
+        gi = GenderImage()
+        ret = gi('./media/20091020222328!KnuthAtOpenContentAlliance.jpg')
+        self.assertEqual(len(ret), 1)
+        ret = ret[0]
+        self.assertEqual(ret[0], (78, 45, 321, 288))
+        self.assertEqual(ret[1], 'm')
+        self.assertAlmostEqual(ret[2], 7.843016989318868)
+        self.assertAlmostEqual(ret[3], 0.99995565)
+
+
+    def test_video_basic(self):
         gv = GenderVideo()
         ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=25)
         ret.bb = ret.bb.map(str)
