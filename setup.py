@@ -78,7 +78,7 @@ setup(
     description = DESCRIPTION,
     license = "MIT",
     install_requires=['opencv-contrib-python', 'dlib', 'pandas', 'sklearn', 'h5py', 'matplotlib', 'keras-vggface @ https://github.com/DavidDoukhan/keras-vggface/archive/refs/tags/vddk-0.1.tar.gz'],
-    url = "https://github.com/ina-foss/inaFaceGenderSegmenter",
+    url = "https://github.com/ina-foss/inaFaceGender",
     packages=['inaFaceGender'],
     keywords = KEYWORDS,
     #packages = find_packages(),
