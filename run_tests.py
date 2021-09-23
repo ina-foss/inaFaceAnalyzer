@@ -44,7 +44,7 @@ class TestInaFaceGender(unittest.TestCase):
         ret.bb = ret.bb.map(str)
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv',
                         dtype={'conf': np.float32})
-        assert_frame_equal(ret, df)
+        assert_frame_equal(ret, df, check_less_precise=True)
 
     def test_opencv_cnn_detection(self):
         detector = OcvCnnFacedetector()

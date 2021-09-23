@@ -24,20 +24,16 @@
 # THE SOFTWARE.
 
 import dlib, cv2
-import numpy as np
+#import numpy as np
 import pandas as pd
 import os
-import h5py
-from sklearn.svm import LinearSVC
+#import h5py
 
 from .face_utils import extract_left_eye_center, extract_right_eye_center, get_rotation_matrix, crop_image
 from .opencv_utils import video_iterator
 from .face_tracking import TrackerList
 from .face_detector import OcvCnnFacedetector
-
-from keras_vggface.vggface import VGGFace
-from keras_vggface import utils
-from keras.preprocessing import image 
+from .face_classifier import VGG16_LinSVM
 
 
 from matplotlib import pyplot as plt
@@ -79,10 +75,38 @@ def _smooth_labels(df):
     
 
   
-    
+class AbstractGender:
+    """
+    This is an abstract class containg the common code to be used to process 
+    images, videos, with/without tracking
+    """
+    def __init__(self, face_detector, verbose):
+        """
+        Constructor
+        Parameters
+        ----------
+        face_detector : instance of face_detector.OcvCnnFacedetector or None
+            More face detections modules may be implemented
+            if None, then manual bounding boxes should be provided
+        verbose : boolean
+            If True, will display several usefull intermediate images and results
+        """        
+        p = os.path.dirname(os.path.realpath(__file__)) + '/models/'
+        # face detection system
+        self.face_detector = face_detector
+
+        # face alignment module
+        # TODO: make a separate class
+        self.align_predictor = dlib.shape_predictor(p +'shape_predictor_68_face_landmarks.dat')
+
+        # Face feature extractor from aligned and detected faces
+        self.classifier = VGG16_LinSVM()
+        
+        # True if some verbose is required
+        self.verbose = verbose        
   
     
-class GenderVideo:
+class GenderVideo(AbstractGender):
     """ 
     This is a class regrouping all phases of a pipeline designed for gender classification from video.
     
@@ -94,44 +118,43 @@ class GenderVideo:
         threshold: quality of face detection considered acceptable, value between 0 and 1.
     """
     def __init__(self, face_detector = OcvCnnFacedetector(bbox_scaling=1.1), verbose = False):
-        
-        """ 
-        The constructor for GenderVideo class. 
+        AbstractGender.__init__(self, face_detector, verbose)
+        # """ 
+        # The constructor for GenderVideo class. 
   
-        Parameters: 
-           threshold (float): quality of face detection considered acceptable, value between 0 and 1. 
-        """
+        # Parameters: 
+        #    threshold (float): quality of face detection considered acceptable, value between 0 and 1. 
+        # """
         
-        p = os.path.dirname(os.path.realpath(__file__)) + '/models/'
-        #self.face_detector = cv2.dnn.readNetFromTensorflow(p + "opencv_face_detector_uint8.pb",
-        #                                                   p + "opencv_face_detector.pbtxt")
-        self.face_detector = face_detector
-        self.align_predictor = dlib.shape_predictor(p +'shape_predictor_68_face_landmarks.dat')
+        # p = os.path.dirname(os.path.realpath(__file__)) + '/models/'
+        # #self.face_detector = cv2.dnn.readNetFromTensorflow(p + "opencv_face_detector_uint8.pb",
+        # #                                                   p + "opencv_face_detector.pbtxt")
+        # self.face_detector = face_detector
+        # self.align_predictor = dlib.shape_predictor(p +'shape_predictor_68_face_landmarks.dat')
 
         
-        f = h5py.File(p + 'svm_classifier.hdf5', 'r')
-        svm = LinearSVC()
-        svm.classes_ = np.array(f['linearsvc/classes'][:]).astype('<U1')
-        svm.intercept_ = f['linearsvc/intercept'][:]
-        svm.coef_ = f['linearsvc/coef'][:]
-        self.gender_svm = svm
+        # f = h5py.File(p + 'svm_classifier.hdf5', 'r')
+        # svm = LinearSVC()
+        # svm.classes_ = np.array(f['linearsvc/classes'][:]).astype('<U1')
+        # svm.intercept_ = f['linearsvc/intercept'][:]
+        # svm.coef_ = f['linearsvc/coef'][:]
+        # self.gender_svm = svm
         
-        self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = (224, 224, 3), pooling ='avg')
-        self.verbose = verbose
+        # self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = (224, 224, 3), pooling ='avg')
+        # self.verbose = verbose
 
-    def _gender_from_face(self, img):
-        """
-        Face is supposed to be aligned and cropped and resized to 224*224
-        it is for regulard detection __call__
-        we should check if it is done in the tracking implementation
-        """
-        img = image.img_to_array(img)
-        img = utils.preprocess_input(img, version=1)
-        img = np.expand_dims(img, axis=0)
-        features = self.vgg_feature_extractor.predict(img)
-        label = self.gender_svm.predict(features)[0]
-        decision_value = round(self.gender_svm.decision_function(features)[0], 3)
-        return label, decision_value
+    # def _gender_from_face(self, img):
+    #     """
+    #     Face is supposed to be aligned and cropped and resized to 224*224
+        
+    #     """
+    #     img = image.img_to_array(img)
+    #     img = utils.preprocess_input(img, version=1)
+    #     img = np.expand_dims(img, axis=0)
+    #     features = self.vgg_feature_extractor.predict(img)
+    #     label = self.gender_svm.predict(features)[0]
+    #     decision_value = round(self.gender_svm.decision_function(features)[0], 3)
+    #     return label, decision_value
 
     
     def align_and_crop_face(self, img, bb, desired_width, desired_height):
@@ -209,7 +232,8 @@ class GenderVideo:
                 
                 
                 face_img, left_eye, right_eye = self.align_and_crop_face(frame, bb, 224, 224)
-                label, decision_value = self._gender_from_face(face_img)
+                #label, decision_value = self._gender_from_face(face_img)
+                label, decision_value = self.classifier(face_img)
                 
                 bb =  (bb.left(), bb.top(), bb.right(), bb.bottom())
                 
@@ -250,7 +274,8 @@ class GenderVideo:
 
             for bb, detect_conf in faces_info:
                 face_img, left_eye, right_eye = self.align_and_crop_face(frame, dlib.rectangle(*bb), 224, 224)
-                label, decision_value = self._gender_from_face(face_img)
+                #label, decision_value = self._gender_from_face(face_img)
+                label, decision_value = self.classifier(face_img)
 
                 info.append([iframe, bb, label, decision_value, round(detect_conf, 3)])
 
@@ -281,7 +306,8 @@ class GenderVideo:
             plt.imshow(frame)
             plt.show()
 
-        ret = self._gender_from_face(frame)
+       # ret = #self._gender_from_face(frame)
+        ret = self.classifier(frame)
         if display:
             print(ret)
         return ret
