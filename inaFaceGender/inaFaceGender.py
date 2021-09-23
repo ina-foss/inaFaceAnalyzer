@@ -104,60 +104,8 @@ class AbstractGender:
         
         # True if some verbose is required
         self.verbose = verbose        
-  
-    
-class GenderVideo(AbstractGender):
-    """ 
-    This is a class regrouping all phases of a pipeline designed for gender classification from video.
-    
-    Attributes: 
-        face_detector: Face detection model. 
-        align_predictor: Face alignment model.
-        gender_svm: Gender SVM classifier model.
-        vgg_feature_extractor: VGGFace neural model used for feature extraction.
-        threshold: quality of face detection considered acceptable, value between 0 and 1.
-    """
-    def __init__(self, face_detector = OcvCnnFacedetector(bbox_scaling=1.1), verbose = False):
-        AbstractGender.__init__(self, face_detector, verbose)
-        # """ 
-        # The constructor for GenderVideo class. 
-  
-        # Parameters: 
-        #    threshold (float): quality of face detection considered acceptable, value between 0 and 1. 
-        # """
-        
-        # p = os.path.dirname(os.path.realpath(__file__)) + '/models/'
-        # #self.face_detector = cv2.dnn.readNetFromTensorflow(p + "opencv_face_detector_uint8.pb",
-        # #                                                   p + "opencv_face_detector.pbtxt")
-        # self.face_detector = face_detector
-        # self.align_predictor = dlib.shape_predictor(p +'shape_predictor_68_face_landmarks.dat')
 
-        
-        # f = h5py.File(p + 'svm_classifier.hdf5', 'r')
-        # svm = LinearSVC()
-        # svm.classes_ = np.array(f['linearsvc/classes'][:]).astype('<U1')
-        # svm.intercept_ = f['linearsvc/intercept'][:]
-        # svm.coef_ = f['linearsvc/coef'][:]
-        # self.gender_svm = svm
-        
-        # self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = (224, 224, 3), pooling ='avg')
-        # self.verbose = verbose
-
-    # def _gender_from_face(self, img):
-    #     """
-    #     Face is supposed to be aligned and cropped and resized to 224*224
-        
-    #     """
-    #     img = image.img_to_array(img)
-    #     img = utils.preprocess_input(img, version=1)
-    #     img = np.expand_dims(img, axis=0)
-    #     features = self.vgg_feature_extractor.predict(img)
-    #     label = self.gender_svm.predict(features)[0]
-    #     decision_value = round(self.gender_svm.decision_function(features)[0], 3)
-    #     return label, decision_value
-
-    
-    def align_and_crop_face(self, img, bb, desired_width, desired_height):
+    def align_and_crop_face(self, frame, bb, desired_width, desired_height):
         """ 
         Aligns and resizes face to desired shape.
   
@@ -173,17 +121,69 @@ class GenderVideo(AbstractGender):
             left_eye: left eye position coordinates.
             right_eye: right eye position coordinates.
         """        
-        shape = self.align_predictor(img, bb)
+        shape = self.align_predictor(frame, bb)
         left_eye = extract_left_eye_center(shape)
         right_eye = extract_right_eye_center(shape)
         M = get_rotation_matrix(left_eye, right_eye)
 
-        rotated_img = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]), flags=cv2.INTER_CUBIC)
-        cropped = crop_image(rotated_img, bb)
+        rotated_frame = cv2.warpAffine(frame, M, (frame.shape[1], frame.shape[0]), flags=cv2.INTER_CUBIC)
+        cropped = crop_image(rotated_frame, bb)
         cropped_res = cv2.resize(cropped, (desired_width, desired_height))
         cropped_img = cropped_res[:, :, ::-1]
 
         return cropped_img, left_eye, right_eye
+    
+
+
+class GenderImage(AbstractGender):
+    def __init__(self, face_detector = OcvCnnFacedetector(bbox_scaling=1.1), verbose = False):
+        AbstractGender.__init__(self, face_detector, verbose)
+    def __call__(self, img_path):
+        img = cv2.imread('./media/Europa21_-_2.jpg')
+        frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    
+class GenderVideo(AbstractGender):
+    """ 
+    This is a class regrouping all phases of a pipeline designed for gender classification from video.
+    
+    Attributes: 
+        face_detector: Face detection model. 
+        align_predictor: Face alignment model.
+        gender_svm: Gender SVM classifier model.
+        vgg_feature_extractor: VGGFace neural model used for feature extraction.
+        threshold: quality of face detection considered acceptable, value between 0 and 1.
+    """
+    def __init__(self, face_detector = OcvCnnFacedetector(bbox_scaling=1.1), verbose = False):
+        AbstractGender.__init__(self, face_detector, verbose)
+
+    
+    # def align_and_crop_face(self, img, bb, desired_width, desired_height):
+    #     """ 
+    #     Aligns and resizes face to desired shape.
+  
+    #     Parameters: 
+    #         img  : Image to be aligned and resized.
+    #         bb: Bounding box coordinates tuples. (dlib.rectangle)
+    #         desired_width: output image width.
+    #         desired_height: output image height.
+            
+          
+    #     Returns: 
+    #         cropped_img: Image aligned and resized.
+    #         left_eye: left eye position coordinates.
+    #         right_eye: right eye position coordinates.
+    #     """        
+    #     shape = self.align_predictor(img, bb)
+    #     left_eye = extract_left_eye_center(shape)
+    #     right_eye = extract_right_eye_center(shape)
+    #     M = get_rotation_matrix(left_eye, right_eye)
+
+    #     rotated_img = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]), flags=cv2.INTER_CUBIC)
+    #     cropped = crop_image(rotated_img, bb)
+    #     cropped_res = cv2.resize(cropped, (desired_width, desired_height))
+    #     cropped_img = cropped_res[:, :, ::-1]
+
+    #     return cropped_img, left_eye, right_eye
         
 
 
