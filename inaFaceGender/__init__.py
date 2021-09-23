@@ -23,5 +23,5 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from .inaFaceGender import GenderVideo
+from .inaFaceGender import GenderVideo, GenderImage
 from .display_utils import incrust_faces_in_video

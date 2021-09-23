@@ -127,20 +127,54 @@ class AbstractGender:
         M = get_rotation_matrix(left_eye, right_eye)
 
         rotated_frame = cv2.warpAffine(frame, M, (frame.shape[1], frame.shape[0]), flags=cv2.INTER_CUBIC)
+        
+        if self.verbose:
+            print('after rotation')
+            plt.imshow(rotated_frame)
+            plt.show()
+        
         cropped = crop_image(rotated_frame, bb)
         cropped_res = cv2.resize(cropped, (desired_width, desired_height))
+        if self.verbose:
+            print('after crop')
+            plt.imshow(cropped_res)
+            plt.show()
+
+        # colors are stranges after this instruction
+        # should it be moved in VGG specific code ???
         cropped_img = cropped_res[:, :, ::-1]
 
         return cropped_img, left_eye, right_eye
     
+    def detect_and_classify_faces_from_frame(self, frame):
+        if self.verbose:
+            plt.imshow(frame)
+            plt.show()
+        ret = []
+        for bb, detect_conf in self.face_detector(frame):
+            if self.verbose:
+                tmpframe = frame.copy()
+                cv2.rectangle(tmpframe, (bb[0], bb[1]), (bb[2], bb[3]), (0, 255, 0), 8)
+                plt.imshow(tmpframe)
+                plt.show()
+
+            face_img, left_eye, right_eye = self.align_and_crop_face(frame, dlib.rectangle(*bb), 224, 224)
+            label, decision_value = self.classifier(face_img)
+            ret.append([bb, label, decision_value, detect_conf])
+            if self.verbose:
+                print(ret[-1])
+                print()
+        return ret
+        
 
 
 class GenderImage(AbstractGender):
     def __init__(self, face_detector = OcvCnnFacedetector(bbox_scaling=1.1), verbose = False):
         AbstractGender.__init__(self, face_detector, verbose)
     def __call__(self, img_path):
-        img = cv2.imread('./media/Europa21_-_2.jpg')
+        img = cv2.imread(img_path)
         frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        return self.detect_and_classify_faces_from_frame(frame)
     
 class GenderVideo(AbstractGender):
     """ 
@@ -155,37 +189,6 @@ class GenderVideo(AbstractGender):
     """
     def __init__(self, face_detector = OcvCnnFacedetector(bbox_scaling=1.1), verbose = False):
         AbstractGender.__init__(self, face_detector, verbose)
-
-    
-    # def align_and_crop_face(self, img, bb, desired_width, desired_height):
-    #     """ 
-    #     Aligns and resizes face to desired shape.
-  
-    #     Parameters: 
-    #         img  : Image to be aligned and resized.
-    #         bb: Bounding box coordinates tuples. (dlib.rectangle)
-    #         desired_width: output image width.
-    #         desired_height: output image height.
-            
-          
-    #     Returns: 
-    #         cropped_img: Image aligned and resized.
-    #         left_eye: left eye position coordinates.
-    #         right_eye: right eye position coordinates.
-    #     """        
-    #     shape = self.align_predictor(img, bb)
-    #     left_eye = extract_left_eye_center(shape)
-    #     right_eye = extract_right_eye_center(shape)
-    #     M = get_rotation_matrix(left_eye, right_eye)
-
-    #     rotated_img = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]), flags=cv2.INTER_CUBIC)
-    #     cropped = crop_image(rotated_img, bb)
-    #     cropped_res = cv2.resize(cropped, (desired_width, desired_height))
-    #     cropped_img = cropped_res[:, :, ::-1]
-
-    #     return cropped_img, left_eye, right_eye
-        
-
 
 
     def detect_with_tracking(self, video_path, k_frames, subsamp_coeff = 1, offset = -1):
@@ -270,14 +273,7 @@ class GenderVideo(AbstractGender):
 
         for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0)):
 
-            faces_info = self.face_detector(frame)
-
-            for bb, detect_conf in faces_info:
-                face_img, left_eye, right_eye = self.align_and_crop_face(frame, dlib.rectangle(*bb), 224, 224)
-                #label, decision_value = self._gender_from_face(face_img)
-                label, decision_value = self.classifier(face_img)
-
-                info.append([iframe, bb, label, decision_value, round(detect_conf, 3)])
+            info += [[iframe] + e for e in self.detect_and_classify_faces_from_frame(frame)]
 
         info = pd.DataFrame.from_records(info, columns = ['frame', 'bb','label', 'decision', 'conf'])
         return info
