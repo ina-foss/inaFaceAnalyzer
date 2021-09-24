@@ -79,7 +79,7 @@ class OcvCnnFacedetector:
           
         Returns: 
             faces_data (list) : List containing :
-                                - the bounding box after scaling
+                                - the bounding box
                                 - face detection confidence score
         """
         
