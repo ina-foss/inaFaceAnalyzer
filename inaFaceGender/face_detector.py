@@ -51,42 +51,20 @@ def _opencv_get_bbox_pts(detections, face_idx, frame_width, frame_height):
     return x1, y1, x2, y2
 
 
-def _scale_bbox(x1, y1, x2, y2, scale, frame_shape=None):
-    w = x2 - x1
-    h = y2 - y1
-    
-    x1 = int(x1 - (w*scale - w)/2)
-    y1 = int(y1 - (h*scale -h)/2)
-    x2 = int(x2 + (w*scale - w)/2)
-    y2 = int(y2 + (h*scale -h)/2)
-
-    if frame_shape is not None:
-        x1 = max(x1, 0)
-        y1 = max(y1, 0)
-        x2 = min(x2, frame_shape[1])
-        y2 = min(y2, frame_shape[0])
-
-    return x1, y1, x2, y2
-
 
 class OcvCnnFacedetector:
     """
     opencv default CNN face detector
     Future : define an abstract class allowing to implement several detection methods
     """
-    def __init__(self, minconf=0.65, bbox_scaling=1.0):
+    def __init__(self, minconf=0.65):
         """
         Parameters
         ----------
         minconf : float, optional
            minimal face detection confidence. The default is 0.65.
-        bbox_scaling : float, optional
-            scaling factor to be applied to the face bounding box.
-            The default is 1.0.
-
         """
         self.minconf = minconf
-        self.bbox_scaling = bbox_scaling
         p = os.path.dirname(os.path.realpath(__file__)) + '/models/'
         self.model = cv2.dnn.readNetFromTensorflow(p + "opencv_face_detector_uint8.pb",
                                                    p + "opencv_face_detector.pbtxt")
@@ -122,13 +100,17 @@ class OcvCnnFacedetector:
                 
                 #x1, y1, x2, y2 = bbox[:]
                 #x1, y1, x2, y2 = _scale_bbox(x1, y1, x2, y2, self.bbox_scaling, frame.shape)
-                x1, y1, x2, y2 = _scale_bbox(*bbox, self.bbox_scaling, frame.shape)
+                #x1, y1, x2, y2 = _scale_bbox(*bbox, self.bbox_scaling, frame.shape)
                 
-                if x1 < x2 and y1 < y2:
-                    dets = (x1, y1, x2, y2)
-                else:
-                    ## TODO WARNING - THIS HACK IS STRANGE
-                    dets = (0, 0, frame_width, frame_height)
+                # if x1 < x2 and y1 < y2:
+                #     dets = (x1, y1, x2, y2)
+                # else:
+                #     ## TODO WARNING - THIS HACK IS STRANGE
+                #     dets = (0, 0, frame_width, frame_height)
+                
+                ## TODO WARNING - THIS HACK IS STRANGE
+                if bbox[2] < bbox[0] or bbox[3] < bbox[1]:
+                    bbox = (0, 0, frame_width, frame_height)
 
-                faces_data.append((dets, confidence))
+                faces_data.append((bbox, confidence))
         return faces_data

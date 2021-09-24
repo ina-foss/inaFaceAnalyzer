@@ -72,7 +72,22 @@ def _smooth_labels(df):
 
     return new_df
 
+def _scale_bbox(x1, y1, x2, y2, scale, frame_shape=None):
+    w = x2 - x1
+    h = y2 - y1
     
+    x1 = int(x1 - (w*scale - w)/2)
+    y1 = int(y1 - (h*scale -h)/2)
+    x2 = int(x2 + (w*scale - w)/2)
+    y2 = int(y2 + (h*scale -h)/2)
+
+    if frame_shape is not None:
+        x1 = max(x1, 0)
+        y1 = max(y1, 0)
+        x2 = min(x2, frame_shape[1])
+        y2 = min(y2, frame_shape[0])
+
+    return x1, y1, x2, y2
 
   
 class AbstractGender:
@@ -80,7 +95,7 @@ class AbstractGender:
     This is an abstract class containg the common code to be used to process 
     images, videos, with/without tracking
     """
-    def __init__(self, face_detector, verbose):
+    def __init__(self, face_detector, bbox_scaling, verbose):
         """
         Constructor
         Parameters
@@ -88,12 +103,18 @@ class AbstractGender:
         face_detector : instance of face_detector.OcvCnnFacedetector or None
             More face detections modules may be implemented
             if None, then manual bounding boxes should be provided
+        bbox_scaling : float, optional
+            scaling factor to be applied to the face bounding box.
+            larger bounding box may help for sex classification from face
         verbose : boolean
             If True, will display several usefull intermediate images and results
         """        
         p = os.path.dirname(os.path.realpath(__file__)) + '/models/'
         # face detection system
         self.face_detector = face_detector
+
+        # scaling factor to be applied to face bounding boxes
+        self.bbox_scaling = bbox_scaling
 
         # face alignment module
         # TODO: make a separate class
@@ -152,6 +173,7 @@ class AbstractGender:
             plt.show()
         ret = []
         for bb, detect_conf in self.face_detector(frame):
+            bb = _scale_bbox(*bb, self.bbox_scaling, frame.shape)
             if self.verbose:
                 tmpframe = frame.copy()
                 cv2.rectangle(tmpframe, (bb[0], bb[1]), (bb[2], bb[3]), (0, 255, 0), 8)
@@ -170,8 +192,8 @@ class AbstractGender:
 
 
 class GenderImage(AbstractGender):
-    def __init__(self, face_detector = OcvCnnFacedetector(bbox_scaling=1.1), verbose = False):
-        AbstractGender.__init__(self, face_detector, verbose)
+    def __init__(self, face_detector = OcvCnnFacedetector(), bbox_scaling=1.1, verbose = False):
+        AbstractGender.__init__(self, face_detector, bbox_scaling, verbose)
     def __call__(self, img_path):
         img = cv2.imread(img_path)
         frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -188,10 +210,10 @@ class GenderVideo(AbstractGender):
         vgg_feature_extractor: VGGFace neural model used for feature extraction.
         threshold: quality of face detection considered acceptable, value between 0 and 1.
     """
-    def __init__(self, face_detector = OcvCnnFacedetector(bbox_scaling=1.1), verbose = False):
-        AbstractGender.__init__(self, face_detector, verbose)
+    def __init__(self, face_detector = OcvCnnFacedetector(), bbox_scaling=1.1, verbose = False):
+        AbstractGender.__init__(self, face_detector, bbox_scaling, verbose)
 
-
+    # TODO: BUILD A SEPARATE CLASS FOR DETECTION+TRACKING
     def detect_with_tracking(self, video_path, k_frames, subsamp_coeff = 1, offset = -1):
         """
         Pipeline for gender classification from videos using correlation filters based tracking (dlib's).
