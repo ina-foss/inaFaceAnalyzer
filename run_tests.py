@@ -50,9 +50,9 @@ class TestInaFaceGender(unittest.TestCase):
         ret = gi('./media/20091020222328!KnuthAtOpenContentAlliance.jpg')
         self.assertEqual(len(ret), 1)
         ret = ret[0]
-        self.assertEqual(ret[0], (78, 45, 321, 288))
+        self.assertEqual(ret[0], (77, 45, 321, 289))
         self.assertEqual(ret[1], 'm')
-        self.assertAlmostEqual(ret[2], 7.843016989318868)
+        self.assertAlmostEqual(ret[2], 6.527375173189105)
         self.assertAlmostEqual(ret[3], 0.99995565)
 
 
