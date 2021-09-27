@@ -219,10 +219,7 @@ class AbstractGender:
         face_img, left_eye, right_eye = self.align_and_crop_face(frame, dlib.rectangle(*bbox), 224, 224)
         label, decision_value = self.classifier(face_img)
         ret = [bbox, label, decision_value]
-        if self.verbose:
-            print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function, face detection confidence')
-            print(ret)
-            print()
+
         return ret
     
     def detect_and_classify_faces_from_frame(self, frame):
@@ -246,6 +243,10 @@ class AbstractGender:
             #     print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function, face detection confidence')
             #     print(ret[-1])
             #     print()
+            if self.verbose:
+                print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function, face detection confidence')
+                print(ret[-1])
+                print()
         return ret
         
 
@@ -413,6 +414,10 @@ class GenderVideo(AbstractGender):
             
             
             lret.append(self.classif_from_frame_and_bbox(frame, bbox, self.squarify_bbox, self.bbox_scaling, True))
+            if self.verbose:
+                print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function')
+                print(lret[-1])
+                print()
         return pd.DataFrame.from_records(lret, columns=['bb', 'label', 'decision'])
 
 
