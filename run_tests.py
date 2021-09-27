@@ -26,8 +26,8 @@
 
 import unittest
 import pandas as pd
-from inaFaceGender import GenderVideo, GenderImage
-from pandas.util.testing import assert_frame_equal
+from inaFaceGender.inaFaceGender import GenderVideo, GenderImage, _norm_bbox, _squarify_bbox
+from pandas.util.testing import assert_frame_equal, assert_series_equal
 import numpy as np
 from inaFaceGender.opencv_utils import video_iterator
 from inaFaceGender.face_detector import OcvCnnFacedetector
@@ -40,9 +40,9 @@ class TestInaFaceGender(unittest.TestCase):
         ret = gi('./media/Europa21_-_2.jpg')
         self.assertEqual(len(ret), 1)
         ret = ret[0]
-        self.assertEqual(ret[0], (431, 245, 988, 802))
+        self.assertEqual(ret[0], (432, 246, 988, 802))
         self.assertEqual(ret[1], 'f')
-        self.assertAlmostEqual(ret[2], -3.24866205721505)
+        self.assertAlmostEqual(ret[2], -3.305765917955594)
         self.assertAlmostEqual(ret[3], 0.99964356)
 
     def test_image_knuth(self):
@@ -50,9 +50,9 @@ class TestInaFaceGender(unittest.TestCase):
         ret = gi('./media/20091020222328!KnuthAtOpenContentAlliance.jpg')
         self.assertEqual(len(ret), 1)
         ret = ret[0]
-        self.assertEqual(ret[0], (77, 45, 321, 289))
+        self.assertEqual(ret[0], (78, 46, 321, 289))
         self.assertEqual(ret[1], 'm')
-        self.assertAlmostEqual(ret[2], 6.527375173189105)
+        self.assertAlmostEqual(ret[2], 6.621492606578991)
         self.assertAlmostEqual(ret[3], 0.99995565)
 
 
@@ -70,8 +70,11 @@ class TestInaFaceGender(unittest.TestCase):
         frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         ret = detector(frame)
         self.assertEqual(len(ret), 1)
-        self.assertEqual(ret[0][0], (457, 271, 963, 777))
-        self.assertAlmostEqual(ret[0][1], 0.99964356)
+        ret, conf = ret[0]
+        ret = _squarify_bbox(ret)
+        ret = _norm_bbox(ret, img.shape[1], img.shape[0])
+        self.assertEqual(ret, (457, 271, 963, 777))
+        self.assertAlmostEqual(conf, 0.99964356)
         
     def test_video_iterator(self):
         src = './media/pexels-artem-podrez-5725953.mp4'
@@ -80,8 +83,17 @@ class TestInaFaceGender(unittest.TestCase):
         self.assertEqual(len([e for e in video_iterator(src, time_unit='ms', start=500, stop=1000)]), 16)
 
                      
-                             
-                             
+    def test_pred_from_vid_and_bblist(self):
+        gv = GenderVideo(bbox_scaling=1, squarify=False)
+        df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv')
+        # this method read a single face per frame
+        df = df.drop_duplicates(subset='frame').reset_index()
+        lbbox = list(df.bb.map(eval))
+        retdf = gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=25)
+        self.assertEqual(len(retdf), len(lbbox))
+        self.assertEqual(list(retdf.bb), lbbox)
+        self.assertEqual(list(retdf.label), list(df.label))
+        assert_series_equal(retdf.decision, df.decision, check_less_precise=True)
 
 if __name__ == '__main__':
     unittest.main()

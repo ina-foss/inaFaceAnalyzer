@@ -47,31 +47,6 @@ def _rel_to_abs(bbox, frame_width, frame_height):
     x1, y1, x2, y2 = bbox
     return x1*frame_width, y1*frame_height, x2*frame_width, y2*frame_height
 
-def _squarify_bbox(bbox):
-    """
-    Convert a rectangle bounding box to a square
-    width sides equal to the maximum between width and height
-    """
-    #print('sq' , bbox)
-    x1, y1, x2, y2 = bbox
-    w = x2 - x1
-    h = y2 - y1
-    offset = max(w, h) / 2
-    x_center = (x1+x2) / 2
-    y_center = (y1+y2) / 2    
-    return x_center - offset, y_center - offset, x_center + offset, y_center + offset
-
-# TODO: this may cause a stretching in a latter stage
-# TODO conversion to int should be done after scaling
-def _norm_bbox(bbox, frame_width, frame_height):
-    """
-    convert to int and crop bbox to 0:frame_shape
-    """
-    #print('norm', bbox)
-    x1, y1, x2, y2 = [int(e) for e in bbox]
-    return max(0, x1), max(0, y1), min(x2, frame_width), min (y2, frame_height)
-
-
 
 
 class OcvCnnFacedetector:
@@ -120,13 +95,6 @@ class OcvCnnFacedetector:
             if confidence > self.minconf:
                 bbox = _get_opencvcnn_bbox(detections, i)
                 bbox = _rel_to_abs(bbox, frame_width, frame_height)
-                bbox = _squarify_bbox(bbox)
-                bbox = _norm_bbox(bbox, frame_width, frame_height)
-                
-                                
-                ## TODO WARNING - THIS HACK IS STRANGE
-                if bbox[2] < bbox[0] or bbox[3] < bbox[1]:
-                    bbox = (0, 0, frame_width, frame_height)
 
                 faces_data.append((bbox, confidence))
         return faces_data

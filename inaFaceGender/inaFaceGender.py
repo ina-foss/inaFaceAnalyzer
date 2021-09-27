@@ -72,7 +72,7 @@ def _smooth_labels(df):
 
     return new_df
 
-def _scale_bbox(x1, y1, x2, y2, scale, frame_shape=None):
+def _scale_bbox(x1, y1, x2, y2, scale):
     w = x2 - x1
     h = y2 - y1
     
@@ -81,13 +81,41 @@ def _scale_bbox(x1, y1, x2, y2, scale, frame_shape=None):
     x2 = int(x2 + (w*scale - w)/2)
     y2 = int(y2 + (h*scale -h)/2)
 
-    if frame_shape is not None:
-        x1 = max(x1, 0)
-        y1 = max(y1, 0)
-        x2 = min(x2, frame_shape[1])
-        y2 = min(y2, frame_shape[0])
+    # if frame_shape is not None:
+    #     x1 = max(x1, 0)
+    #     y1 = max(y1, 0)
+    #     x2 = min(x2, frame_shape[1])
+    #     y2 = min(y2, frame_shape[0])
 
     return x1, y1, x2, y2
+
+def _squarify_bbox(bbox):
+    """
+    Convert a rectangle bounding box to a square
+    width sides equal to the maximum between width and height
+    """
+    #print('sq' , bbox)
+    x1, y1, x2, y2 = bbox
+    w = x2 - x1
+    h = y2 - y1
+    offset = max(w, h) / 2
+    x_center = (x1+x2) / 2
+    y_center = (y1+y2) / 2    
+    return x_center - offset, y_center - offset, x_center + offset, y_center + offset
+
+# TODO: this may cause a stretching in a latter stage
+# TODO conversion to int should be done after scaling
+def _norm_bbox(bbox, frame_width, frame_height):
+    """
+    convert to int and crop bbox to 0:frame_shape
+    """
+
+    x1, y1, x2, y2 = [int(e) for e in bbox]
+    ## TODO WARNING - THIS HACK IS STRANGE
+    if x2 <= x1 or y2 <= y1:
+        return (0, 0, frame_width, frame_height)
+    return max(0, x1), max(0, y1), min(x2, frame_width), min(y2, frame_height)
+
 
   
 class AbstractGender:
@@ -95,7 +123,8 @@ class AbstractGender:
     This is an abstract class containg the common code to be used to process 
     images, videos, with/without tracking
     """
-    def __init__(self, face_detector, bbox_scaling, verbose):
+    # TODO : add squarify bbox option ???
+    def __init__(self, face_detector, bbox_scaling, squarify_bbox, verbose):
         """
         Constructor
         Parameters
@@ -103,15 +132,20 @@ class AbstractGender:
         face_detector : instance of face_detector.OcvCnnFacedetector or None
             More face detections modules may be implemented
             if None, then manual bounding boxes should be provided
-        bbox_scaling : float, optional
+        bbox_scaling : float
             scaling factor to be applied to the face bounding box.
             larger bounding box may help for sex classification from face
+        squarify_bbox : boolean
+            if set to True, then the bounding box (manual or automatic) is set to a square
         verbose : boolean
             If True, will display several usefull intermediate images and results
         """        
         p = os.path.dirname(os.path.realpath(__file__)) + '/models/'
         # face detection system
         self.face_detector = face_detector
+        
+        # set all bounding box shapes to square
+        self.squarify_bbox = squarify_bbox
 
         # scaling factor to be applied to face bounding boxes
         self.bbox_scaling = bbox_scaling
@@ -167,33 +201,58 @@ class AbstractGender:
 
         return cropped_img, left_eye, right_eye
     
+    
+    def classif_from_frame_and_bbox(self, frame, bbox, bbox_square, bbox_scale, bbox_norm):
+        if bbox_square:
+            bbox = _squarify_bbox(bbox)
+        bbox = _scale_bbox(*bbox, bbox_scale)
+        if bbox_norm:
+            frame_height = frame.shape[0]
+            frame_width = frame.shape[1]
+            bbox = _norm_bbox(bbox, frame_width, frame_height)
+        if self.verbose:
+            tmpframe = frame.copy()
+            cv2.rectangle(tmpframe, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 8)
+            plt.imshow(tmpframe)
+            plt.show()
+
+        face_img, left_eye, right_eye = self.align_and_crop_face(frame, dlib.rectangle(*bbox), 224, 224)
+        label, decision_value = self.classifier(face_img)
+        ret = [bbox, label, decision_value]
+        if self.verbose:
+            print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function, face detection confidence')
+            print(ret)
+            print()
+        return ret
+    
     def detect_and_classify_faces_from_frame(self, frame):
         if self.verbose:
             plt.imshow(frame)
             plt.show()
         ret = []
         for bb, detect_conf in self.face_detector(frame):
-            bb = _scale_bbox(*bb, self.bbox_scaling, frame.shape)
-            if self.verbose:
-                tmpframe = frame.copy()
-                cv2.rectangle(tmpframe, (bb[0], bb[1]), (bb[2], bb[3]), (0, 255, 0), 8)
-                plt.imshow(tmpframe)
-                plt.show()
+            ret.append(self.classif_from_frame_and_bbox(frame, bb, self.squarify_bbox, self.bbox_scaling, True) + [detect_conf])
+            # bb = _scale_bbox(*bb, self.bbox_scaling, frame.shape)
+            # if self.verbose:
+            #     tmpframe = frame.copy()
+            #     cv2.rectangle(tmpframe, (bb[0], bb[1]), (bb[2], bb[3]), (0, 255, 0), 8)
+            #     plt.imshow(tmpframe)
+            #     plt.show()
 
-            face_img, left_eye, right_eye = self.align_and_crop_face(frame, dlib.rectangle(*bb), 224, 224)
-            label, decision_value = self.classifier(face_img)
-            ret.append([bb, label, decision_value, detect_conf])
-            if self.verbose:
-                print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function, face detection confidence')
-                print(ret[-1])
-                print()
+            # face_img, left_eye, right_eye = self.align_and_crop_face(frame, dlib.rectangle(*bb), 224, 224)
+            # label, decision_value = self.classifier(face_img)
+            # ret.append([bb, label, decision_value, detect_conf])
+            # if self.verbose:
+            #     print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function, face detection confidence')
+            #     print(ret[-1])
+            #     print()
         return ret
         
 
 
 class GenderImage(AbstractGender):
-    def __init__(self, face_detector = OcvCnnFacedetector(), bbox_scaling=1.1, verbose = False):
-        AbstractGender.__init__(self, face_detector, bbox_scaling, verbose)
+    def __init__(self, face_detector = OcvCnnFacedetector(), bbox_scaling=1.1, squarify=True, verbose = False):
+        AbstractGender.__init__(self, face_detector, bbox_scaling, squarify, verbose)
     def __call__(self, img_path):
         img = cv2.imread(img_path)
         frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -210,8 +269,8 @@ class GenderVideo(AbstractGender):
         vgg_feature_extractor: VGGFace neural model used for feature extraction.
         threshold: quality of face detection considered acceptable, value between 0 and 1.
     """
-    def __init__(self, face_detector = OcvCnnFacedetector(), bbox_scaling=1.1, verbose = False):
-        AbstractGender.__init__(self, face_detector, bbox_scaling, verbose)
+    def __init__(self, face_detector = OcvCnnFacedetector(), bbox_scaling=1.1, squarify=True, verbose = False):
+        AbstractGender.__init__(self, face_detector, bbox_scaling, squarify, verbose)
 
     # TODO: BUILD A SEPARATE CLASS FOR DETECTION+TRACKING
     def detect_with_tracking(self, video_path, k_frames, subsamp_coeff = 1, offset = -1):
@@ -291,6 +350,15 @@ class GenderVideo(AbstractGender):
         Returns: 
             info: A Dataframe with frame and face information (coordinates, decision function,labels..)
         """
+                #x1, y1, x2, y2 = bbox[:]
+        #x1, y1, x2, y2 = _scale_bbox(x1, y1, x2, y2, self.bbox_scaling, frame.shape)
+        #x1, y1, x2, y2 = _scale_bbox(*bbox, self.bbox_scaling, frame.shape)
+        
+        # if x1 < x2 and y1 < y2:
+        #     dets = (x1, y1, x2, y2)
+        # else:
+        #     ## TODO WARNING - THIS HACK IS STRANGE
+        #     dets = (0, 0, frame_width, frame_height)
         
         info = []
 
@@ -302,39 +370,49 @@ class GenderVideo(AbstractGender):
         return info
     
 
-    def pred_from_frame_and_bb(self, frame, bb, scale=1, display=False): ## add bounding box scaling
-        # frame should be obtained from opencv
-        # bounding box is x1, y1, x2, y2
+    # def pred_from_frame_and_bb(self, frame, bb, scale=1, display=False): ## add bounding box scaling
+    #     # frame should be obtained from opencv
+    #     # bounding box is x1, y1, x2, y2
 
-        if display:
-            plt.imshow(frame)
-            plt.show()
+    #     if display:
+    #         plt.imshow(frame)
+    #         plt.show()
 
-        x1, y1, x2, y2 = [e for e in bb]
-        # TODO: check the result without the frame.shape argument
-        x1, y1, x2, y2 = _scale_bbox(x1, y1, x2, y2, scale, frame.shape)
+    #     x1, y1, x2, y2 = [e for e in bb]
+    #     # TODO: check the result without the frame.shape argument
+    #     x1, y1, x2, y2 = _scale_bbox(x1, y1, x2, y2, scale, frame.shape)
 
-        dets = [dlib.rectangle(x1, y1, x2, y2)]
+    #     dets = [dlib.rectangle(x1, y1, x2, y2)]
 
-        if display:
-            plt.imshow(frame[y1:y2, x1:x2, :])
-            plt.show()
+    #     if display:
+    #         plt.imshow(frame[y1:y2, x1:x2, :])
+    #         plt.show()
 
-        frame = self.align_and_crop_face(frame, dets, 224, 224)[0]
-        if display:
-            plt.imshow(frame)
-            plt.show()
+    #     frame = self.align_and_crop_face(frame, dets, 224, 224)[0]
+    #     if display:
+    #         plt.imshow(frame)
+    #         plt.show()
 
-       # ret = #self._gender_from_face(frame)
-        ret = self.classifier(frame)
-        if display:
-            print(ret)
-        return ret
+    #    # ret = #self._gender_from_face(frame)
+    #     ret = self.classifier(frame)
+    #     if display:
+    #         print(ret)
+    #     return ret
 
-    def pred_from_vid_and_bblist(self, vidsrc, lbox, subsamp_coeff=1, start_frame=0, scale=1., display=False):
+    def pred_from_vid_and_bblist(self, vidsrc, lbox, subsamp_coeff=1, start_frame=0):
         lret = []
         for (iframe, frame), bbox in zip(video_iterator(vidsrc, subsamp_coeff=subsamp_coeff, start=start_frame),lbox):
-            lret.append(self.pred_from_frame_and_bb(frame, bbox, scale, display))
-        return lret
+            if self.verbose:
+                print('iframe: %s, bbox: %s' % (iframe, bbox))
+            if self.squarify_bbox:
+                bbox = _squarify_bbox(bbox)
+
+            bbox = _scale_bbox(*bbox, self.bbox_scaling)
+        
+            bbox = _norm_bbox(bbox, frame.shape[1], frame.shape[0])
+            
+            
+            lret.append(self.classif_from_frame_and_bbox(frame, bbox, self.squarify_bbox, self.bbox_scaling, True))
+        return pd.DataFrame.from_records(lret, columns=['bb', 'label', 'decision'])
 
 
