@@ -404,12 +404,12 @@ class GenderVideo(AbstractGender):
         for (iframe, frame), bbox in zip(video_iterator(vidsrc, subsamp_coeff=subsamp_coeff, start=start_frame),lbox):
             if self.verbose:
                 print('iframe: %s, bbox: %s' % (iframe, bbox))
-            if self.squarify_bbox:
-                bbox = _squarify_bbox(bbox)
+            # if self.squarify_bbox:
+            #     bbox = _squarify_bbox(bbox)
 
-            bbox = _scale_bbox(*bbox, self.bbox_scaling)
+            # bbox = _scale_bbox(*bbox, self.bbox_scaling)
         
-            bbox = _norm_bbox(bbox, frame.shape[1], frame.shape[0])
+            # bbox = _norm_bbox(bbox, frame.shape[1], frame.shape[0])
             
             
             lret.append(self.classif_from_frame_and_bbox(frame, bbox, self.squarify_bbox, self.bbox_scaling, True))
