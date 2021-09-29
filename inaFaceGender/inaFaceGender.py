@@ -38,6 +38,22 @@ from .face_classifier import VGG16_LinSVM
 
 from matplotlib import pyplot as plt
 
+
+# def crop_image_fill(frame, bb):
+#     x1, y1, x2, y2 = bb
+#     hframe, wframe = (frame.shape[0], frame.shape[1])
+#     if x1 >= 0 and y1 >= 0 and x2 <= wframe and y2 <= hframe:
+#         return frame[top:bottom, left:right]
+#     w = x2 - x1
+#     h = y2 - y1
+#     sframe = frame[max(0, y1):min(y2, hframe), max(0, x1):min(x2, wframe),:]
+#     ret = np.zeros((h, w, 3), np.uint8)
+#     yoff = (h - sframe.shape[0]) // 2
+#     xoff = (w - sframe.shape[1]) // 2
+#     print('xoff', xoff, 'yoff', yoff)
+#     ret[yoff:(h+yoff), xoff:(w+xoff), :] = sframe[:,:,:]
+#     return ret
+    
     
 
 def info2csv(df, csv_path):
@@ -217,8 +233,8 @@ class AbstractGender:
             plt.show()
 
         face_img, left_eye, right_eye = self.align_and_crop_face(frame, dlib.rectangle(*bbox), 224, 224)
-        label, decision_value = self.classifier(face_img)
-        ret = [bbox, label, decision_value]
+        feats, label, decision_value = self.classifier(face_img)
+        ret = [feats, bbox, label, decision_value]
 
         return ret
     
@@ -365,7 +381,7 @@ class GenderVideo(AbstractGender):
 
         for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0)):
 
-            info += [[iframe] + e for e in self.detect_and_classify_faces_from_frame(frame)]
+            info += [[iframe] + e[1:] for e in self.detect_and_classify_faces_from_frame(frame)]
 
         info = pd.DataFrame.from_records(info, columns = ['frame', 'bb','label', 'decision', 'conf'])
         return info
@@ -413,7 +429,7 @@ class GenderVideo(AbstractGender):
             # bbox = _norm_bbox(bbox, frame.shape[1], frame.shape[0])
             
             
-            lret.append(self.classif_from_frame_and_bbox(frame, bbox, self.squarify_bbox, self.bbox_scaling, True))
+            lret.append(self.classif_from_frame_and_bbox(frame, bbox, self.squarify_bbox, self.bbox_scaling, True)[1:])
             if self.verbose:
                 print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function')
                 print(lret[-1])
