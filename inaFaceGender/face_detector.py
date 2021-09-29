@@ -25,6 +25,7 @@
 
 import os
 import cv2
+import numpy as np
 
 def _get_opencvcnn_bbox(detections, face_idx):
     """
@@ -89,12 +90,15 @@ class OcvCnnFacedetector:
         self.model.setInput(blob)
         detections = self.model.forward()
         
+        assert(np.all(-np.sort(-detections[:,:,:,2]) == detections[:,:,:,2]))
         
         for i in range(detections.shape[2]):
             confidence = detections[0, 0, i, 2]
-            if confidence > self.minconf:
-                bbox = _get_opencvcnn_bbox(detections, i)
-                bbox = _rel_to_abs(bbox, frame_width, frame_height)
-
-                faces_data.append((bbox, confidence))
+            if confidence < self.minconf:
+                break
+            
+            bbox = _get_opencvcnn_bbox(detections, i)
+            bbox = _rel_to_abs(bbox, frame_width, frame_height)
+            faces_data.append((bbox, confidence))
+            
         return faces_data
