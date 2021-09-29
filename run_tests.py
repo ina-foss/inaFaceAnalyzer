@@ -26,9 +26,9 @@
 
 import unittest
 import pandas as pd
+import numpy as np
 from inaFaceGender.inaFaceGender import GenderVideo, GenderImage, _norm_bbox, _squarify_bbox
 from pandas.util.testing import assert_frame_equal, assert_series_equal
-import numpy as np
 from inaFaceGender.opencv_utils import video_iterator
 from inaFaceGender.face_detector import OcvCnnFacedetector
 import cv2
@@ -89,7 +89,7 @@ class TestInaFaceGender(unittest.TestCase):
         # this method read a single face per frame
         df = df.drop_duplicates(subset='frame').reset_index()
         lbbox = list(df.bb.map(eval))
-        retdf = gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=25)
+        _, retdf = gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=25)
         self.assertEqual(len(retdf), len(lbbox))
         self.assertEqual(list(retdf.bb), lbbox)
         self.assertEqual(list(retdf.label), list(df.label))

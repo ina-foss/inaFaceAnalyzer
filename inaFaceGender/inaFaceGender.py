@@ -24,7 +24,7 @@
 # THE SOFTWARE.
 
 import dlib, cv2
-#import numpy as np
+import numpy as np
 import pandas as pd
 import os
 #import h5py
@@ -418,21 +418,20 @@ class GenderVideo(AbstractGender):
 
     def pred_from_vid_and_bblist(self, vidsrc, lbox, subsamp_coeff=1, start_frame=0):
         lret = []
+        lfeat = []
+
         for (iframe, frame), bbox in zip(video_iterator(vidsrc, subsamp_coeff=subsamp_coeff, start=start_frame),lbox):
             if self.verbose:
                 print('iframe: %s, bbox: %s' % (iframe, bbox))
-            # if self.squarify_bbox:
-            #     bbox = _squarify_bbox(bbox)
 
-            # bbox = _scale_bbox(*bbox, self.bbox_scaling)
+            ret = self.classif_from_frame_and_bbox(frame, bbox, self.squarify_bbox, self.bbox_scaling, True)
 
-            # bbox = _norm_bbox(bbox, frame.shape[1], frame.shape[0])
+            lret.append(ret[1:])
+            lfeat.append(ret[0])
 
-
-            lret.append(self.classif_from_frame_and_bbox(frame, bbox, self.squarify_bbox, self.bbox_scaling, True)[1:])
             if self.verbose:
                 print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function')
                 print(lret[-1])
                 print()
         assert len(lret) == len(lbox), '%d bounding box provided, and only %d frames processed' % (len(lbox), len(lret))
-        return pd.DataFrame.from_records(lret, columns=['bb', 'label', 'decision'])
+        return np.concatenate(lfeat), pd.DataFrame.from_records(lret, columns=['bb', 'label', 'decision'])
