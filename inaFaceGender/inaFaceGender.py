@@ -261,7 +261,7 @@ class AbstractGender:
             #     print()
             if self.verbose:
                 print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function, face detection confidence')
-                print(ret[-1])
+                print(ret[-1][1:])
                 print()
         return ret
         
