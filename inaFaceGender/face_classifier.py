@@ -70,6 +70,8 @@ class VGG16_LinSVM:
 
         Returns
         -------
+        feats :
+            face features used as input to the final classifier
         label : str
             f for female, m for male
         decision_value : float
@@ -81,5 +83,5 @@ class VGG16_LinSVM:
         decision_value = self.gender_svm.decision_function(feats)[0]
 #        print(decision_value)
         label = self.gender_svm.classes_[1 if decision_value > 0 else 0]
-        return label, decision_value
+        return feats, label, decision_value
     

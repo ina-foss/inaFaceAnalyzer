@@ -125,11 +125,7 @@ def _norm_bbox(bbox, frame_width, frame_height):
     """
     convert to int and crop bbox to 0:frame_shape
     """
-
     x1, y1, x2, y2 = [int(e) for e in bbox]
-    ## TODO WARNING - THIS HACK IS STRANGE
-    if x2 <= x1 or y2 <= y1:
-        return (0, 0, frame_width, frame_height)
     return max(0, x1), max(0, y1), min(x2, frame_width), min(y2, frame_height)
 
 
@@ -223,10 +219,12 @@ class AbstractGender:
             bbox = _squarify_bbox(bbox)
         bbox = _scale_bbox(*bbox, bbox_scale)
         if bbox_norm:
+            #print('norm')
             frame_height = frame.shape[0]
             frame_width = frame.shape[1]
             bbox = _norm_bbox(bbox, frame_width, frame_height)
         if self.verbose:
+            #print('disp bbox', bbox)
             tmpframe = frame.copy()
             cv2.rectangle(tmpframe, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 8)
             plt.imshow(tmpframe)
@@ -244,6 +242,8 @@ class AbstractGender:
             plt.show()
         ret = []
         for bb, detect_conf in self.face_detector(frame):
+            if self.verbose:
+                print('bbox: %s, conf: %f' % (bb, detect_conf))
             ret.append(self.classif_from_frame_and_bbox(frame, bb, self.squarify_bbox, self.bbox_scaling, True) + [detect_conf])
             # bb = _scale_bbox(*bb, self.bbox_scaling, frame.shape)
             # if self.verbose:

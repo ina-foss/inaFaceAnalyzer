@@ -98,6 +98,12 @@ class OcvCnnFacedetector:
                 break
             
             bbox = _get_opencvcnn_bbox(detections, i)
+            # remove noisy detections coordinates
+            if bbox[0] >= 1 or bbox[1] >= 1 or bbox[2] <= 0 or bbox[3] <= 0:
+                continue
+            if bbox[0] >= bbox[2] or bbox[1] >= bbox[3]:
+                continue
+            
             bbox = _rel_to_abs(bbox, frame_width, frame_height)
             faces_data.append((bbox, confidence))
             
