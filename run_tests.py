@@ -34,7 +34,7 @@ from inaFaceGender.face_detector import OcvCnnFacedetector
 import cv2
 
 class TestInaFaceGender(unittest.TestCase):
-    
+
     def test_image_all_diallo(self):
         gi = GenderImage()
         ret = gi('./media/Europa21_-_2.jpg')
@@ -75,14 +75,14 @@ class TestInaFaceGender(unittest.TestCase):
         ret = _norm_bbox(ret, img.shape[1], img.shape[0])
         self.assertEqual(ret, (457, 271, 963, 777))
         self.assertAlmostEqual(conf, 0.99964356)
-        
+
     def test_video_iterator(self):
         src = './media/pexels-artem-podrez-5725953.mp4'
         self.assertEqual(len([e for e in video_iterator(src,start=10, stop=20)]), 11)
         self.assertEqual(len([e for e in video_iterator(src)]), 358)
         self.assertEqual(len([e for e in video_iterator(src, time_unit='ms', start=500, stop=1000)]), 16)
 
-                     
+
     def test_pred_from_vid_and_bblist(self):
         gv = GenderVideo(bbox_scaling=1, squarify=False)
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv')
@@ -94,6 +94,17 @@ class TestInaFaceGender(unittest.TestCase):
         self.assertEqual(list(retdf.bb), lbbox)
         self.assertEqual(list(retdf.label), list(df.label))
         assert_series_equal(retdf.decision, df.decision, check_less_precise=True)
+
+    def test_pred_from_vid_and_bblist_boxlist_toolong(self):
+        gv = GenderVideo(bbox_scaling=1, squarify=False)
+        df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv')
+        # there will be much more boxes than frames
+        lbbox = list(df.bb.map(eval))
+        # the processing of these boxes should throw an exception
+        with self.assertRaises(AssertionError):
+            gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=25)
+
+
 
 if __name__ == '__main__':
     unittest.main()
