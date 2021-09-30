@@ -37,4 +37,9 @@ def svm_load(hdf5_fname):
     svm.coef_ = f['linearsvc/coef'][:]
     return svm
 
-# TODO: make a dump function
+# TODO: test the load & dump pipeline
+def svm_dump(hdf5_fname, model):
+    with h5py.File(hdf5_fname, 'w') as fid:
+        fid['linearsvc/intercept'] = model.intercept_
+        fid['linearsvc/coef'] = model.coef_
+        fid.create_dataset('linearsvc/classes', data = model.classes_.astype(h5py.special_dtype(vlen=str) ))
