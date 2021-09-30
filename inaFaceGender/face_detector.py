@@ -32,7 +32,7 @@ def _get_opencvcnn_bbox(detections, face_idx):
     Extract bounding boxes from opencv CNN detection output
     Results are in relative coordinates 0...1
     """
-    
+
     x1 = detections[0, 0, face_idx, 3]
     y1 = detections[0, 0, face_idx, 4]
     x2 = detections[0, 0, face_idx, 5]
@@ -67,20 +67,20 @@ class OcvCnnFacedetector:
         self.model = cv2.dnn.readNetFromTensorflow(p + "opencv_face_detector_uint8.pb",
                                                    p + "opencv_face_detector.pbtxt")
 
-        
+
     def __call__(self, frame):
-        """ 
+        """
         Detect faces from an image
-  
-        Parameters: 
+
+        Parameters:
             frame (array): Image to detect faces from.
-          
-        Returns: 
+
+        Returns:
             faces_data (list) : List containing :
                                 - the bounding box
                                 - face detection confidence score
         """
-        
+
         faces_data = []
 
         frame_height = frame.shape[0]
@@ -89,22 +89,28 @@ class OcvCnnFacedetector:
         blob = cv2.dnn.blobFromImage(frame, 1.0, (300, 300), [104, 117, 123], True, False)
         self.model.setInput(blob)
         detections = self.model.forward()
-        
+
         assert(np.all(-np.sort(-detections[:,:,:,2]) == detections[:,:,:,2]))
-        
+
         for i in range(detections.shape[2]):
             confidence = detections[0, 0, i, 2]
             if confidence < self.minconf:
                 break
-            
+
             bbox = _get_opencvcnn_bbox(detections, i)
             # remove noisy detections coordinates
             if bbox[0] >= 1 or bbox[1] >= 1 or bbox[2] <= 0 or bbox[3] <= 0:
                 continue
             if bbox[0] >= bbox[2] or bbox[1] >= bbox[3]:
                 continue
-            
+
             bbox = _rel_to_abs(bbox, frame_width, frame_height)
             faces_data.append((bbox, confidence))
-            
+
         return faces_data
+
+class IdentityFaceDetector:
+    def __init__(self):
+        pass
+    def __call__(self, frame):
+        return [((0, 0, frame.shape[1], frame.shape[0]), np.NAN)]

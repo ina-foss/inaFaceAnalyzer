@@ -24,13 +24,11 @@
 # THE SOFTWARE.
 
 import os
-import h5py
 import numpy as np
-from sklearn.svm import LinearSVC
 from keras_vggface.vggface import VGGFace
 from keras_vggface import utils
-from keras.preprocessing import image 
-
+from keras.preprocessing import image
+from .svm_utils import svm_load
 
 class VGG16_LinSVM:
     input_shape = (224,224)
@@ -42,13 +40,14 @@ class VGG16_LinSVM:
 
         # SVM trained on neural features - dependent on the neural representation
         # should be packed together
-        f = h5py.File(p + 'svm_classifier.hdf5', 'r')
-        svm = LinearSVC()
-        svm.classes_ = np.array(f['linearsvc/classes'][:]).astype('<U1')
-        svm.intercept_ = f['linearsvc/intercept'][:]
-        svm.coef_ = f['linearsvc/coef'][:]
-        self.gender_svm = svm
-        
+        self.gender_svm = svm_load(p + 'svm_classifier.hdf5')
+        # f = h5py.File(p + 'svm_classifier.hdf5', 'r')
+        # svm = LinearSVC()
+        # svm.classes_ = np.array(f['linearsvc/classes'][:]).astype('<U1')
+        # svm.intercept_ = f['linearsvc/intercept'][:]
+        # svm.coef_ = f['linearsvc/coef'][:]
+        # self.gender_svm = svm
+
     def extract_features(self, img):
         """
         returns VGG16 Features
@@ -65,7 +64,7 @@ class VGG16_LinSVM:
         Parameters
         ----------
         #TODO: find class name
-        img : opencv frame 
+        img : opencv frame
             img is supposed to be aligned and cropped and resized to 224*224
 
         Returns
@@ -84,4 +83,3 @@ class VGG16_LinSVM:
 #        print(decision_value)
         label = self.gender_svm.classes_[1 if decision_value > 0 else 0]
         return feats, label, decision_value
-    
