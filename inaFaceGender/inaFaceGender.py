@@ -172,7 +172,7 @@ class AbstractGender:
 
 
 
-    def preprocess_face(self, frame, bbox, squarify, bbox_scale, norm, align_eyes, output_shape):
+    def preprocess_face(self, frame, bbox, squarify, bbox_scale, norm, align_eyes, output_shape, verbose=False):
         """
         Apply preprocessing pipeline to a detected face and returns the
         corresponding image with the following optional processings
@@ -225,8 +225,8 @@ class AbstractGender:
         if norm:
             bbox = _norm_bbox(bbox, frame_w, frame_h)
 
-        # if vebose, display the image and the bounding box
-        if self.verbose:
+        # if verbose, display the image and the bounding box
+        if verbose:
            tmpframe = frame.copy()
            cv2.rectangle(tmpframe, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 8)
            plt.imshow(tmpframe)
@@ -243,7 +243,7 @@ class AbstractGender:
         if output_shape is not None:
             frame = cv2.resize(frame, output_shape)
 
-        if self.verbose:
+        if verbose:
             print('resulting image')
             plt.imshow(frame)
             plt.show()
@@ -252,7 +252,7 @@ class AbstractGender:
 
     def classif_from_frame_and_bbox(self, frame, bbox, bbox_square, bbox_scale, bbox_norm):
 
-        face_img, bbox = self.preprocess_face(frame, bbox, bbox_square, bbox_scale, bbox_norm, True, (224, 224))
+        face_img, bbox = self.preprocess_face(frame, bbox, bbox_square, bbox_scale, bbox_norm, True, (224, 224), self.verbose)
 
         feats, label, decision_value = self.classifier(face_img)
         ret = [feats, bbox, label, decision_value]
@@ -280,9 +280,18 @@ class AbstractGender:
 class GenderImage(AbstractGender):
     def __init__(self, face_detector = OcvCnnFacedetector(), bbox_scaling=1.1, squarify=True, verbose = False):
         AbstractGender.__init__(self, face_detector, bbox_scaling, squarify, verbose)
-    def __call__(self, img_path):
+
+    def read_rgb(self, img_path, verbose=False):
         img = cv2.imread(img_path)
         frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        if verbose:
+            print('raw image ' + img_path)
+            plt.imshow(frame)
+            plt.show()
+        return frame
+
+    def __call__(self, img_path):
+        frame = self.read_rgb(img_path, self.verbose)
         return self.detect_and_classify_faces_from_frame(frame)
     # def get_face_images(self, img_path):
     #     img_cv2.imread(img_path)

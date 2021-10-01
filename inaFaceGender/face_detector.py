@@ -26,6 +26,7 @@
 import os
 import cv2
 import numpy as np
+from .opencv_utils import disp_frame_bblist
 
 def _get_opencvcnn_bbox(detections, face_idx):
     """
@@ -48,7 +49,17 @@ def _rel_to_abs(bbox, frame_width, frame_height):
     x1, y1, x2, y2 = bbox
     return x1*frame_width, y1*frame_height, x2*frame_width, y2*frame_height
 
+def _center(bbox):
+    """
+    returns center (x,y) of bounding box bbox(x1, y1, x2, y2)
+    """
+    return ((bbox[0] + bbox[2]) / 2), ((bbox[1] + bbox[3]) / 2)
 
+def _sqdist(p1, p2):
+    '''
+    return squared distance between points p1(x,y) and p2(x,y)
+    '''
+    return (p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2
 
 class OcvCnnFacedetector:
     """
@@ -68,7 +79,7 @@ class OcvCnnFacedetector:
                                                    p + "opencv_face_detector.pbtxt")
 
 
-    def __call__(self, frame):
+    def __call__(self, frame, verbose=False):
         """
         Detect faces from an image
 
@@ -107,7 +118,48 @@ class OcvCnnFacedetector:
             bbox = _rel_to_abs(bbox, frame_width, frame_height)
             faces_data.append((bbox, confidence))
 
+            if verbose:
+                print('detected face at %s with confidence %s' % (bbox, confidence))
+                disp_frame_bblist(frame, [bbox])
+
         return faces_data
+
+    def get_most_central_face(self, frame, verbose=False):
+        """
+        Several face annotated datasets may contain several faces per image
+        with annotated face at the center of the image
+        This method returns the detected face which is closest from the center
+
+        Parameters
+        ----------
+        frame : nd.array (height, width, 3)
+            RGB image data.
+        verbose : boolean, optional
+            Display detected faces. The default is False.
+
+        Returns
+        -------
+        The
+
+        """
+        faces_data = self.__call__(frame, verbose)
+        frame_center = (frame.shape[1] / 2, frame.shape[0] / 2)
+        ldists = [_sqdist(_center(bbox), frame_center) for (bbox, conf) in faces_data]
+        if len(ldists) == 0:
+            if verbose:
+                print('no face detected')
+            return None
+        am = np.argmin(ldists)
+        bbox, conf = faces_data[am]
+        if bbox[0] > frame_center[0] or bbox[2] < frame_center[0] or bbox[1] > frame_center[1] or bbox[3] < frame_center[1]:
+            if verbose:
+                print('detected faces do not include the center of the image')
+            return None
+        if verbose:
+            print('most closest face with bounding box %s and confidence %f' % (bbox, conf))
+            disp_frame_bblist(frame, [bbox])
+        return (bbox, conf)
+
 
 class IdentityFaceDetector:
     def __init__(self):
