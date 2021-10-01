@@ -28,7 +28,22 @@ import numpy as np
 from keras_vggface.vggface import VGGFace
 from keras_vggface import utils
 from keras.preprocessing import image
+import tensorflow
+from tensorflow import keras
 from .svm_utils import svm_load
+
+class Resnet50FairFace:
+    input_shape = (224, 224)
+    def __init__(self):
+        p = os.path.dirname(os.path.realpath(__file__))
+        self.model = keras.models.load_model(p + '/models/keras_resnet50_fairface.h5', compile=False)
+    def __call__(self, img):
+        x = tensorflow.keras.preprocessing.image.img_to_array(img)
+        x = np.expand_dims(x, axis=0)
+        x = tensorflow.keras.applications.resnet50.preprocess_input(x)
+        ret = self.model.predict(x)
+        label = 'm' if ret > 0 else 'f'
+        return None, label, ret
 
 class VGG16_LinSVM:
     input_shape = (224,224)
