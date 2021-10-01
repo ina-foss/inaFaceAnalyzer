@@ -41,7 +41,9 @@ class Resnet50FairFace:
         x = tensorflow.keras.preprocessing.image.img_to_array(img)
         x = np.expand_dims(x, axis=0)
         x = tensorflow.keras.applications.resnet50.preprocess_input(x)
-        ret = self.model.predict(x)
+        ret = self.model.predict(x).ravel()
+        assert len(ret) == 1
+        ret = ret[0]
         label = 'm' if ret > 0 else 'f'
         return None, label, ret
 

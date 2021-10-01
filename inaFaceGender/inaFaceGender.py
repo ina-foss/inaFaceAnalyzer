@@ -133,7 +133,7 @@ class AbstractGender:
     images, videos, with/without tracking
     """
     # TODO : add squarify bbox option ???
-    def __init__(self, face_detector, bbox_scaling, squarify_bbox, verbose):
+    def __init__(self, face_detector, face_classifier, bbox_scaling, squarify_bbox, verbose):
         """
         Constructor
         Parameters
@@ -165,7 +165,7 @@ class AbstractGender:
         self.face_alignment = Dlib68FaceAlignment(verbose=verbose)
 
         # Face feature extractor from aligned and detected faces
-        self.classifier = VGG16_LinSVM()
+        self.classifier = face_classifier
 
         # True if some verbose is required
         self.verbose = verbose
@@ -278,8 +278,8 @@ class AbstractGender:
 
 
 class GenderImage(AbstractGender):
-    def __init__(self, face_detector = OcvCnnFacedetector(), bbox_scaling=1.1, squarify=True, verbose = False):
-        AbstractGender.__init__(self, face_detector, bbox_scaling, squarify, verbose)
+    def __init__(self, face_detector = OcvCnnFacedetector(), face_classifier=VGG16_LinSVM(), bbox_scaling=1.1, squarify=True, verbose = False):
+        AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
 
     def read_rgb(self, img_path, verbose=False):
         img = cv2.imread(img_path)
@@ -309,8 +309,8 @@ class GenderVideo(AbstractGender):
         vgg_feature_extractor: VGGFace neural model used for feature extraction.
         threshold: quality of face detection considered acceptable, value between 0 and 1.
     """
-    def __init__(self, face_detector = OcvCnnFacedetector(), bbox_scaling=1.1, squarify=True, verbose = False):
-        AbstractGender.__init__(self, face_detector, bbox_scaling, squarify, verbose)
+    def __init__(self, face_detector = OcvCnnFacedetector(), face_classifier=VGG16_LinSVM(), bbox_scaling=1.1, squarify=True, verbose = False):
+        AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
 
     # TODO: BUILD A SEPARATE CLASS FOR DETECTION+TRACKING
     def detect_with_tracking(self, video_path, k_frames, subsamp_coeff = 1, offset = -1):
