@@ -26,14 +26,11 @@
 import dlib, cv2
 import numpy as np
 import pandas as pd
-import os
-#import h5py
-
-from .face_utils import extract_left_eye_center, extract_right_eye_center, get_rotation_matrix#, crop_image
 from .opencv_utils import video_iterator
 from .face_tracking import TrackerList
 from .face_detector import OcvCnnFacedetector
 from .face_classifier import VGG16_LinSVM
+from .face_alignment import Dlib68FaceAlignment
 
 
 from matplotlib import pyplot as plt
@@ -152,7 +149,7 @@ class AbstractGender:
         verbose : boolean
             If True, will display several usefull intermediate images and results
         """
-        p = os.path.dirname(os.path.realpath(__file__)) + '/models/'
+        #p = os.path.dirname(os.path.realpath(__file__)) + '/models/'
         # face detection system
         self.face_detector = face_detector
 
@@ -164,7 +161,8 @@ class AbstractGender:
 
         # face alignment module
         # TODO: make a separate class
-        self.align_predictor = dlib.shape_predictor(p +'shape_predictor_68_face_landmarks.dat')
+#        self.align_predictor = dlib.shape_predictor(p +'shape_predictor_68_face_landmarks.dat')
+        self.face_alignment = Dlib68FaceAlignment(verbose=verbose)
 
         # Face feature extractor from aligned and detected faces
         self.classifier = VGG16_LinSVM()
@@ -172,33 +170,6 @@ class AbstractGender:
         # True if some verbose is required
         self.verbose = verbose
 
-    def align_eyes(self, frame, bb):
-        """
-        Performs facial landmark detection and rotate image such as the eyes
-        lie on a horizontal line
-
-        Parameters:
-            img  : Image to be aligned and resized.
-            bb: Bounding box coordinates tuples.
-
-        Returns:
-            rotated_img: Image rotated.
-            left_eye: left eye position coordinates in the original image.
-            right_eye: right eye position coordinates in the original image.
-        """
-        bb = dlib.rectangle(*bb)
-        shape = self.align_predictor(frame, bb)
-        left_eye = extract_left_eye_center(shape)
-        right_eye = extract_right_eye_center(shape)
-        M = get_rotation_matrix(left_eye, right_eye)
-
-        rotated_frame = cv2.warpAffine(frame, M, (frame.shape[1], frame.shape[0]), flags=cv2.INTER_CUBIC)
-
-        if self.verbose:
-            print('after rotation')
-            plt.imshow(rotated_frame)
-            plt.show()
-        return rotated_frame, left_eye, right_eye
 
 
     def preprocess_face(self, frame, bbox, squarify, bbox_scale, norm, align_eyes, output_shape):
@@ -263,7 +234,7 @@ class AbstractGender:
 
         # performs face alignment based on facial landmark detection
         if align_eyes:
-            frame, left_eye, right_eye = self.align_eyes(frame, bbox)
+            frame, left_eye, right_eye = self.face_alignment(frame, bbox)
 
         # crop image to the bounding box
         frame = frame[bbox[1]:bbox[3], bbox[0]:bbox[2]]
@@ -324,7 +295,7 @@ class GenderVideo(AbstractGender):
 
     Attributes:
         face_detector: Face detection model.
-        align_predictor: Face alignment model.
+        face_alignment: Face alignment model.
         gender_svm: Gender SVM classifier model.
         vgg_feature_extractor: VGGFace neural model used for feature extraction.
         threshold: quality of face detection considered acceptable, value between 0 and 1.
