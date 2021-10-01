@@ -54,6 +54,7 @@ class VGG16_LinSVM:
         img is supposed to be aligned and cropped and resized to 224*224
         """
         assert (img.shape[0], img.shape[1]) == (224, 224)
+        img  =  img[:, :, ::-1] # RGB to something else ??
         img = image.img_to_array(img)
         img = utils.preprocess_input(img, version=1)
         img = np.expand_dims(img, axis=0)

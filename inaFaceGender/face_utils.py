@@ -69,7 +69,7 @@ def _angle_between_2_points(p1, p2):
         return np.degrees(np.arctan(tan))
     elif y2 > y1:
         return np.degrees(np.pi / 2)
-    
+
     else:
         return np.degrees(-np.pi / 2)
 
@@ -83,10 +83,4 @@ def get_rotation_matrix(p1, p2):
     yc = (y1 + y2) // 2
     M = cv2.getRotationMatrix2D((xc, yc), angle, 1)
     return M
-
-
-def crop_image(image, det):
-    left, top, right, bottom = _rect_to_tuple(det)
-    return image[top:bottom, left:right]
-
 

@@ -29,7 +29,7 @@ import pandas as pd
 import os
 #import h5py
 
-from .face_utils import extract_left_eye_center, extract_right_eye_center, get_rotation_matrix, crop_image
+from .face_utils import extract_left_eye_center, extract_right_eye_center, get_rotation_matrix#, crop_image
 from .opencv_utils import video_iterator
 from .face_tracking import TrackerList
 from .face_detector import OcvCnnFacedetector
@@ -172,22 +172,21 @@ class AbstractGender:
         # True if some verbose is required
         self.verbose = verbose
 
-    def align_and_crop_face(self, frame, bb, desired_width, desired_height):
+    def align_eyes(self, frame, bb):
         """
-        Aligns and resizes face to desired shape.
+        Performs facial landmark detection and rotate image such as the eyes
+        lie on a horizontal line
 
         Parameters:
             img  : Image to be aligned and resized.
-            bb: Bounding box coordinates tuples. (dlib.rectangle)
-            desired_width: output image width.
-            desired_height: output image height.
-
+            bb: Bounding box coordinates tuples.
 
         Returns:
-            cropped_img: Image aligned and resized.
-            left_eye: left eye position coordinates.
-            right_eye: right eye position coordinates.
+            rotated_img: Image rotated.
+            left_eye: left eye position coordinates in the original image.
+            right_eye: right eye position coordinates in the original image.
         """
+        bb = dlib.rectangle(*bb)
         shape = self.align_predictor(frame, bb)
         left_eye = extract_left_eye_center(shape)
         right_eye = extract_right_eye_center(shape)
@@ -199,38 +198,91 @@ class AbstractGender:
             print('after rotation')
             plt.imshow(rotated_frame)
             plt.show()
+        return rotated_frame, left_eye, right_eye
 
-        cropped = crop_image(rotated_frame, bb)
-        cropped_res = cv2.resize(cropped, (desired_width, desired_height))
+
+    def preprocess_face(self, frame, bbox, squarify, bbox_scale, norm, align_eyes, output_shape):
+        """
+        Apply preprocessing pipeline to a detected face and returns the
+        corresponding image with the following optional processings
+        Parameters
+        ----------
+        frame : numpy nd.array
+            RGB image data
+        bbox : tuple (x1, y1, x2, y2) or None
+            if not None, the provided bounding box will be used, else the
+            whole image will be used
+        squarify: boolean
+            if set to True, the bounding box will be extented to be the
+            smallest square containing the bounding box. This avoids distortion
+            if faces are resized in a latter stage
+        bbox_scale: float
+            resize the bounding box to consider larger (bbox_scale > 1) or
+            smaller (bbox_scale < 1) areas around faces. If set to 1, the
+            original bounding box is used
+        norm : boolean
+            if set to True, bounding boxes will be converted from float to int
+            and will be cropped to fit inside the input frame
+        align_eyes: boolean
+            if set to True, face will be rotated based on the estimation of
+            facial landmarks such the eyes lie on a horizontal line
+        output_shape: (width, height) or None
+            if not None, face will be resized to the provided output shape
+        Returns
+        -------
+        frame: np.array RGB image data
+        bbox: up-to-data bounding box after the proprocessing pipeline
+
+        """
+
+        (frame_h, frame_w, _) = frame.shape
+
+        # if no bounding box is provided, use the whole image
+        if bbox is None:
+            bbox = (0, 0, frame_w, frame_h)
+
+        # if True, extend the bounding box to the smallest square containing
+        # the orignal bounding box
+        if squarify:
+            bbox = _squarify_bbox(bbox)
+
+        # perform bounding box scaling to march larger/smaller areas around
+        # the detected face
+        bbox = _scale_bbox(*bbox, bbox_scale)
+
+        # bounding box normalization to int and to fit in input frame
+        if norm:
+            bbox = _norm_bbox(bbox, frame_w, frame_h)
+
+        # if vebose, display the image and the bounding box
         if self.verbose:
-            print('after crop')
-            plt.imshow(cropped_res)
+           tmpframe = frame.copy()
+           cv2.rectangle(tmpframe, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 8)
+           plt.imshow(tmpframe)
+           plt.show()
+
+        # performs face alignment based on facial landmark detection
+        if align_eyes:
+            frame, left_eye, right_eye = self.align_eyes(frame, bbox)
+
+        # crop image to the bounding box
+        frame = frame[bbox[1]:bbox[3], bbox[0]:bbox[2]]
+
+        # resize image to the required output shape
+        if output_shape is not None:
+            frame = cv2.resize(frame, output_shape)
+
+        if self.verbose:
+            print('resulting image')
+            plt.imshow(frame)
             plt.show()
 
-        # colors are stranges after this instruction
-        # should it be moved in VGG specific code ???
-        cropped_img = cropped_res[:, :, ::-1]
-
-        return cropped_img, left_eye, right_eye
-
+        return frame, bbox
 
     def classif_from_frame_and_bbox(self, frame, bbox, bbox_square, bbox_scale, bbox_norm):
-        if bbox_square:
-            bbox = _squarify_bbox(bbox)
-        bbox = _scale_bbox(*bbox, bbox_scale)
-        if bbox_norm:
-            #print('norm')
-            frame_height = frame.shape[0]
-            frame_width = frame.shape[1]
-            bbox = _norm_bbox(bbox, frame_width, frame_height)
-        if self.verbose:
-            #print('disp bbox', bbox)
-            tmpframe = frame.copy()
-            cv2.rectangle(tmpframe, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 8)
-            plt.imshow(tmpframe)
-            plt.show()
 
-        face_img, left_eye, right_eye = self.align_and_crop_face(frame, dlib.rectangle(*bbox), 224, 224)
+        face_img, bbox = self.preprocess_face(frame, bbox, bbox_square, bbox_scale, bbox_norm, True, (224, 224))
+
         feats, label, decision_value = self.classifier(face_img)
         ret = [feats, bbox, label, decision_value]
 
@@ -245,20 +297,7 @@ class AbstractGender:
             if self.verbose:
                 print('bbox: %s, conf: %f' % (bb, detect_conf))
             ret.append(self.classif_from_frame_and_bbox(frame, bb, self.squarify_bbox, self.bbox_scaling, True) + [detect_conf])
-            # bb = _scale_bbox(*bb, self.bbox_scaling, frame.shape)
-            # if self.verbose:
-            #     tmpframe = frame.copy()
-            #     cv2.rectangle(tmpframe, (bb[0], bb[1]), (bb[2], bb[3]), (0, 255, 0), 8)
-            #     plt.imshow(tmpframe)
-            #     plt.show()
 
-            # face_img, left_eye, right_eye = self.align_and_crop_face(frame, dlib.rectangle(*bb), 224, 224)
-            # label, decision_value = self.classifier(face_img)
-            # ret.append([bb, label, decision_value, detect_conf])
-            # if self.verbose:
-            #     print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function, face detection confidence')
-            #     print(ret[-1])
-            #     print()
             if self.verbose:
                 print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function, face detection confidence')
                 print(ret[-1][1:])
@@ -274,6 +313,10 @@ class GenderImage(AbstractGender):
         img = cv2.imread(img_path)
         frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         return self.detect_and_classify_faces_from_frame(frame)
+    # def get_face_images(self, img_path):
+    #     img_cv2.imread(img_path)
+    #     frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
 
 class GenderVideo(AbstractGender):
     """
@@ -367,15 +410,6 @@ class GenderVideo(AbstractGender):
         Returns:
             info: A Dataframe with frame and face information (coordinates, decision function,labels..)
         """
-                #x1, y1, x2, y2 = bbox[:]
-        #x1, y1, x2, y2 = _scale_bbox(x1, y1, x2, y2, self.bbox_scaling, frame.shape)
-        #x1, y1, x2, y2 = _scale_bbox(*bbox, self.bbox_scaling, frame.shape)
-
-        # if x1 < x2 and y1 < y2:
-        #     dets = (x1, y1, x2, y2)
-        # else:
-        #     ## TODO WARNING - THIS HACK IS STRANGE
-        #     dets = (0, 0, frame_width, frame_height)
 
         info = []
 
@@ -387,34 +421,6 @@ class GenderVideo(AbstractGender):
         return info
 
 
-    # def pred_from_frame_and_bb(self, frame, bb, scale=1, display=False): ## add bounding box scaling
-    #     # frame should be obtained from opencv
-    #     # bounding box is x1, y1, x2, y2
-
-    #     if display:
-    #         plt.imshow(frame)
-    #         plt.show()
-
-    #     x1, y1, x2, y2 = [e for e in bb]
-    #     # TODO: check the result without the frame.shape argument
-    #     x1, y1, x2, y2 = _scale_bbox(x1, y1, x2, y2, scale, frame.shape)
-
-    #     dets = [dlib.rectangle(x1, y1, x2, y2)]
-
-    #     if display:
-    #         plt.imshow(frame[y1:y2, x1:x2, :])
-    #         plt.show()
-
-    #     frame = self.align_and_crop_face(frame, dets, 224, 224)[0]
-    #     if display:
-    #         plt.imshow(frame)
-    #         plt.show()
-
-    #    # ret = #self._gender_from_face(frame)
-    #     ret = self.classifier(frame)
-    #     if display:
-    #         print(ret)
-    #     return ret
 
     def pred_from_vid_and_bblist(self, vidsrc, lbox, subsamp_coeff=1, start_frame=0):
         lret = []
