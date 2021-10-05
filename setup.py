@@ -87,8 +87,8 @@ setup(
     data_files = ['LICENSE'],
     long_description=LONGDESCRIPTION,
     long_description_content_type='text/markdown',
-    #scripts=[os.path.join('scripts', script) for script in \
-    #         ['ina_speech_segmenter.py', 'ina_speech_segmenter_pyro_client.py']],
+    scripts=[os.path.join('scripts', script) for script in \
+             ['ina_face_gender.py']],
     classifiers=CLASSIFIERS,
     python_requires='>=3.8',
 

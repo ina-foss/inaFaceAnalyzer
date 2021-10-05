@@ -27,7 +27,8 @@
 import unittest
 import pandas as pd
 import numpy as np
-from inaFaceGender.inaFaceGender import GenderVideo, GenderImage, _norm_bbox, _squarify_bbox
+from inaFaceGender.inaFaceGender import GenderVideo, GenderImage
+from inaFaceGender.face_preprocessing import _norm_bbox, _squarify_bbox
 from pandas.util.testing import assert_frame_equal, assert_series_equal
 from inaFaceGender.opencv_utils import video_iterator
 from inaFaceGender.face_detector import OcvCnnFacedetector
