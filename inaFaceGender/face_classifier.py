@@ -32,6 +32,9 @@ import tensorflow
 from tensorflow import keras
 from .svm_utils import svm_load
 
+# TODO: add batch processing functions
+# from frames ? from image paths ?
+
 class Resnet50FairFace:
     input_shape = (224, 224)
     def __init__(self):
@@ -55,15 +58,9 @@ class VGG16_LinSVM:
         # Face feature extractor from aligned and detected faces
         self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = (224, 224, 3), pooling ='avg')
 
-        # SVM trained on neural features - dependent on the neural representation
-        # should be packed together
+        # SVM trained on VG neural features
         self.gender_svm = svm_load(p + 'svm_classifier.hdf5')
-        # f = h5py.File(p + 'svm_classifier.hdf5', 'r')
-        # svm = LinearSVC()
-        # svm.classes_ = np.array(f['linearsvc/classes'][:]).astype('<U1')
-        # svm.intercept_ = f['linearsvc/intercept'][:]
-        # svm.coef_ = f['linearsvc/coef'][:]
-        # self.gender_svm = svm
+
 
     def extract_features(self, img):
         """

@@ -95,4 +95,5 @@ def disp_frame_bblist(frame, bblist):
 
 def imwrite_rgb(dst, img):
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-    cv2.imwrite(dst, img)
+    if not cv2.imwrite(dst, img):
+        raise Exception('cannot write image %s' % dst)
