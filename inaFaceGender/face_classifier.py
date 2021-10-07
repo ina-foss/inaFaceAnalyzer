@@ -39,16 +39,18 @@ class Resnet50FairFace:
     input_shape = (224, 224)
     def __init__(self):
         p = os.path.dirname(os.path.realpath(__file__))
-        self.model = keras.models.load_model(p + '/models/keras_resnet50_fairface.h5', compile=False)
+        m = keras.models.load_model(p + '/models/keras_resnet50_fairface.h5', compile=False)
+        self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs + [m.layers[-3].output])
     def __call__(self, img):
         x = tensorflow.keras.preprocessing.image.img_to_array(img)
         x = np.expand_dims(x, axis=0)
         x = tensorflow.keras.applications.resnet50.preprocess_input(x)
-        ret = self.model.predict(x).ravel()
+        ret, feats = self.model.predict(x)
+        ret = ret.ravel()
         assert len(ret) == 1
         ret = ret[0]
         label = 'm' if ret > 0 else 'f'
-        return None, label, ret
+        return feats, label, ret
 
 class VGG16_LinSVM:
     input_shape = (224,224)

@@ -33,6 +33,7 @@ from pandas.util.testing import assert_frame_equal, assert_series_equal
 from inaFaceGender.opencv_utils import video_iterator
 from inaFaceGender.face_detector import OcvCnnFacedetector
 import cv2
+from inaFaceGender.face_classifier import Resnet50FairFace
 
 class TestInaFaceGender(unittest.TestCase):
 
@@ -95,6 +96,21 @@ class TestInaFaceGender(unittest.TestCase):
         self.assertEqual(list(retdf.bb), lbbox)
         self.assertEqual(list(retdf.label), list(df.label))
         assert_series_equal(retdf.decision, df.decision, check_less_precise=True)
+
+    def test_pred_from_vid_and_bblist_res50(self):
+        gv = GenderVideo(bbox_scaling=1, squarify=False, face_classifier=Resnet50FairFace())
+        df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv')
+        # this method read a single face per frame
+        df = df.drop_duplicates(subset='frame').reset_index()
+        lbbox = list(df.bb.map(eval))
+        _, retdf = gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=25)
+        self.assertEqual(len(retdf), len(lbbox))
+        self.assertEqual(list(retdf.bb), lbbox)
+        # TODO : get test content
+        #self.assertEqual(list(retdf.label), list(df.label))
+        #assert_series_equal(retdf.decision, df.decision, check_less_precise=True)
+
+
 
     def test_pred_from_vid_and_bblist_boxlist_toolong(self):
         gv = GenderVideo(bbox_scaling=1, squarify=False)
