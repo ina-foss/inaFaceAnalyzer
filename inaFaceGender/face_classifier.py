@@ -27,9 +27,9 @@ import os
 import numpy as np
 from keras_vggface.vggface import VGGFace
 from keras_vggface import utils
-from keras.preprocessing import image
 import tensorflow
 from tensorflow import keras
+from tensorflow.keras.preprocessing.image import img_to_array
 from .svm_utils import svm_load
 
 # TODO: add batch processing functions
@@ -42,7 +42,7 @@ class Resnet50FairFace:
         m = keras.models.load_model(p + '/models/keras_resnet50_fairface.h5', compile=False)
         self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs + [m.layers[-3].output])
     def __call__(self, img):
-        x = tensorflow.keras.preprocessing.image.img_to_array(img)
+        x = img_to_array(img)
         x = np.expand_dims(x, axis=0)
         x = tensorflow.keras.applications.resnet50.preprocess_input(x)
         ret, feats = self.model.predict(x)
@@ -51,6 +51,8 @@ class Resnet50FairFace:
         ret = ret[0]
         label = 'm' if ret > 0 else 'f'
         return feats, label, ret
+    def batch(self, limg):
+        data = []
 
 class VGG16_LinSVM:
     input_shape = (224,224)
@@ -71,7 +73,7 @@ class VGG16_LinSVM:
         """
         assert (img.shape[0], img.shape[1]) == (224, 224)
         img  =  img[:, :, ::-1] # RGB to something else ??
-        img = image.img_to_array(img)
+        img = img_to_array(img)
         img = utils.preprocess_input(img, version=1)
         img = np.expand_dims(img, axis=0)
         return self.vgg_feature_extractor.predict(img)
