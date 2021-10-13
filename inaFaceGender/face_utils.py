@@ -75,12 +75,12 @@ def _angle_between_2_points(p1, p2):
 
 
 
-def get_rotation_matrix(p1, p2):
-    angle = _angle_between_2_points(p1, p2)
-    x1, y1 = p1
-    x2, y2 = p2
-    xc = (x1 + x2) // 2
-    yc = (y1 + y2) // 2
-    M = cv2.getRotationMatrix2D((xc, yc), angle, 1)
-    return M
+# def get_rotation_matrix(p1, p2):
+#    angle = _angle_between_2_points(p1, p2)
+#    x1, y1 = p1
+#    x2, y2 = p2
+#    xc = (x1 + x2) // 2
+#    yc = (y1 + y2) // 2
+#    M = cv2.getRotationMatrix2D((xc, yc), angle, 1)
+#    return M
 

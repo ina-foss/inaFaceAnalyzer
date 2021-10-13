@@ -45,16 +45,10 @@ def _scale_bbox(x1, y1, x2, y2, scale):
     w = x2 - x1
     h = y2 - y1
 
-    x1 = int(x1 - (w*scale - w)/2)
-    y1 = int(y1 - (h*scale -h)/2)
-    x2 = int(x2 + (w*scale - w)/2)
-    y2 = int(y2 + (h*scale -h)/2)
-
-    # if frame_shape is not None:
-    #     x1 = max(x1, 0)
-    #     y1 = max(y1, 0)
-    #     x2 = min(x2, frame_shape[1])
-    #     y2 = min(y2, frame_shape[0])
+    x1 = x1 - (w*scale - w)/2
+    y1 = y1 - (h*scale -h)/2
+    x2 = x2 + (w*scale - w)/2
+    y2 = y2 + (h*scale -h)/2
 
     return x1, y1, x2, y2
 
@@ -79,7 +73,7 @@ def _norm_bbox(bbox, frame_width, frame_height):
     convert to int and crop bbox to 0:frame_shape
     """
     x1, y1, x2, y2 = [int(e) for e in bbox]
-    return max(0, x1), max(0, y1), min(x2, frame_width), min(y2, frame_height)
+    return x1, y1, x2, y2
 
 def preprocess_face(frame, bbox, squarify, bbox_scale, norm, face_alignment, output_shape, verbose=False):
     """
@@ -146,9 +140,10 @@ def preprocess_face(frame, bbox, squarify, bbox_scale, norm, face_alignment, out
     # performs face alignment based on facial landmark detection
     if face_alignment is not None:
         frame, left_eye, right_eye = face_alignment(frame, bbox)
-
-    # crop image to the bounding box
-    frame = frame[bbox[1]:bbox[3], bbox[0]:bbox[2]]
+    else:
+        # crop image to the bounding box
+	# TODO: replace by a wrap affine => management of out of frame
+        frame = frame[bbox[1]:bbox[3], bbox[0]:bbox[2]]
 
     # resize image to the required output shape
     if output_shape is not None:

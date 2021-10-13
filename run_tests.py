@@ -44,7 +44,8 @@ class TestInaFaceGender(unittest.TestCase):
         ret = ret[0]
         self.assertEqual(ret[1], (432, 246, 988, 802))
         self.assertEqual(ret[2], 'f')
-        self.assertAlmostEqual(ret[3], -3.305765917955594, places=4)
+        #todo : places = 1 due to changes in rotation procedure
+        self.assertAlmostEqual(ret[3], -3.305765917955594, places=1)
         self.assertAlmostEqual(ret[4], 0.99964356, places=4)
 
     def test_image_knuth(self):
@@ -54,7 +55,8 @@ class TestInaFaceGender(unittest.TestCase):
         ret = ret[0]
         self.assertEqual(ret[1], (78, 46, 321, 289))
         self.assertEqual(ret[2], 'm')
-        self.assertAlmostEqual(ret[3], 6.621492606578991, places=4)
+        #todo : places = 1 due to changes in rotation procedure
+        self.assertAlmostEqual(ret[3], 6.621492606578991, places=1)
         self.assertAlmostEqual(ret[4], 0.99995565, places=4)
 
 

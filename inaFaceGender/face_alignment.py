@@ -27,7 +27,8 @@ import os
 import dlib
 import cv2
 import pylab as plt
-from .face_utils import extract_right_eye_center, extract_left_eye_center, get_rotation_matrix
+from .face_utils import extract_right_eye_center, extract_left_eye_center, _angle_between_2_points#, get_rotation_matrix
+import numpy as np
 
 class Dlib68FaceAlignment:
     """
@@ -102,8 +103,18 @@ class Dlib68FaceAlignment:
 
         """
         left_eye, right_eye = self.detect_eye_centers(frame, bb)
-        M = get_rotation_matrix(left_eye, right_eye)
-        rotated_frame = cv2.warpAffine(frame, M, (frame.shape[1], frame.shape[0]), flags=cv2.INTER_CUBIC)
+        w = bb[2] - bb[0]
+        h = bb[3] - bb[1]
+
+        angle = _angle_between_2_points(left_eye, right_eye)
+        xc = (left_eye[0] + right_eye[0]) / 2
+        yc = (left_eye[1] + right_eye[1]) / 2
+        M = cv2.getRotationMatrix2D((xc, yc), angle, 1)
+        M += np.array([[0, 0, -bb[0]], [0, 0, -bb[1]]])
+
+
+        rotated_frame = cv2.warpAffine(frame, M, (w, h), flags=cv2.INTER_CUBIC)
+
         if self.verbose:
             print('after rotation')
             plt.imshow(rotated_frame)
