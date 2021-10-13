@@ -32,8 +32,8 @@ from tensorflow import keras
 from tensorflow.keras.preprocessing.image import img_to_array
 from .svm_utils import svm_load
 
-# TODO: add batch processing functions
-# from frames ? from image paths ?
+# TODO: batch method should be used by default
+# __call__ should be removed in a nearby future
 
 class Resnet50FairFace:
     input_shape = (224, 224)
@@ -52,7 +52,14 @@ class Resnet50FairFace:
         label = 'm' if ret > 0 else 'f'
         return feats, label, ret
     def batch(self, limg):
-        data = []
+        x = np.concatenate([np.expand_dims(img_to_array(e), axis=0) for e in limg])
+        x = tensorflow.keras.applications.resnet50.preprocess_input(x)
+        decisions, feats = self.model.predict(x)
+        decisions = decisions.ravel()
+        assert len(decisions) == len(limg)
+        labels = ['m' if e > 0 else 'f' for e in decisions]
+        #print(decisions.shape)
+        return feats, labels, decisions
 
 class VGG16_LinSVM:
     input_shape = (224,224)
@@ -74,8 +81,8 @@ class VGG16_LinSVM:
         assert (img.shape[0], img.shape[1]) == (224, 224)
         img  =  img[:, :, ::-1] # RGB to something else ??
         img = img_to_array(img)
+        img = np.expand_dims(img, axis=0)        
         img = utils.preprocess_input(img, version=1)
-        img = np.expand_dims(img, axis=0)
         return self.vgg_feature_extractor.predict(img)
 
     def __call__(self, img):
@@ -97,8 +104,19 @@ class VGG16_LinSVM:
 
         """
         feats = self.extract_features(img)
-        #label = self.gender_svm.predict(feats)[0]
         decision_value = self.gender_svm.decision_function(feats)[0]
-#        print(decision_value)
         label = self.gender_svm.classes_[1 if decision_value > 0 else 0]
         return feats, label, decision_value
+
+    def batch(self, limg):
+        ltmpimg = []
+        for img in limg:
+            assert (img.shape[0], img.shape[1]) == (224, 224)
+            img  =  img[:, :, ::-1] # RGB to something else ??
+            img = img_to_array(img)
+            ltmpimg.append(np.expand_dims(img, axis=0))
+        x = utils.preprocess_input(np.concatenate(ltmpimg), version=1)
+        feats = self.vgg_feature_extractor(x)
+        decision = self.gender_svm.decision_function(feats)
+        labels = [self.gender_svm.classes_[1 if x > 0 else 0] for x in decision]
+        return feats, labels, decision

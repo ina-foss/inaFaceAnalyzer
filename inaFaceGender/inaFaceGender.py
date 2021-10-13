@@ -80,6 +80,7 @@ class AbstractGender:
     This is an abstract class containg the common code to be used to process
     images, videos, with/without tracking
     """
+    batch_len = 32
     # TODO : add squarify bbox option ???
     def __init__(self, face_detector, face_classifier, bbox_scaling, squarify_bbox, verbose):
         """
@@ -146,6 +147,22 @@ class AbstractGender:
                 print(ret[-1][1:])
                 print()
         return ret
+
+    def process_batch(self, lbatch):
+        # lbatch cpontains tuples (iframe, bb (original bounding box), detect_conf, face_img, bbox)
+
+        batch = lbatch[:self.batch_len]
+
+        feats, labels, decision_values = self.classifier.batch([e[3] for e in batch])
+        info = []
+        for i, (iframe, _, detect_conf, _, bbox) in enumerate(batch):
+            info.append((iframe, bbox, labels[i], decision_values[i], detect_conf))
+            if self.verbose:
+                print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function, face detection confidence')
+                last = info[-1]
+                print(last[1], last[2], last[3], last[4])
+                print()
+        return lbatch[self.batch_len:], info
 
 
 
@@ -247,7 +264,6 @@ class GenderVideo(AbstractGender):
 
         return info
 
-
     def __call__(self, video_path, subsamp_coeff = 1 ,  offset = -1):
 
         """
@@ -264,15 +280,32 @@ class GenderVideo(AbstractGender):
         """
 
         info = []
+        lbatch = []
 
         for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0)):
+            if self.verbose:
+                print('frame ', iframe)
+                plt.imshow(frame)
+                plt.show()
 
-            info += [[iframe] + e[1:] for e in self.detect_and_classify_faces_from_frame(frame)]
+            for bb, detect_conf in self.face_detector(frame):
+                if self.verbose:
+                    print('bbox: %s, conf: %f' % (bb, detect_conf))
+                                        
 
+                face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, True, self.face_alignment, (224, 224), self.verbose)
+                lbatch.append((iframe, bb, detect_conf, face_img, bbox))
+
+            while len(lbatch) > self.batch_len:
+                lbatch, tmpinfo = self.process_batch(lbatch)
+                info += tmpinfo
+ 
+        while len(lbatch) > 0:
+            lbatch, tmpinfo = self.process_batch(lbatch)
+            info += tmpinfo            
+ 
         info = pd.DataFrame.from_records(info, columns = ['frame', 'bb','label', 'decision', 'conf'])
         return info
-
-
 
     def pred_from_vid_and_bblist(self, vidsrc, lbox, subsamp_coeff=1, start_frame=0):
         lret = []
