@@ -177,6 +177,14 @@ class GenderImage(AbstractGender):
             print('raw image ' + img_path)
             plt.imshow(frame)
             plt.show()
+        # add black around image
+        # x = max(frame.shape[0], frame.shape[1], frame.shape[2])
+        # offset = (x  * 15) // 100
+        # print('offset', offset)
+        # frame2 = np.zeros((frame.shape[0] + 2*offset, frame.shape[1] + 2*offset, frame.shape[2]), dtype=frame.dtype)
+        # print('frame 2 shape', frame2.shape)
+        # frame2[offset:(frame.shape[0]+offset), offset:(frame.shape[1]+offset), :] = frame
+
         return frame
 
     def __call__(self, img_path):
