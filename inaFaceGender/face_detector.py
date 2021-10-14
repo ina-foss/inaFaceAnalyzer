@@ -61,19 +61,36 @@ def _sqdist(p1, p2):
     '''
     return (p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2
 
+def _blackpadd(frame, paddpercent):
+    # add black around image
+    y, x, z = frame.shape
+    #offset = int(max(x, y) * paddpercent)
+    xoffset = int(x * paddpercent)
+    yoffset = int(y * paddpercent)
+    ret = np.zeros((y + 2 * yoffset, x + 2 * xoffset, z), dtype=frame.dtype)
+    ret[yoffset:(y + yoffset), xoffset:(x + xoffset), :] = frame
+    return ret, yoffset, xoffset
+
+
+
 class OcvCnnFacedetector:
     """
     opencv default CNN face detector
     Future : define an abstract class allowing to implement several detection methods
     """
-    def __init__(self, minconf=0.65):
+    def __init__(self, minconf=0.65, paddpercent=0.):
         """
         Parameters
         ----------
         minconf : float, optional
            minimal face detection confidence. The default is 0.65.
+        paddpercent : float, optional
+            input frame is copy passted within a black image with black pixel
+            padding. the resulting dimensions is width * (1+2*paddpercent)
+
         """
         self.minconf = minconf
+        self.paddpercent = paddpercent
         p = os.path.dirname(os.path.realpath(__file__)) + '/models/'
         self.model = cv2.dnn.readNetFromTensorflow(p + "opencv_face_detector_uint8.pb",
                                                    p + "opencv_face_detector.pbtxt")
@@ -96,6 +113,11 @@ class OcvCnnFacedetector:
 
         frame_height = frame.shape[0]
         frame_width = frame.shape[1]
+
+        #print(frame.shape)
+        frame, yoffset, xoffset = _blackpadd(frame, self.paddpercent)
+        #print(frame.shape, xoffset, yoffset)
+
         # The CNN is intended to work images resized to 300*300
         blob = cv2.dnn.blobFromImage(frame, 1.0, (300, 300), [104, 117, 123], True, False)
         self.model.setInput(blob)
@@ -115,7 +137,9 @@ class OcvCnnFacedetector:
             if bbox[0] >= bbox[2] or bbox[1] >= bbox[3]:
                 continue
 
-            bbox = _rel_to_abs(bbox, frame_width, frame_height)
+            bbox = _rel_to_abs(bbox, frame_width + 2*xoffset, frame_height+2*yoffset)
+            #bbox = [e - offset for e in bbox]
+            bbox = [bbox[0] - xoffset, bbox[1] - yoffset, bbox[2] - xoffset, bbox[3] - yoffset]
             faces_data.append((bbox, confidence))
 
             if verbose:
