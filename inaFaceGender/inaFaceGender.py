@@ -177,22 +177,11 @@ class GenderImage(AbstractGender):
             print('raw image ' + img_path)
             plt.imshow(frame)
             plt.show()
-        # add black around image
-        # x = max(frame.shape[0], frame.shape[1], frame.shape[2])
-        # offset = (x  * 15) // 100
-        # print('offset', offset)
-        # frame2 = np.zeros((frame.shape[0] + 2*offset, frame.shape[1] + 2*offset, frame.shape[2]), dtype=frame.dtype)
-        # print('frame 2 shape', frame2.shape)
-        # frame2[offset:(frame.shape[0]+offset), offset:(frame.shape[1]+offset), :] = frame
-
         return frame
 
     def __call__(self, img_path):
         frame = self.read_rgb(img_path, self.verbose)
         return self.detect_and_classify_faces_from_frame(frame)
-    # def get_face_images(self, img_path):
-    #     img_cv2.imread(img_path)
-    #     frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 
 class GenderVideo(AbstractGender):
@@ -230,6 +219,7 @@ class GenderVideo(AbstractGender):
         tl = TrackerList()
 
         info = []
+        lbatch = []
 
         for iframe, frame in video_iterator(video_path,subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0)):
 
@@ -239,31 +229,24 @@ class GenderVideo(AbstractGender):
             if (iframe % k_frames)==0:
                 faces_info = self.face_detector(frame)
 
-                tl.ingest_detection(frame, [dlib.rectangle(*e[0]) for e in faces_info])
+                tl.ingest_detection(frame, [dlib.rectangle(*[int(x) for x in e[0]]) for e in faces_info])
 
             # process faces based on position found in trackers
             for fid in tl.d:
                 bb = tl.d[fid].t.get_position()
+                bb = (bb.left(), bb.top(), bb.right(), bb.bottom())
 
-                x1, y1, x2, y2 = _scale_bbox(bb.left(), bb.top(), bb.right(), bb.bottom(), 1, frame.shape)
-                if x1 < x2 and y1 < y2:
-                    bb = dlib.rectangle(x1, y1, x2, y2)
-                else:
-                    ## TODO WARNING - THIS HACK IS STRANGE
-                    bb = dlib.rectangle(0, 0, frame.shape[1], frame.shape[0])
+                face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, True, self.face_alignment, (224, 224), self.verbose)
+                lbatch.append((iframe, bb, fid, face_img, bbox)) # add detect/track confidence
 
 
-                face_img, left_eye, right_eye = self.align_and_crop_face(frame, bb, 224, 224)
-                #label, decision_value = self._gender_from_face(face_img)
-                label, decision_value = self.classifier(face_img)
+            while len(lbatch) > self.batch_len:
+                lbatch, tmpinfo = self.process_batch(lbatch)
+                info += tmpinfo
 
-                bb =  (bb.left(), bb.top(), bb.right(), bb.bottom())
-
-                # TODO - ADD CONFIDENCE
-                info.append([
-                        iframe, fid,  bb, label,
-                        decision_value # confidence[fid]
-                    ])
+        while len(lbatch) > 0:
+            lbatch, tmpinfo = self.process_batch(lbatch)
+            info += tmpinfo
 
 
 
@@ -299,7 +282,7 @@ class GenderVideo(AbstractGender):
             for bb, detect_conf in self.face_detector(frame):
                 if self.verbose:
                     print('bbox: %s, conf: %f' % (bb, detect_conf))
-                                        
+
 
                 face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, True, self.face_alignment, (224, 224), self.verbose)
                 lbatch.append((iframe, bb, detect_conf, face_img, bbox))
@@ -307,11 +290,11 @@ class GenderVideo(AbstractGender):
             while len(lbatch) > self.batch_len:
                 lbatch, tmpinfo = self.process_batch(lbatch)
                 info += tmpinfo
- 
+
         while len(lbatch) > 0:
             lbatch, tmpinfo = self.process_batch(lbatch)
-            info += tmpinfo            
- 
+            info += tmpinfo
+
         info = pd.DataFrame.from_records(info, columns = ['frame', 'bb','label', 'decision', 'conf'])
         return info
 

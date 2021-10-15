@@ -111,14 +111,17 @@ class OcvCnnFacedetector:
 
         faces_data = []
 
-        frame_height = frame.shape[0]
-        frame_width = frame.shape[1]
+#        frame_height = frame.shape[0]
+#        frame_width = frame.shape[1]
 
         #print(frame.shape)
         frame, yoffset, xoffset = _blackpadd(frame, self.paddpercent)
+        h, w, z = frame.shape
         #print(frame.shape, xoffset, yoffset)
+        # minhw = min(h,w)
 
         # The CNN is intended to work images resized to 300*300
+        #blob = cv2.dnn.blobFromImage(frame, 1.0, (int(w*300./minhw), int(h*300./minhw)), [104, 117, 123], True, False)
         blob = cv2.dnn.blobFromImage(frame, 1.0, (300, 300), [104, 117, 123], True, False)
         self.model.setInput(blob)
         detections = self.model.forward()
@@ -137,7 +140,7 @@ class OcvCnnFacedetector:
             if bbox[0] >= bbox[2] or bbox[1] >= bbox[3]:
                 continue
 
-            bbox = _rel_to_abs(bbox, frame_width + 2*xoffset, frame_height+2*yoffset)
+            bbox = _rel_to_abs(bbox, w, h)
             #bbox = [e - offset for e in bbox]
             bbox = [bbox[0] - xoffset, bbox[1] - yoffset, bbox[2] - xoffset, bbox[3] - yoffset]
             faces_data.append((bbox, confidence))
