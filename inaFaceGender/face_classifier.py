@@ -69,7 +69,6 @@ class Resnet50FairFaceGRA(AbstractFaceClassifier):
         x = img_to_array(img)
         x = np.expand_dims(x, axis=0)
         x = tensorflow.keras.applications.resnet50.preprocess_input(x)
-        print( self.model.predict(x))
         gender, _, age, feats = self.model.predict(x)
         gender_dec = gender.ravel()
         assert(len(gender_dec) == 1)
@@ -88,13 +87,24 @@ class Resnet50FairFaceGRA(AbstractFaceClassifier):
             age_label = mean + (age_dec - np.round(age_dec)) * (stop -start+1)
         return feats, (gender_label, age_label), (gender_dec, age_dec)
 
+    def batch(self, limg):
+        x = np.concatenate([np.expand_dims(img_to_array(e), axis=0) for e in limg])
+        x = tensorflow.keras.applications.resnet50.preprocess_input(x)
+        gender_dec, _, age_dec, feats = self.model.predict(x)
+        gender_dec = gender_dec.ravel()
+        assert len(gender_dec) == len(limg)
+        labels = ['m' if e > 0 else 'f' for e in gender_dec]
+        #print(decisions.shape)
+        return feats, labels, gender_dec
+
+
 
 class Resnet50FairFace(AbstractFaceClassifier):
     input_shape = (224, 224)
     def __init__(self):
         url = self.models_url + 'keras_resnet50_fairface.h5'
         fname = get_file('keras_resnet50_fairface.h5', url)
-        m = keras.models.load_model(fname, compile=False)        
+        m = keras.models.load_model(fname, compile=False)
         self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs + [m.layers[-3].output])
     def __call__(self, img):
         x = img_to_array(img)
