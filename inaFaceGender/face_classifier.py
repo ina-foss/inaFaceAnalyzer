@@ -92,8 +92,9 @@ class Resnet50FairFaceGRA(AbstractFaceClassifier):
 class Resnet50FairFace(AbstractFaceClassifier):
     input_shape = (224, 224)
     def __init__(self):
-        p = os.path.dirname(os.path.realpath(__file__))
-        m = keras.models.load_model(p + '/models/keras_resnet50_fairface.h5', compile=False)
+        url = self.models_url + 'keras_resnet50_fairface.h5'
+        fname = get_file('keras_resnet50_fairface.h5', url)
+        m = keras.models.load_model(fname, compile=False)        
         self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs + [m.layers[-3].output])
     def __call__(self, img):
         x = img_to_array(img)
