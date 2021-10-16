@@ -40,7 +40,7 @@ from .opencv_utils import imread_rgb
 
 
 class AbstractFaceClassifier:
-    models_url = 'https://github.com/ina-foss/inaFaceGender/raw/master/inaFaceGender/models/'
+    models_url = 'https://github.com/ina-foss/inaFaceGender/releases/download/models-init/'
     def imgpaths_batch(self, lfiles, batch_len=32):
         """
         images are assumed to be faces already detected, scaled, aligned, croped
