@@ -3,7 +3,7 @@
 
 # The MIT License
 
-# Copyright (c) 2019 Ina (Thomas Petit - http://www.ina.fr/)
+# Copyright (c) 2019 Ina (Thomas Petit & David Doukhan- http://www.ina.fr/)
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,11 +25,11 @@
 
 # This code is a modification of nlhkh's project face-alignment-dlib
 # See github.com/nlhkh/face-alignment-dlib/blob/master/utils.py
-# It has been adapted by Thomas PETIT (github.com/w2ex)
+# It has been adapted by Thomas PETIT (github.com/w2ex) & David Doukhan
 
 
 import numpy as np
-import cv2
+import dlib
 
 def _rect_to_tuple(rect):
     left = rect.left()
@@ -37,6 +37,21 @@ def _rect_to_tuple(rect):
     top = rect.top()
     bottom = rect.bottom()
     return left, top, right, bottom
+
+def tuple2rect(t):
+    return dlib.rectangle(*[int(x) for x in t])
+
+def intersection_over_union(x, y):
+    # intersection over union
+    if type(x) == tuple:
+        x = tuple2rect(x)
+    if type(y) == tuple:
+        y = tuple2rect(y)
+    assert isinstance(x, dlib.rectangle)
+    assert isinstance(y, dlib.rectangle)
+    inter = x.intersect(y).area()
+    union = x.area() + y.area() - inter
+    return inter / union
 
 
 def _extract_eye(shape, eye_indices):
@@ -83,4 +98,3 @@ def _angle_between_2_points(p1, p2):
 #    yc = (y1 + y2) // 2
 #    M = cv2.getRotationMatrix2D((xc, yc), angle, 1)
 #    return M
-

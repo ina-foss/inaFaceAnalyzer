@@ -27,6 +27,8 @@ import os
 import cv2
 import numpy as np
 from .opencv_utils import disp_frame_bblist
+from .face_preprocessing import _squarify_bbox
+from .face_utils import intersection_over_union
 
 def _get_opencvcnn_bbox(detections, face_idx):
     """
@@ -78,7 +80,7 @@ class OcvCnnFacedetector:
     opencv default CNN face detector
     Future : define an abstract class allowing to implement several detection methods
     """
-    def __init__(self, minconf=0.65, paddpercent=0.):
+    def __init__(self, minconf=0.65, paddpercent=0.15):
         """
         Parameters
         ----------
@@ -186,6 +188,27 @@ class OcvCnnFacedetector:
             print('most closest face with bounding box %s and confidence %f' % (bbox, conf))
             disp_frame_bblist(frame, [bbox])
         return (bbox, conf)
+
+    def get_closest_face(self, frame, ref_bbox, min_iou=.7, squarify=True, verbose=False):
+        # get closest detected faces from ref_bbox
+        if squarify:
+            f = _squarify_bbox
+        else:
+            f = lambda x: x
+
+        ref_bbox = f(ref_bbox)
+
+        lfaces = self.__call__(frame, verbose)
+        if len(lfaces) == 0:
+            return None
+
+        liou = [intersection_over_union(f(ref_bbox), f(bbox)) for bbox, _ in lfaces]
+        if verbose:
+            print('liou', liou)
+        am = np.argmax(liou)
+        if liou[am] < min_iou:
+            return None
+        return lfaces[am]
 
 
 class IdentityFaceDetector:

@@ -38,7 +38,7 @@ from inaFaceGender.face_classifier import Resnet50FairFace
 class TestInaFaceGender(unittest.TestCase):
 
     def test_image_all_diallo(self):
-        gi = GenderImage()
+        gi = GenderImage(face_detector = OcvCnnFacedetector(paddpercent=0.))
         ret = gi('./media/Europa21_-_2.jpg')
         self.assertEqual(len(ret), 1)
         ret = ret[0]
@@ -49,7 +49,7 @@ class TestInaFaceGender(unittest.TestCase):
         self.assertAlmostEqual(ret[4], 0.99964356, places=4)
 
     def test_image_knuth(self):
-        gi = GenderImage()
+        gi = GenderImage(face_detector = OcvCnnFacedetector(paddpercent=0.))
         ret = gi('./media/20091020222328!KnuthAtOpenContentAlliance.jpg')
         self.assertEqual(len(ret), 1)
         ret = ret[0]
@@ -61,7 +61,7 @@ class TestInaFaceGender(unittest.TestCase):
 
 
     def test_video_basic(self):
-        gv = GenderVideo()
+        gv = GenderVideo(face_detector = OcvCnnFacedetector(paddpercent=0.))
         ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=25)
         ret.bb = ret.bb.map(str)
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv',
@@ -69,7 +69,7 @@ class TestInaFaceGender(unittest.TestCase):
         assert_frame_equal(ret, df, check_less_precise=True)
 
     def test_opencv_cnn_detection(self):
-        detector = OcvCnnFacedetector()
+        detector = OcvCnnFacedetector(paddpercent=0.)
         img = cv2.imread('./media/Europa21_-_2.jpg')
         frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         ret = detector(frame)
