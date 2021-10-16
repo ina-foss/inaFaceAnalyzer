@@ -30,6 +30,7 @@ from keras_vggface import utils
 import tensorflow
 from tensorflow import keras
 from tensorflow.keras.preprocessing.image import img_to_array
+from tensorflow.keras.utils import get_file
 from .svm_utils import svm_load
 from .opencv_utils import imread_rgb
 
@@ -39,6 +40,7 @@ from .opencv_utils import imread_rgb
 
 
 class AbstractFaceClassifier:
+    models_url = 'https://github.com/ina-foss/inaFaceGender/raw/master/inaFaceGender/models/'
     def imgpaths_batch(self, lfiles, batch_len=32):
         """
         images are assumed to be faces already detected, scaled, aligned, croped
@@ -53,6 +55,38 @@ class AbstractFaceClassifier:
         labels = [lab for e in lret for lab in e[1]]
         decisions = [dec for e in lret for dec in e[2]]
         return feats, labels, decisions
+
+
+class Resnet50FairFaceGRA(AbstractFaceClassifier):
+    input_shape = (224, 224)
+    def __init__(self):
+        url = self.models_url + 'keras_resnet50_fairface_GRA.h5'
+        fname = get_file('keras_resnet50_fairface_GRA.h5', url)
+        m = keras.models.load_model(fname, compile=False)
+        self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs + [m.layers[-5].output])
+
+    def __call__(self, img):
+        x = img_to_array(img)
+        x = np.expand_dims(x, axis=0)
+        x = tensorflow.keras.applications.resnet50.preprocess_input(x)
+        print( self.model.predict(x))
+        gender, _, age, feats = self.model.predict(x)
+        gender_dec = gender.ravel()
+        assert(len(gender_dec) == 1)
+        gender_dec = gender_dec[0]
+        gender_label = 'm' if gender_dec > 0 else 'f'
+        age_dec = age[0][0]
+
+        lage = [(0,2), (3,9), (10,19), (20,29), (30,39), (40,49), (50,59), (60,69), (70, 89), (90,99)]
+        if age_dec < 0:
+            age_label = 0.
+        elif int(np.round(age_dec)) > 9:
+            age_label = 100.
+        else:
+            start, stop = lage[int(np.round(age_dec))]
+            mean = (start + stop + 1) / 2.
+            age_label = mean + (age_dec - np.round(age_dec)) * (stop -start+1)
+        return feats, (gender_label, age_label), (gender_dec, age_dec)
 
 
 class Resnet50FairFace(AbstractFaceClassifier):
