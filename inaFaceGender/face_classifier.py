@@ -31,11 +31,31 @@ import tensorflow
 from tensorflow import keras
 from tensorflow.keras.preprocessing.image import img_to_array
 from .svm_utils import svm_load
+from .opencv_utils import imread_rgb
+
 
 # TODO: batch method should be used by default
 # __call__ should be removed in a nearby future
 
-class Resnet50FairFace:
+
+class AbstractFaceClassifier:
+    def imgpaths_batch(self, lfiles, batch_len=32):
+        """
+        images are assumed to be faces already detected, scaled, aligned, croped
+        """
+        lret = []
+        while lfiles:
+#            print('batch')
+            limg = [imread_rgb(e) for e in lfiles[:batch_len]]
+            lfiles = lfiles[batch_len:]
+            lret.append(self.batch(limg))
+        feats = np.concatenate([e[0] for e in lret])
+        labels = [lab for e in lret for lab in e[1]]
+        decisions = [dec for e in lret for dec in e[2]]
+        return feats, labels, decisions
+
+
+class Resnet50FairFace(AbstractFaceClassifier):
     input_shape = (224, 224)
     def __init__(self):
         p = os.path.dirname(os.path.realpath(__file__))
@@ -61,7 +81,7 @@ class Resnet50FairFace:
         #print(decisions.shape)
         return feats, labels, decisions
 
-class VGG16_LinSVM:
+class VGG16_LinSVM(AbstractFaceClassifier):
     input_shape = (224,224)
     def __init__(self):
         p = os.path.dirname(os.path.realpath(__file__)) + '/models/'
@@ -81,7 +101,7 @@ class VGG16_LinSVM:
         assert (img.shape[0], img.shape[1]) == (224, 224)
         img  =  img[:, :, ::-1] # RGB to something else ??
         img = img_to_array(img)
-        img = np.expand_dims(img, axis=0)        
+        img = np.expand_dims(img, axis=0)
         img = utils.preprocess_input(img, version=1)
         return self.vgg_feature_extractor.predict(img)
 
