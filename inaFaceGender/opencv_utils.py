@@ -97,3 +97,12 @@ def imwrite_rgb(dst, img):
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     if not cv2.imwrite(dst, img):
         raise Exception('cannot write image %s' % dst)
+
+def imread_rgb(img_path, verbose=False):
+    img = cv2.imread(img_path)
+    frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    if verbose:
+        print('raw image ' + img_path)
+        plt.imshow(frame)
+        plt.show()
+    return frame

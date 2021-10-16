@@ -26,7 +26,7 @@
 import dlib, cv2
 import numpy as np
 import pandas as pd
-from .opencv_utils import video_iterator
+from .opencv_utils import video_iterator, imread_rgb
 from .face_tracking import TrackerList
 from .face_detector import OcvCnnFacedetector
 from .face_classifier import VGG16_LinSVM
@@ -170,17 +170,10 @@ class GenderImage(AbstractGender):
     def __init__(self, face_detector = OcvCnnFacedetector(), face_classifier=VGG16_LinSVM(), bbox_scaling=1.1, squarify=True, verbose = False):
         AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
 
-    def read_rgb(self, img_path, verbose=False):
-        img = cv2.imread(img_path)
-        frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        if verbose:
-            print('raw image ' + img_path)
-            plt.imshow(frame)
-            plt.show()
-        return frame
+
 
     def __call__(self, img_path):
-        frame = self.read_rgb(img_path, self.verbose)
+        frame = imread_rgb(img_path, self.verbose)
         return self.detect_and_classify_faces_from_frame(frame)
 
 
