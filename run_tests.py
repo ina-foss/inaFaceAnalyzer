@@ -80,6 +80,23 @@ class TestInaFaceGender(unittest.TestCase):
         self.assertEqual(ret, (457, 271, 963, 777))
         self.assertAlmostEqual(conf, 0.99964356)
 
+
+    def test_opencv_cnn_detection_2(self):
+        detector = OcvCnnFacedetector()
+        img = cv2.imread('./media/800px-India_(236650352).jpg')
+        frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        ret = detector(frame)
+        self.assertEqual(len(ret), 5)
+
+        bb, _ = detector.get_closest_face(frame, (200, 200, 500, 450))
+        self.assertAlmostEqual(bb, [246.0497784614563, 198.21387606859207, 439.4639492034912, 485.5670797228813])
+        bb, _ = detector.get_closest_face(frame, (500, 100, 700, 300), min_iou=.6)
+        self.assertAlmostEqual(bb, [501.6525077819824, 128.37764537334442, 656.5784645080566, 328.3189299106598])
+        ret = detector.get_closest_face(frame, (700, 0, 800, 200), min_iou=.1)
+        self.assertIsNone(ret)
+
+
+
     def test_video_iterator(self):
         src = './media/pexels-artem-podrez-5725953.mp4'
         self.assertEqual(len([e for e in video_iterator(src,start=10, stop=20)]), 11)

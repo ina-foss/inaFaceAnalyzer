@@ -144,12 +144,14 @@ class OcvCnnFacedetector:
 
             bbox = _rel_to_abs(bbox, w, h)
             #bbox = [e - offset for e in bbox]
-            bbox = [bbox[0] - xoffset, bbox[1] - yoffset, bbox[2] - xoffset, bbox[3] - yoffset]
-            faces_data.append((bbox, confidence))
-
             if verbose:
                 print('detected face at %s with confidence %s' % (bbox, confidence))
                 disp_frame_bblist(frame, [bbox])
+
+
+            bbox = [bbox[0] - xoffset, bbox[1] - yoffset, bbox[2] - xoffset, bbox[3] - yoffset]
+            faces_data.append((bbox, confidence))
+
 
         return faces_data
 
@@ -204,6 +206,7 @@ class OcvCnnFacedetector:
 
         liou = [intersection_over_union(f(ref_bbox), f(bbox)) for bbox, _ in lfaces]
         if verbose:
+            print([f(bb) for bb, _, in lfaces])
             print('liou', liou)
         am = np.argmax(liou)
         if liou[am] < min_iou:
