@@ -29,18 +29,15 @@ from keras_vggface import utils
 import tensorflow
 from tensorflow import keras
 from tensorflow.keras.preprocessing.image import img_to_array
-from tensorflow.keras.utils import get_file
 from .svm_utils import svm_load
 from .opencv_utils import imread_rgb
-
+from .remote_utils import get_remote
 
 # TODO: batch method should be used by default
 # __call__ should be removed in a nearby future
 
 
 class AbstractFaceClassifier:
-    url_r1 = 'https://github.com/ina-foss/inaFaceGender/releases/download/models-init/'
-    url_r2 = 'https://github.com/ina-foss/inaFaceGender/releases/download/models-init-2/'
     def imgpaths_batch(self, lfiles, batch_len=32):
         """
         images are assumed to be faces already detected, scaled, aligned, croped
@@ -60,9 +57,8 @@ class AbstractFaceClassifier:
 class Resnet50FairFaceGRA(AbstractFaceClassifier):
     input_shape = (224, 224)
     def __init__(self):
-        url = self.url_r1 + 'keras_resnet50_fairface_GRA.h5'
-        fname = get_file('keras_resnet50_fairface_GRA.h5', url)
-        m = keras.models.load_model(fname, compile=False)
+
+        m = keras.models.load_model(get_remote('keras_resnet50_fairface_GRA.h5'), compile=False)
         self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs + [m.layers[-5].output])
 
     def __call__(self, img):
@@ -102,9 +98,7 @@ class Resnet50FairFaceGRA(AbstractFaceClassifier):
 class Resnet50FairFace(AbstractFaceClassifier):
     input_shape = (224, 224)
     def __init__(self):
-        url = self.url_r1 + 'keras_resnet50_fairface.h5'
-        fname = get_file('keras_resnet50_fairface.h5', url)
-        m = keras.models.load_model(fname, compile=False)
+        m = keras.models.load_model(get_remote('keras_resnet50_fairface.h5'), compile=False)
         self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs + [m.layers[-3].output])
     def __call__(self, img):
         x = img_to_array(img)
@@ -134,9 +128,7 @@ class VGG16_LinSVM(AbstractFaceClassifier):
         self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = (224, 224, 3), pooling ='avg')
 
         # SVM trained on VG neural features
-        url = self.url_r2 + 'svm_ytf_zrezgui.hdf5'
-        fname = get_file('svm_ytf_zrezgui.hdf5', url)
-        self.gender_svm = svm_load(fname)
+        self.gender_svm = svm_load(get_remote('svm_ytf_zrezgui.hdf5'))
 
 
     def extract_features(self, img):

@@ -25,10 +25,10 @@
 
 import cv2
 import numpy as np
+from .remote_utils import get_remote
 from .opencv_utils import disp_frame_bblist
 from .face_preprocessing import _squarify_bbox
 from .face_utils import intersection_over_union
-from tensorflow.keras.utils import get_file
 
 
 def _get_opencvcnn_bbox(detections, face_idx):
@@ -95,10 +95,8 @@ class OcvCnnFacedetector:
         self.minconf = minconf
         self.paddpercent = paddpercent
 
-        url_r2 = 'https://github.com/ina-foss/inaFaceGender/releases/download/models-init-2/'
-        fpb = get_file('opencv_face_detector_uint8.pb', url_r2 + 'opencv_face_detector_uint8.pb')
-        fpbtxt = get_file('opencv_face_detector.pbtxt', url_r2 + 'opencv_face_detector.pbtxt')
-
+        fpb = get_remote('opencv_face_detector_uint8.pb')
+        fpbtxt = get_remote('opencv_face_detector.pbtxt')
         self.model = cv2.dnn.readNetFromTensorflow(fpb, fpbtxt)
 
 
