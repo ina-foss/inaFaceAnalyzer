@@ -23,12 +23,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import os
 import dlib
 import cv2
 import pylab as plt
 from .face_utils import extract_right_eye_center, extract_left_eye_center, _angle_between_2_points#, get_rotation_matrix
 import numpy as np
+from tensorflow.keras.utils import get_file
+
 
 class Dlib68FaceAlignment:
     """
@@ -47,8 +48,9 @@ class Dlib68FaceAlignment:
         verbose : boolean, optional. The default is False.
             If set to True, resulting rotated image will be displayed.
         """
-        p = os.path.dirname(os.path.realpath(__file__)) + '/models/'
-        self.model = dlib.shape_predictor(p +'shape_predictor_68_face_landmarks.dat')
+        url_r2 = 'https://github.com/ina-foss/inaFaceGender/releases/download/models-init-2/'
+        fname = get_file('shape_predictor_68_face_landmarks.dat', url_r2 + 'shape_predictor_68_face_landmarks.dat')
+        self.model = dlib.shape_predictor(fname)
         self.verbose = verbose
 
     def detect_eye_centers(self, frame, bb):
