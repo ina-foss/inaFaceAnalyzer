@@ -23,7 +23,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import dlib, cv2
+import dlib
 import numpy as np
 import pandas as pd
 from .opencv_utils import video_iterator, imread_rgb
@@ -109,8 +109,6 @@ class AbstractGender:
         self.bbox_scaling = bbox_scaling
 
         # face alignment module
-        # TODO: make a separate class
-#        self.align_predictor = dlib.shape_predictor(p +'shape_predictor_68_face_landmarks.dat')
         self.face_alignment = Dlib68FaceAlignment(verbose=verbose)
 
         # Face feature extractor from aligned and detected faces
@@ -206,8 +204,7 @@ class GenderVideo(AbstractGender):
             info (DataFrame): A Dataframe with frame and face information (coordinates, decision function, smoothed and non smoothed labels)
         """
 
-        assert (k_frames % subsamp_coeff) == 0
-
+        nb_track_frames = k_frames
 
         tl = TrackerList()
 
@@ -219,10 +216,12 @@ class GenderVideo(AbstractGender):
             tl.update(frame)
 
             # detect faces every k frames
-            if (iframe % k_frames)==0:
+            if nb_track_frames >= k_frames:
                 faces_info = self.face_detector(frame)
+                nb_track_frames = 0
 
                 tl.ingest_detection(frame, [dlib.rectangle(*[int(x) for x in e[0]]) for e in faces_info])
+            nb_track_frames += 1
 
             # process faces based on position found in trackers
             for fid in tl.d:
