@@ -166,7 +166,7 @@ class TestInaFaceGender(unittest.TestCase):
         self.assertEqual(isinstance(feats, np.ndarray), True)
         self.assertEqual(isinstance(label, str), True, label)
         self.assertEqual(isinstance(dec, np.float32), True, (dec, dec.__class__))
-        
+
     def test_single_image_multi_output(self):
         mat = np.zeros((224,224,3), dtype=np.uint8)
         c = Resnet50FairFaceGRA()
@@ -179,6 +179,14 @@ class TestInaFaceGender(unittest.TestCase):
         self.assertEqual(len(labels), 2, labels)
         self.assertEqual(len(decs), 2, decs)
 
+    def test_fairface_age_mapping(self):
+        from inaFaceGender.face_classifier import _fairface_agedec2age
+        # [(0,2), (3,9), (10,19), (20,29), (30,39), (40,49), (50,59), (60,69), (70+)]
+        # simple
+        lx = [0, 1, 2, 3]
+        ly = [1.5, 6.5, 15, 25]
+        np.testing.assert_almost_equal(ly, [_fairface_agedec2age(e) for e in lx])
+        # harder - test limits and stuffs around centers...
 
 if __name__ == '__main__':
     unittest.main()
