@@ -123,7 +123,7 @@ class Resnet50FairFace(AbstractFaceClassifier):
 # add tests
 def _fairface_agedec2age(age_dec):
     lage = [(0,2), (3,9), (10,19), (20,29), (30,39), (40,49), (50,59), (60,69), (70, 79), (80,99)]
-    if age_dec < 0:
+    if age_dec < -0.5:
         age_label = 0.
     elif int(np.round(age_dec)) > 9:
         age_label = 100.
