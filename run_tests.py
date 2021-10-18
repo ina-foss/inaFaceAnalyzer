@@ -33,7 +33,7 @@ from pandas.util.testing import assert_frame_equal, assert_series_equal
 from inaFaceGender.opencv_utils import video_iterator
 from inaFaceGender.face_detector import OcvCnnFacedetector
 import cv2
-from inaFaceGender.face_classifier import Resnet50FairFace
+from inaFaceGender.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
 
 class TestInaFaceGender(unittest.TestCase):
 
@@ -67,6 +67,12 @@ class TestInaFaceGender(unittest.TestCase):
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv',
                         dtype={'conf': np.float32})
         assert_frame_equal(ret, df, check_less_precise=True)
+
+    # TODO: update with serialized ouput!
+    def test_video_res50(self):
+        gv = GenderVideo(face_detector = OcvCnnFacedetector(paddpercent=0.), face_classifier=Resnet50FairFace())
+        ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=25)
+
 
     def test_opencv_cnn_detection(self):
         detector = OcvCnnFacedetector(paddpercent=0.)
@@ -140,6 +146,38 @@ class TestInaFaceGender(unittest.TestCase):
         with self.assertRaises(AssertionError):
             gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=25)
 
+    def test_single_image_single_output_vgg16(self):
+        mat = np.zeros((224,224,3), dtype=np.uint8)
+        c = Vggface_LSVM_YTF()
+        ret = c(mat)
+        self.assertEqual(len(ret), 3)
+        feats, label, dec = ret
+        self.assertEqual(isinstance(feats, np.ndarray), True, feats)
+        self.assertEqual(isinstance(label, str), True, label)
+        self.assertEqual(isinstance(dec, float), True, dec)
+
+
+    def test_single_image_single_output_res50(self):
+        mat = np.zeros((224,224,3), dtype=np.uint8)
+        c = Resnet50FairFace()
+        ret = c(mat)
+        self.assertEqual(len(ret), 3)
+        feats, label, dec = ret
+        self.assertEqual(isinstance(feats, np.ndarray), True)
+        self.assertEqual(isinstance(label, str), True, label)
+        self.assertEqual(isinstance(dec, np.float32), True, (dec, dec.__class__))
+        
+    def test_single_image_multi_output(self):
+        mat = np.zeros((224,224,3), dtype=np.uint8)
+        c = Resnet50FairFaceGRA()
+        ret = c(mat)
+        self.assertEqual(len(ret), 3)
+        feats, labels, decs = ret
+        self.assertEqual(isinstance(feats, np.ndarray), True)
+        self.assertEqual(isinstance(labels, tuple), True, labels)
+        self.assertEqual(isinstance(decs, tuple), True, decs)
+        self.assertEqual(len(labels), 2, labels)
+        self.assertEqual(len(decs), 2, decs)
 
 
 if __name__ == '__main__':

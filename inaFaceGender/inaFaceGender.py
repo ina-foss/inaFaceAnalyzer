@@ -29,7 +29,7 @@ import pandas as pd
 from .opencv_utils import video_iterator, imread_rgb
 from .face_tracking import TrackerList
 from .face_detector import OcvCnnFacedetector
-from .face_classifier import VGG16_LinSVM
+from .face_classifier import Vggface_LSVM_YTF
 from .face_alignment import Dlib68FaceAlignment
 from .face_preprocessing import preprocess_face
 
@@ -109,7 +109,7 @@ class AbstractGender:
         self.bbox_scaling = bbox_scaling
 
         # face alignment module
-        self.face_alignment = Dlib68FaceAlignment(verbose=verbose)
+        self.face_alignment = Dlib68FaceAlignment()
 
         # Face feature extractor from aligned and detected faces
         self.classifier = face_classifier
@@ -126,14 +126,11 @@ class AbstractGender:
         face_img, bbox = preprocess_face(frame, bbox, bbox_square, bbox_scale, bbox_norm, self.face_alignment, (224, 224), self.verbose)
 
         feats, label, decision_value = self.classifier(face_img)
-        ret = [feats, bbox, label, decision_value]
+        ret = [feats, bbox, label, decision_value]        
 
         return ret
 
     def detect_and_classify_faces_from_frame(self, frame):
-        if self.verbose:
-            plt.imshow(frame)
-            plt.show()
         ret = []
         for bb, detect_conf in self.face_detector(frame):
             if self.verbose:
@@ -151,7 +148,7 @@ class AbstractGender:
 
         batch = lbatch[:self.batch_len]
 
-        feats, labels, decision_values = self.classifier.batch([e[3] for e in batch])
+        feats, labels, decision_values = self.classifier([e[3] for e in batch])
         info = []
         for i, (iframe, _, detect_conf, _, bbox) in enumerate(batch):
             info.append((iframe, bbox, labels[i], decision_values[i], detect_conf))
@@ -165,7 +162,7 @@ class AbstractGender:
 
 
 class GenderImage(AbstractGender):
-    def __init__(self, face_detector = OcvCnnFacedetector(), face_classifier=VGG16_LinSVM(), bbox_scaling=1.1, squarify=True, verbose = False):
+    def __init__(self, face_detector = OcvCnnFacedetector(), face_classifier=Vggface_LSVM_YTF(), bbox_scaling=1.1, squarify=True, verbose = False):
         AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
 
 
@@ -186,7 +183,7 @@ class GenderVideo(AbstractGender):
         vgg_feature_extractor: VGGFace neural model used for feature extraction.
         threshold: quality of face detection considered acceptable, value between 0 and 1.
     """
-    def __init__(self, face_detector = OcvCnnFacedetector(), face_classifier=VGG16_LinSVM(), bbox_scaling=1.1, squarify=True, verbose = False):
+    def __init__(self, face_detector = OcvCnnFacedetector(), face_classifier=Vggface_LSVM_YTF(), bbox_scaling=1.1, squarify=True, verbose = False):
         AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
 
     # TODO: BUILD A SEPARATE CLASS FOR DETECTION+TRACKING
