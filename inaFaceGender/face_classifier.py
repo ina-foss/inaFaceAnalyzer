@@ -24,6 +24,7 @@
 # THE SOFTWARE.
 
 import numpy as np
+import numbers
 from keras_vggface.vggface import VGGFace
 from keras_vggface import utils
 import tensorflow
@@ -119,18 +120,21 @@ class Resnet50FairFace(AbstractFaceClassifier):
         labels = ['m' if e > 0 else 'f' for e in decisions]
         return feats, labels, decisions
 
-# TODO: process vector instead of single element
-# add tests
+
 def _fairface_agedec2age(age_dec):
-    lage = [(0,2), (3,9), (10,19), (20,29), (30,39), (40,49), (50,59), (60,69), (70, 79), (80,99)]
-    if age_dec < -0.5:
-        age_label = 0.
-    elif int(np.round(age_dec)) > 9:
-        age_label = 100.
-    else:
-        start, stop = lage[int(np.round(age_dec))]
-        mean = (start + stop + 1) / 2.
-        age_label = mean + (age_dec - np.round(age_dec)) * (stop -start+1)
+    ages = np.array([(0,2), (3,9), (10,19), (20,29), (30,39), (40,49), (50,59), (60,69), (70, 79), (80,99)])
+    ages_mean = (np.sum(ages, axis=1) + 1) / 2.
+    ages_range = ages[:, 1] - ages[:, 0] +1
+
+    if isinstance(age_dec, numbers.Number):
+        age_dec = np.array([age_dec], dtype=np.float32)
+
+    age_dec = np.array(age_dec)
+    age_dec[age_dec <= -.5] = -.499999999
+    age_dec[age_dec >= 9.5] = 9.499999999
+    idec = np.round(age_dec).astype(np.int32)
+
+    age_label = ages_mean[idec] + (age_dec - idec) * ages_range[idec]
     return age_label
 
 class Resnet50FairFaceGRA(Resnet50FairFace):

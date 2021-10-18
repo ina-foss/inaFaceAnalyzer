@@ -184,16 +184,16 @@ class TestInaFaceGender(unittest.TestCase):
         # [(0,2), (3,9), (10,19), (20,29), (30,39), (40,49), (50,59), (60,69), (70+)]
         # simple
         x = [0, 1, 2, 3, 9]
-        y = [1.5, 6.5, 15, 25, 90]
-        np.testing.assert_almost_equal(y, [_fairface_agedec2age(e) for e in x])
+        y = np.array([1.5, 6.5, 15, 25, 90])
+        np.testing.assert_almost_equal(y, _fairface_agedec2age(x))
         # test limits
         x = [-1, -0.5, 9.5, 11]
         y = [0, 0, 100, 100]
-        np.testing.assert_almost_equal(y, [_fairface_agedec2age(e) for e in x])
+        np.testing.assert_almost_equal(y, _fairface_agedec2age(x))
         # harder - stuffs around centers...
         x = [-1/3./2, 4.5]
         y = [1, 40]
-        np.testing.assert_almost_equal(y, [_fairface_agedec2age(e) for e in x])
+        np.testing.assert_almost_equal(y, _fairface_agedec2age(x))
 
 if __name__ == '__main__':
     unittest.main()
