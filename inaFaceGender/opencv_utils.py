@@ -27,7 +27,7 @@
 import cv2
 import pylab as plt
 
-def video_iterator(src, time_unit='frame', start=None, stop=None, subsamp_coeff=1):
+def video_iterator(src, time_unit='frame', start=None, stop=None, subsamp_coeff=1, verbose=False):
 
     # cv2.CAP_PROP_POS_MSEC property was not used because it is buggy
 
@@ -67,7 +67,14 @@ def video_iterator(src, time_unit='frame', start=None, stop=None, subsamp_coeff=
 
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        yield cap.get(cv2.CAP_PROP_POS_FRAMES) - 1, frame
+        iframe = cap.get(cv2.CAP_PROP_POS_FRAMES) - 1
+
+        if verbose:
+            print('frame ', iframe)
+            plt.imshow(frame)
+            plt.show()
+
+        yield iframe, frame
 
     cap.release()
 

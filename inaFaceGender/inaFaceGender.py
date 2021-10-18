@@ -81,7 +81,7 @@ class AbstractGender:
     images, videos, with/without tracking
     """
     batch_len = 32
-    # TODO : add squarify bbox option ???
+
     def __init__(self, face_detector, face_classifier, bbox_scaling, squarify_bbox, verbose):
         """
         Constructor
@@ -98,7 +98,6 @@ class AbstractGender:
         verbose : boolean
             If True, will display several usefull intermediate images and results
         """
-        #p = os.path.dirname(os.path.realpath(__file__)) + '/models/'
         # face detection system
         self.face_detector = face_detector
 
@@ -126,7 +125,7 @@ class AbstractGender:
         face_img, bbox = preprocess_face(frame, bbox, bbox_square, bbox_scale, bbox_norm, self.face_alignment, (224, 224), self.verbose)
 
         feats, label, decision_value = self.classifier(face_img)
-        ret = [feats, bbox, label, decision_value]        
+        ret = [feats, bbox, label, decision_value]
 
         return ret
 
@@ -208,7 +207,7 @@ class GenderVideo(AbstractGender):
         info = []
         lbatch = []
 
-        for iframe, frame in video_iterator(video_path,subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0)):
+        for iframe, frame in video_iterator(video_path,subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
 
             tl.update(frame)
 
@@ -262,11 +261,7 @@ class GenderVideo(AbstractGender):
         info = []
         lbatch = []
 
-        for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0)):
-            if self.verbose:
-                print('frame ', iframe)
-                plt.imshow(frame)
-                plt.show()
+        for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
 
             for bb, detect_conf in self.face_detector(frame):
                 if self.verbose:
@@ -291,7 +286,7 @@ class GenderVideo(AbstractGender):
         lret = []
         lfeat = []
 
-        for (iframe, frame), bbox in zip(video_iterator(vidsrc, subsamp_coeff=subsamp_coeff, start=start_frame),lbox):
+        for (iframe, frame), bbox in zip(video_iterator(vidsrc, subsamp_coeff=subsamp_coeff, start=start_frame, verbose=self.verbose),lbox):
             if self.verbose:
                 print('iframe: %s, bbox: %s' % (iframe, bbox))
 
