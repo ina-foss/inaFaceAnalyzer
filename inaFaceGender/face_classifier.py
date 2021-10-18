@@ -178,3 +178,14 @@ class VGG16_LinSVM(AbstractFaceClassifier):
         decision = self.gender_svm.decision_function(feats)
         labels = [self.gender_svm.classes_[1 if x > 0 else 0] for x in decision]
         return feats, labels, decision
+
+
+class OxfordVGG16_FairFace_LinSVM(VGG16_LinSVM):
+    input_shape = (224,224)
+    def __init__(self):
+
+        # Face feature extractor from aligned and detected faces
+        self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = (224, 224, 3), pooling ='avg')
+
+        # SVM trained on VG neural features
+        self.gender_svm = svm_load(get_remote('svm_vgg16_fairface.hdf5'))

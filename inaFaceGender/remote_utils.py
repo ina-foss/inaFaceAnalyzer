@@ -43,8 +43,10 @@ dmodels = {
     # Resnet50 architectures trained on FairFace database
     'keras_resnet50_fairface_GRA.h5' : url_r1,
     'keras_resnet50_fairface.h5' : url_r1,
-    # linear SVM trained on VGG16 face embeddings
-    'svm_ytf_zrezgui.hdf5': url_r2
+    # linear SVM trained on Youtube Faces VGG16 face embeddings
+    'svm_ytf_zrezgui.hdf5': url_r2,
+    # linear SVM trained on FairFace VGG 16 embeddings
+    'svm_vgg16_fairface.hdf5': url_r2,
     }
 
 
