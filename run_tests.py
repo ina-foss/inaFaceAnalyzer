@@ -183,10 +183,17 @@ class TestInaFaceGender(unittest.TestCase):
         from inaFaceGender.face_classifier import _fairface_agedec2age
         # [(0,2), (3,9), (10,19), (20,29), (30,39), (40,49), (50,59), (60,69), (70+)]
         # simple
-        lx = [0, 1, 2, 3]
-        ly = [1.5, 6.5, 15, 25]
-        np.testing.assert_almost_equal(ly, [_fairface_agedec2age(e) for e in lx])
-        # harder - test limits and stuffs around centers...
+        x = [0, 1, 2, 3, 9]
+        y = [1.5, 6.5, 15, 25, 90]
+        np.testing.assert_almost_equal(y, [_fairface_agedec2age(e) for e in x])
+        # test limits
+        x = [-1, -0.5, 9.5, 11]
+        y = [0, 0, 100, 100]
+        np.testing.assert_almost_equal(y, [_fairface_agedec2age(e) for e in x])
+        # harder - stuffs around centers...
+        x = [4.5]
+        y = [40]
+        np.testing.assert_almost_equal(y, [_fairface_agedec2age(e) for e in x])
 
 if __name__ == '__main__':
     unittest.main()

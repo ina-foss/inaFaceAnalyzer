@@ -38,7 +38,7 @@ from .remote_utils import get_remote
 # this may require additional refactoring
 
 class AbstractFaceClassifier:
-    
+
     ## SOON/ALREADY DEPRECATED
     def imgpaths_batch(self, lfiles, batch_len=32):
         """
@@ -53,15 +53,15 @@ class AbstractFaceClassifier:
         labels = [lab for e in lret for lab in e[1]]
         decisions = [dec for e in lret for dec in e[2]]
         return feats, labels, decisions
-    
+
     def __call__(self, limg):
-        """      
+        """
         Classify a list of images
         images are supposed to be preprocessed faces: aligned, cropped
         Parameters
         ----------
         limg : list of images, a single image can also be used
-        
+
         Returns
         -------
         feats :
@@ -71,19 +71,19 @@ class AbstractFaceClassifier:
         decision_value : float
             decision function value (negative for female, positive for male)
         """
-        
+
         if isinstance(limg, list):
             islist = True
         else:
             islist = False
             limg = [limg]
-        
+
         assert np.all([e.shape == self.input_shape for e in limg])
         feats, labels, decisions = self.inference(self.list2batch(limg))
-        
+
         if islist:
             return feats, labels, decisions
-        
+
         #print('call', labels, labels[0])
         if isinstance(labels, tuple):
             labels = tuple([e[0] for e in labels])
@@ -111,7 +111,7 @@ class Resnet50FairFace(AbstractFaceClassifier):
     def list2batch(self, limg):
         x = np.concatenate([np.expand_dims(img_to_array(e), axis=0) for e in limg])
         return tensorflow.keras.applications.resnet50.preprocess_input(x)
-    
+
     def inference(self, x):
         decisions, feats = self.model.predict(x)
         decisions = decisions.ravel()
@@ -122,7 +122,7 @@ class Resnet50FairFace(AbstractFaceClassifier):
 # TODO: process vector instead of single element
 # add tests
 def _fairface_agedec2age(age_dec):
-    lage = [(0,2), (3,9), (10,19), (20,29), (30,39), (40,49), (50,59), (60,69), (70, 89), (90,99)]
+    lage = [(0,2), (3,9), (10,19), (20,29), (30,39), (40,49), (50,59), (60,69), (70, 79), (80,99)]
     if age_dec < 0:
         age_label = 0.
     elif int(np.round(age_dec)) > 9:
@@ -141,12 +141,12 @@ class Resnet50FairFaceGRA(Resnet50FairFace):
 
     def inference(self, x):
         gender, _, age, feats = self.model.predict(x)
-        
+
         # TODO gender stuffs - similar to mother class => factorize
         gender_dec = gender.ravel()
         assert(len(gender_dec) == len(x))
         gender_labels = ['m' if e > 0 else 'f' for e in gender_dec]
-        
+
         age_dec = age.ravel()
         age_labels = [_fairface_agedec2age(e) for e in age_dec]
 
@@ -164,7 +164,7 @@ class OxfordVggFace(AbstractFaceClassifier):
 
     def list2batch(self, limg):
         """
-        
+
         returns VGG16 Features
         limg is a list of preprocessed images supposed to be aligned and cropped and resized to 224*224
         """
