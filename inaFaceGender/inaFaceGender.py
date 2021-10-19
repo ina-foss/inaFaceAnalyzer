@@ -139,14 +139,22 @@ class AbstractGender:
                 print()
         return ret
 
+
+    # THIS METHOD SHOULD BE REMOVED IN A NEAR FUTRE
+    # it is removed in __call__
+    # it should be now removed in detect with tracking
     def process_batch(self, lbatch):
+        # TODO: is it possible to provide only list of images ???
         # lbatch cpontains tuples (iframe, bb (original bounding box), detect_conf, face_img, bbox)
 
+        # TODO : Batch should be already set to its size of max batchlen
         batch = lbatch[:self.batch_len]
+
 
         classif_ret = self.classifier([e[3] for e in batch])
         classif_desc = ','.join(self.classifier.outnames[1:])
 
+        # TO BE DONE OUTSIDE
         info = []
         for i, (iframe, _, detect_conf, _, bbox) in enumerate(batch):
             info.append((iframe, bbox, *[e[i] for e in classif_ret[1:]], detect_conf))
@@ -155,6 +163,8 @@ class AbstractGender:
                 last = info[-1]
                 print(*last)
                 print()
+
+        # TODO : should not return the updated batch....
         return lbatch[self.batch_len:], info
 
 
@@ -237,7 +247,7 @@ class GenderVideo(AbstractGender):
 
 
 
-        track_res = pd.DataFrame.from_records(info, columns = ['frame', 'faceid', 'bb','label', 'decision']) #, 'conf'])
+        track_res = pd.DataFrame.from_records(info, columns = ['frame', 'bb', 'faceid', 'label', 'decision']) #, 'conf'])
         info = _smooth_labels(track_res)
 
         return info
@@ -257,9 +267,13 @@ class GenderVideo(AbstractGender):
             info: A Dataframe with frame and face information (coordinates, decision function,labels..)
         """
 
-        info = []
-        lbatch = []
+
         oshape = self.classifier.input_shape[:-1]
+        classif_desc = ','.join(self.classifier.outnames[1:])
+
+        info = []
+        lbatch_img = []
+        lbatch_info = []
 
         for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
 
@@ -269,19 +283,29 @@ class GenderVideo(AbstractGender):
 
 
                 face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, True, self.face_alignment, oshape, self.verbose)
-                lbatch.append((iframe, bb, detect_conf, face_img, bbox))
 
-            while len(lbatch) > self.batch_len:
-                lbatch, tmpinfo = self.process_batch(lbatch)
-                info += tmpinfo
+                #lbatch.append((iframe, bb, detect_conf, face_img, bbox))
+                lbatch_info.append([iframe, bbox, detect_conf])
+                lbatch_img.append(face_img)
 
-        while len(lbatch) > 0:
-            lbatch, tmpinfo = self.process_batch(lbatch)
-            info += tmpinfo
+            while len(lbatch_img) > self.batch_len:
+                #lbatch, tmpinfo = self.process_batch(lbatch)
+                #info += tmpinfo
+                classif_ret = self.classifier(lbatch_img[:self.batch_len])[1:]
+                for i in range(self.batch_len):
+                    # TODO: its dirty to put face confidence at the end, its for test retro compatibility
+                    info.append(lbatch_info[i][:-1] + [e[i] for e in classif_ret] + [lbatch_info[i][-1]])
+                lbatch_img = lbatch_img[self.batch_len:]
+                lbatch_info = lbatch_info[self.batch_len:]
 
-
-        info = pd.DataFrame.from_records(info, columns = ['frame', 'bb'] + self.classifier.outnames[1:]  + ['conf'])
-        return info
+        if len(lbatch_img) > 0:
+            #lbatch, tmpinfo = self.process_batch(lbatch)
+            #info += tmpinfo
+            classif_ret = self.classifier(lbatch_img)[1:]
+            for i in range(len(lbatch_img)):
+                info.append(lbatch_info[i][:-1] + [e[i] for e in classif_ret] + [lbatch_info[i][-1]])
+        # todo : rename conf in face_detection_conf
+        return pd.DataFrame.from_records(info, columns = ['frame', 'bb'] + self.classifier.outnames[1:] + ['conf'])
 
     def pred_from_vid_and_bblist(self, vidsrc, lbox, subsamp_coeff=1, start_frame=0):
         lret = []
