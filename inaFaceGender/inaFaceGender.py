@@ -114,7 +114,7 @@ class AbstractGender:
 
 
 
-
+    #TODO : test in multi output
     def classif_from_frame_and_bbox(self, frame, bbox, bbox_square, bbox_scale, bbox_norm):
 
         oshape = self.classifier.input_shape[:-1]
@@ -144,14 +144,16 @@ class AbstractGender:
 
         batch = lbatch[:self.batch_len]
 
-        feats, labels, decision_values = self.classifier([e[3] for e in batch])
+        classif_ret = self.classifier([e[3] for e in batch])
+        classif_desc = ','.join(self.classifier.outnames[1:])
+
         info = []
         for i, (iframe, _, detect_conf, _, bbox) in enumerate(batch):
-            info.append((iframe, bbox, labels[i], decision_values[i], detect_conf))
+            info.append((iframe, bbox, *[e[i] for e in classif_ret[1:]], detect_conf))
             if self.verbose:
-                print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function, face detection confidence')
+                print('iframe, bounding box (x1, y1, x2, y2), %s, face detection confidence' % batch_desc)
                 last = info[-1]
-                print(last[1], last[2], last[3], last[4])
+                print(*last)
                 print()
         return lbatch[self.batch_len:], info
 
@@ -277,7 +279,8 @@ class GenderVideo(AbstractGender):
             lbatch, tmpinfo = self.process_batch(lbatch)
             info += tmpinfo
 
-        info = pd.DataFrame.from_records(info, columns = ['frame', 'bb','label', 'decision', 'conf'])
+
+        info = pd.DataFrame.from_records(info, columns = ['frame', 'bb'] + self.classifier.outnames[1:]  + ['conf'])
         return info
 
     def pred_from_vid_and_bblist(self, vidsrc, lbox, subsamp_coeff=1, start_frame=0):
@@ -294,8 +297,8 @@ class GenderVideo(AbstractGender):
             lfeat.append(ret[0])
 
             if self.verbose:
-                print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function')
+                print('bounding box (x1, y1, x2, y2),' + ','.join(self.classifier.outnames[1:]))
                 print(lret[-1])
                 print()
         assert len(lret) == len(lbox), '%d bounding box provided, and only %d frames processed' % (len(lbox), len(lret))
-        return np.concatenate(lfeat), pd.DataFrame.from_records(lret, columns=['bb', 'label', 'decision'])
+        return np.concatenate(lfeat), pd.DataFrame.from_records(lret, columns=['bb']+ self.classifier.outnames[1:])

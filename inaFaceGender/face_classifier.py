@@ -110,6 +110,8 @@ class AbstractFaceClassifier:
 
 class Resnet50FairFace(AbstractFaceClassifier):
     input_shape = (224, 224, 3)
+    outnames = ['bottleneck_face_feats', 'sex_label', 'sex_decision_function']
+
     def __init__(self):
         m = keras.models.load_model(get_remote('keras_resnet50_fairface.h5'), compile=False)
         self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs + [m.layers[-3].output])
@@ -143,7 +145,7 @@ def _fairface_agedec2age(age_dec):
     return age_label.astype(np.float32)
 
 class Resnet50FairFaceGRA(Resnet50FairFace):
-
+    outnames = ['bottleneck_face_feats', 'sex_label', 'age_label', 'sex_decision_function', 'age_decision_function']
     def __init__(self):
         m = keras.models.load_model(get_remote('keras_resnet50_fairface_GRA.h5'), compile=False)
         self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs + [m.layers[-5].output])
@@ -164,6 +166,8 @@ class Resnet50FairFaceGRA(Resnet50FairFace):
 
 class OxfordVggFace(AbstractFaceClassifier):
     input_shape = (224, 224, 3)
+    outnames = ['face_embeddings', 'sex_label', 'sex_decision_function']
+
     def __init__(self, hdf5_svm=None):
         # Face feature extractor from aligned and detected faces
         self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = self.input_shape, pooling ='avg')

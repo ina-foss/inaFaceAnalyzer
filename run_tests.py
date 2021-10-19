@@ -31,7 +31,7 @@ import cv2
 import tensorflow as tf
 from inaFaceGender.inaFaceGender import GenderVideo, GenderImage
 from inaFaceGender.face_preprocessing import _norm_bbox, _squarify_bbox
-from pandas.util.testing import assert_frame_equal, assert_series_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 from inaFaceGender.opencv_utils import video_iterator
 from inaFaceGender.face_detector import OcvCnnFacedetector
 from inaFaceGender.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
@@ -141,8 +141,25 @@ class TestIFG(unittest.TestCase):
         _, retdf = gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=25)
         self.assertEqual(len(retdf), len(lbbox))
         self.assertEqual(list(retdf.bb), lbbox)
-        self.assertEqual(list(retdf.label), list(df.label))
-        assert_series_equal(retdf.decision, df.decision, check_less_precise=True)
+        self.assertEqual(list(retdf.sex_label), list(df.sex_label))
+        assert_series_equal(retdf.sex_decision_function, df.sex_decision_function, rtol=.01)
+
+    def test_pred_from_vid_and_bblist_multioutput(self):
+        gv = GenderVideo(bbox_scaling=1, squarify=False, face_classifier=Resnet50FairFaceGRA())
+        df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv')
+        # this method read a single face per frame
+        df = df.drop_duplicates(subset='frame').reset_index()
+        lbbox = list(df.bb.map(eval))
+        _, retdf = gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=25)
+        self.assertEqual(len(retdf), len(lbbox))
+        self.assertEqual(list(retdf.bb), lbbox)
+        # in theory should be the same - even if it was obtained with a different NN
+        self.assertEqual(list(retdf.sex_label), list(df.sex_label))
+        # will require to gen a new reference csv
+        assert_series_equal(retdf.sex_decision_function, df.sex_decision_function, rtol=.01)
+        # todo: check the values of the remaining outputs ??
+        assert False
+
 
     def test_pred_from_vid_and_bblist_res50(self):
         gv = GenderVideo(bbox_scaling=1, squarify=False, face_classifier=Resnet50FairFace())
