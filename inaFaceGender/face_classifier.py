@@ -40,19 +40,29 @@ from .remote_utils import get_remote
 
 class AbstractFaceClassifier:
 
-    ## SOON/ALREADY DEPRECATED
+    ## SOON/ALREADY DEPRECATED => NO: put in tests
+    # Keras trick for async READ ?
+    # return dict or result object ?
+
+    # bench execution time : time spent in read/exce . CPU vs GPU
+    # use a Keras sequence feature extraction method ??
     def imgpaths_batch(self, lfiles, batch_len=32):
         """
         images are assumed to be faces already detected, scaled, aligned, croped
         """
         lret = []
-        while lfiles:
-            limg = [imread_rgb(e) for e in lfiles[:batch_len]]
-            lfiles = lfiles[batch_len:]
-            lret.append(self.batch(limg))
+
+        for i in range(0, len(lfiles), batch_len):
+            xbatch = [imread_rgb(e) for e in lfiles[i:(i+batch_len)]]
+            lret.append(self(xbatch))
+
         feats = np.concatenate([e[0] for e in lret])
+
+        # FIXME HERE WITH multiple outputs!
+        #print(lret)
         labels = [lab for e in lret for lab in e[1]]
         decisions = [dec for e in lret for dec in e[2]]
+
         return feats, labels, decisions
 
     def __call__(self, limg):
@@ -152,7 +162,7 @@ class Resnet50FairFaceGRA(Resnet50FairFace):
         gender_labels = ['m' if e > 0 else 'f' for e in gender_dec]
 
         age_dec = age.ravel()
-        age_labels = [_fairface_agedec2age(e) for e in age_dec]
+        age_labels = _fairface_agedec2age(age_dec)
 
         return feats, (gender_labels, age_labels), (gender_dec, age_dec)
 

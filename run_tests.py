@@ -195,5 +195,21 @@ class TestInaFaceGender(unittest.TestCase):
         y = [1, 40]
         np.testing.assert_almost_equal(y, _fairface_agedec2age(x))
 
+    def test_imgpaths_batch_singleoutput(self):
+        c = Vggface_LSVM_YTF()
+        f, l, d = c.imgpaths_batch(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], batch_len=2)
+        self.assertSequenceEqual(['f', 'm', 'f'], l)
+        np.testing.assert_almost_equal([-3.188615592113755, 6.73106888068079, -3.1886155921137544], d)
+
+    def test_imgpaths_batch_multioutput(self):
+        c = Resnet50FairFaceGRA()
+        f, l, d = c.imgpaths_batch(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], batch_len=2)
+#[['f', 'm'], array([25.72336197, 61.89072609]), ['f'], array([25.7233572])],
+# [array([-5.632368 ,  7.2553654], dtype=float32),
+#  array([3.0723362, 6.6890726], dtype=float32),
+#  array([-5.632365], dtype=float32),
+#  array([3.0723357], dtype=float32)])
+        self.assertEqual(True, False, 'not yet implemented')
+
 if __name__ == '__main__':
     unittest.main()

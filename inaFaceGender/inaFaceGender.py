@@ -33,11 +33,6 @@ from .face_classifier import Vggface_LSVM_YTF
 from .face_alignment import Dlib68FaceAlignment
 from .face_preprocessing import preprocess_face
 
-from matplotlib import pyplot as plt
-
-
-
-
 
 
 def info2csv(df, csv_path):
