@@ -3,10 +3,10 @@ All files here have a creative common license
 1546923312_7cc94957e8_o.jpg
 From https://www.flickr.com/photos/9518198@N04/1546923312
 
-Europa21_-_2.jpg
+Europa21_-_2.jpg and diallo224.jpg
 From https://commons.wikimedia.org/wiki/File:Europa21_-_2.jpg
 
-20091020222328!KnuthAtOpenContentAlliance.jpg
+20091020222328!KnuthAtOpenContentAlliance.jpg and knuth224.jpg
 From https://commons.wikimedia.org/wiki/File:KnuthAtOpenContentAlliance.jpg
 
 
