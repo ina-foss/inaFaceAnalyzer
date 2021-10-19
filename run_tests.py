@@ -72,7 +72,7 @@ class TestIFG(unittest.TestCase):
         ret.bb = ret.bb.map(str)
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv',
                         dtype={'conf': np.float32})
-        assert_frame_equal(ret, df, check_less_precise=True)
+        assert_frame_equal(ret, df, rtol=.01)
 
     # TODO: update with serialized ouput!
     def test_video_res50(self):
@@ -172,7 +172,7 @@ class TestIFG(unittest.TestCase):
         self.assertEqual(list(retdf.bb), lbbox)
         # TODO : get test content
         #self.assertEqual(list(retdf.label), list(df.label))
-        #assert_series_equal(retdf.decision, df.decision, check_less_precise=True)
+        #assert_series_equal(retdf.decision, df.decision, rtol=.01)
 
 
 
