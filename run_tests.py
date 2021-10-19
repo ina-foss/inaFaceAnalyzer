@@ -200,7 +200,7 @@ class TestIFG(unittest.TestCase):
         c = Vggface_LSVM_YTF()
         f, l, d = c.imgpaths_batch(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], batch_len=2)
         self.assertSequenceEqual(['f', 'm', 'f'], l)
-        np.testing.assert_almost_equal([-3.188615592113755, 6.73106888068079, -3.1886155921137544], d)
+        np.testing.assert_almost_equal([-3.1886155, 6.7310688, -3.1886155], d, decimal=5)
 
     def test_imgpaths_batch_multioutput(self):
         c = Resnet50FairFaceGRA()

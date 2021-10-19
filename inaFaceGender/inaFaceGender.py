@@ -117,7 +117,9 @@ class AbstractGender:
 
     def classif_from_frame_and_bbox(self, frame, bbox, bbox_square, bbox_scale, bbox_norm):
 
-        face_img, bbox = preprocess_face(frame, bbox, bbox_square, bbox_scale, bbox_norm, self.face_alignment, (224, 224), self.verbose)
+        oshape = self.classifier.input_shape[:-1]
+        fa, vrb = (self.face_alignment, self.verbose)
+        face_img, bbox = preprocess_face(frame, bbox, bbox_square, bbox_scale, bbox_norm, fa, oshape, vrb)
 
         feats, label, decision_value = self.classifier(face_img)
         ret = [feats, bbox, label, decision_value]
@@ -194,7 +196,7 @@ class GenderVideo(AbstractGender):
         Returns:
             info (DataFrame): A Dataframe with frame and face information (coordinates, decision function, smoothed and non smoothed labels)
         """
-
+        oshape = self.classifier.input_shape[:-1]
         nb_track_frames = k_frames
 
         tl = TrackerList()
@@ -219,7 +221,7 @@ class GenderVideo(AbstractGender):
                 bb = tl.d[fid].t.get_position()
                 bb = (bb.left(), bb.top(), bb.right(), bb.bottom())
 
-                face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, True, self.face_alignment, (224, 224), self.verbose)
+                face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, True, self.face_alignment, oshape, self.verbose)
                 lbatch.append((iframe, bb, fid, face_img, bbox)) # add detect/track confidence
 
 
@@ -255,6 +257,7 @@ class GenderVideo(AbstractGender):
 
         info = []
         lbatch = []
+        oshape = self.classifier.input_shape[:-1]
 
         for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
 
@@ -263,7 +266,7 @@ class GenderVideo(AbstractGender):
                     print('bbox: %s, conf: %f' % (bb, detect_conf))
 
 
-                face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, True, self.face_alignment, (224, 224), self.verbose)
+                face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, True, self.face_alignment, oshape, self.verbose)
                 lbatch.append((iframe, bb, detect_conf, face_img, bbox))
 
             while len(lbatch) > self.batch_len:
