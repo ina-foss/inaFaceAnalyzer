@@ -27,15 +27,21 @@
 import unittest
 import pandas as pd
 import numpy as np
+import cv2
+import tensorflow as tf
 from inaFaceGender.inaFaceGender import GenderVideo, GenderImage
 from inaFaceGender.face_preprocessing import _norm_bbox, _squarify_bbox
 from pandas.util.testing import assert_frame_equal, assert_series_equal
 from inaFaceGender.opencv_utils import video_iterator
 from inaFaceGender.face_detector import OcvCnnFacedetector
-import cv2
 from inaFaceGender.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
 
+
 class TestIFG(unittest.TestCase):
+
+    def tearDown(self):
+        tf.keras.backend.clear_session()
+
 
     def test_image_all_diallo(self):
         gi = GenderImage(face_detector = OcvCnnFacedetector(paddpercent=0.))
@@ -70,8 +76,24 @@ class TestIFG(unittest.TestCase):
 
     # TODO: update with serialized ouput!
     def test_video_res50(self):
-        gv = GenderVideo(face_detector = OcvCnnFacedetector(paddpercent=0.), face_classifier=Resnet50FairFace())
+        gv = GenderVideo(face_classifier=Resnet50FairFace())
         ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=25)
+
+    # TODO: update with serialized ouput!
+    def test_videocall_multioutput(self):
+        gv = GenderVideo(face_classifier=Resnet50FairFaceGRA())
+        ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=25)
+
+    # TODO: update with serialized ouput!
+    def test_tracking_nofail_singleoutput(self):
+        gv = GenderVideo(face_classifier=Vggface_LSVM_YTF())
+        ret = gv.detect_with_tracking('./media/pexels-artem-podrez-5725953.mp4', k_frames=5, subsamp_coeff=25)
+
+    # TODO: update with serialized ouput!
+    def test_tracking_nofail_multioutput(self):
+        gv = GenderVideo(face_classifier=Resnet50FairFaceGRA())
+        ret = gv.detect_with_tracking('./media/pexels-artem-podrez-5725953.mp4', k_frames=5, subsamp_coeff=25)
+
 
 
     def test_opencv_cnn_detection(self):
