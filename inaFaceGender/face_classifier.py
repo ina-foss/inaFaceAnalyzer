@@ -40,30 +40,35 @@ from .remote_utils import get_remote
 
 class AbstractFaceClassifier:
 
-    ## SOON/ALREADY DEPRECATED => NO: put in tests
     # Keras trick for async READ ?
-    # return dict or result object ?
-
     # bench execution time : time spent in read/exce . CPU vs GPU
-    # use a Keras sequence feature extraction method ??
     def imgpaths_batch(self, lfiles, batch_len=32):
         """
         images are assumed to be faces already detected, scaled, aligned, croped
         """
-        lret = []
+        assert len(lfiles) > 0
+
+        lbatchret = []
 
         for i in range(0, len(lfiles), batch_len):
             xbatch = [imread_rgb(e) for e in lfiles[i:(i+batch_len)]]
-            lret.append(self(xbatch))
+            lbatchret.append(self(xbatch))
 
-        feats = np.concatenate([e[0] for e in lret])
+        lenb = len(lbatchret[0])
+        assert all(len(e) == lenb for e in lbatchret)
 
-        # FIXME HERE WITH multiple outputs!
-        #print(lret)
-        labels = [lab for e in lret for lab in e[1]]
-        decisions = [dec for e in lret for dec in e[2]]
-
-        return feats, labels, decisions
+        lret = []
+        for i in range(lenb):
+            li = [e[i] for e in lbatchret]
+            ti = type(li[0])
+            assert all(type(e) == ti for e in li)
+            if ti == np.ndarray:
+                lret.append(np.concatenate(li))
+            elif ti == list:
+                lret.append([e for lis in li for e in lis])
+            else:
+                raise NotImplementedError(ti)
+        return tuple(lret)
 
     def __call__(self, limg):
         """
@@ -90,21 +95,11 @@ class AbstractFaceClassifier:
             limg = [limg]
 
         assert np.all([e.shape == self.input_shape for e in limg])
-        feats, labels, decisions = self.inference(self.list2batch(limg))
+        batch_ret = self.inference(self.list2batch(limg))
 
         if islist:
-            return feats, labels, decisions
-
-        #print('call', labels, labels[0])
-        if isinstance(labels, tuple):
-            labels = tuple([e[0] for e in labels])
-        else:
-            labels = labels[0]
-        if isinstance(decisions, tuple):
-            decisions = tuple([e[0] for e in decisions])
-        else:
-            decisions = decisions[0]
-        return feats[0], labels, decisions
+            return batch_ret
+        return [e[0] for e in batch_ret]
 
     def list2batch(self, limg):
         raise NotImplementedError()
@@ -132,20 +127,20 @@ class Resnet50FairFace(AbstractFaceClassifier):
 
 
 def _fairface_agedec2age(age_dec):
-    ages = np.array([(0,2), (3,9), (10,19), (20,29), (30,39), (40,49), (50,59), (60,69), (70, 79), (80,99)])
+    ages = np.array([(0,2), (3,9), (10,19), (20,29), (30,39), (40,49), (50,59), (60,69), (70, 79), (80,99)], dtype=np.float32)
     ages_mean = (np.sum(ages, axis=1) + 1) / 2.
     ages_range = ages[:, 1] - ages[:, 0] +1
 
     if isinstance(age_dec, numbers.Number):
-        age_dec = np.array([age_dec], dtype=np.float32)
+        age_dec = np.array([age_dec])
 
     age_dec = np.array(age_dec)
-    age_dec[age_dec <= -.5] = -.499999999
-    age_dec[age_dec >= 9.5] = 9.499999999
+    age_dec[age_dec <= -.5] = -.5 + 10**-8
+    age_dec[age_dec >= 9.5] = 9.5 - 10**-8
     idec = np.round(age_dec).astype(np.int32)
 
     age_label = ages_mean[idec] + (age_dec - idec) * ages_range[idec]
-    return age_label
+    return age_label.astype(np.float32)
 
 class Resnet50FairFaceGRA(Resnet50FairFace):
 
@@ -164,7 +159,7 @@ class Resnet50FairFaceGRA(Resnet50FairFace):
         age_dec = age.ravel()
         age_labels = _fairface_agedec2age(age_dec)
 
-        return feats, (gender_labels, age_labels), (gender_dec, age_dec)
+        return feats, gender_labels, age_labels, gender_dec, age_dec
 
 
 class OxfordVggFace(AbstractFaceClassifier):

@@ -35,7 +35,7 @@ from inaFaceGender.face_detector import OcvCnnFacedetector
 import cv2
 from inaFaceGender.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
 
-class TestInaFaceGender(unittest.TestCase):
+class TestIFG(unittest.TestCase):
 
     def test_image_all_diallo(self):
         gi = GenderImage(face_detector = OcvCnnFacedetector(paddpercent=0.))
@@ -152,9 +152,9 @@ class TestInaFaceGender(unittest.TestCase):
         ret = c(mat)
         self.assertEqual(len(ret), 3)
         feats, label, dec = ret
-        self.assertEqual(isinstance(feats, np.ndarray), True, feats)
-        self.assertEqual(isinstance(label, str), True, label)
-        self.assertEqual(isinstance(dec, float), True, dec)
+        self.assertIsInstance(feats, np.ndarray)
+        self.assertIsInstance(label, str)
+        self.assertIsInstance(dec, float)
 
 
     def test_single_image_single_output_res50(self):
@@ -163,21 +163,22 @@ class TestInaFaceGender(unittest.TestCase):
         ret = c(mat)
         self.assertEqual(len(ret), 3)
         feats, label, dec = ret
-        self.assertEqual(isinstance(feats, np.ndarray), True)
-        self.assertEqual(isinstance(label, str), True, label)
-        self.assertEqual(isinstance(dec, np.float32), True, (dec, dec.__class__))
+        self.assertIsInstance(feats, np.ndarray)
+        self.assertIsInstance(label, str)
+        self.assertIsInstance(dec, np.float32)
 
     def test_single_image_multi_output(self):
         mat = np.zeros((224,224,3), dtype=np.uint8)
         c = Resnet50FairFaceGRA()
         ret = c(mat)
-        self.assertEqual(len(ret), 3)
-        feats, labels, decs = ret
-        self.assertEqual(isinstance(feats, np.ndarray), True)
-        self.assertEqual(isinstance(labels, tuple), True, labels)
-        self.assertEqual(isinstance(decs, tuple), True, decs)
-        self.assertEqual(len(labels), 2, labels)
-        self.assertEqual(len(decs), 2, decs)
+        self.assertEqual(len(ret), 5)
+        feats, genderL, ageL, genderD, ageD = ret
+        self.assertIsInstance(feats, np.ndarray)
+        self.assertIsInstance(genderL, str)
+        self.assertIsInstance(ageL, np.float32, type(ageL))
+        self.assertIsInstance(ageD, np.float32, type(ageD))
+        self.assertIsInstance(genderD, np.float32, type(genderD))
+
 
     def test_fairface_age_mapping(self):
         from inaFaceGender.face_classifier import _fairface_agedec2age
@@ -203,13 +204,15 @@ class TestInaFaceGender(unittest.TestCase):
 
     def test_imgpaths_batch_multioutput(self):
         c = Resnet50FairFaceGRA()
-        f, l, d = c.imgpaths_batch(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], batch_len=2)
-#[['f', 'm'], array([25.72336197, 61.89072609]), ['f'], array([25.7233572])],
-# [array([-5.632368 ,  7.2553654], dtype=float32),
-#  array([3.0723362, 6.6890726], dtype=float32),
-#  array([-5.632365], dtype=float32),
-#  array([3.0723357], dtype=float32)])
-        self.assertEqual(True, False, 'not yet implemented')
+        f, gl, al, gd, ad = c.imgpaths_batch(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], batch_len=2)
+        ref_genderL = ['f', 'm', 'f']
+        ref_ageL =[25.72336197, 61.89072609, 25.72336197]
+        ref_genderD = [-5.632368, 7.2553654, -5.632368]
+        ref_ageD = [3.0723362, 6.6890726, 3.0723362]
+        self.assertSequenceEqual(ref_genderL, gl)
+        np.testing.assert_almost_equal(ref_ageL, al, decimal=5)
+        np.testing.assert_almost_equal(ref_genderD, gd, decimal=5)
+        np.testing.assert_almost_equal(ref_ageD, ad, decimal=5)
 
 if __name__ == '__main__':
     unittest.main()
