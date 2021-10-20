@@ -121,22 +121,6 @@ class TestIFG(unittest.TestCase):
         ret = detector.get_closest_face(frame, (700, 0, 800, 200), min_iou=.1)
         self.assertIsNone(ret)
 
-
-
-    def test_video_iterator_seq_len(self):
-        src = './media/pexels-artem-podrez-5725953.mp4'
-        self.assertEqual(len([e for e in video_iterator(src,start=10, stop=20)]), 11)
-        self.assertEqual(len([e for e in video_iterator(src)]), 358)
-        self.assertEqual(len([e for e in video_iterator(src, time_unit='ms', start=500, stop=1000)]), 16)
-
-    def test_video_iterator_out_types(self):
-        src = './media/pexels-artem-podrez-5725953.mp4'
-        elts = [e for e in video_iterator(src,start=10, stop=20)]
-        self.assertIsInstance(elts[0][0], int)
-        self.assertIsInstance(elts[0][1], np.ndarray)
-
-
-
     def test_pred_from_vid_and_bblist(self):
         gv = GenderVideo(bbox_scaling=1, squarify=False)
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv')
