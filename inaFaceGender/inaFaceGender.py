@@ -291,10 +291,11 @@ class GenderVideo(AbstractGender):
             while len(lbatch_img) > self.batch_len:
                 #lbatch, tmpinfo = self.process_batch(lbatch)
                 #info += tmpinfo
+                # TODO : it's dirty to skip the features !
                 classif_ret = self.classifier(lbatch_img[:self.batch_len])[1:]
                 for i in range(self.batch_len):
                     # TODO: its dirty to put face confidence at the end, its for test retro compatibility
-                    info.append(lbatch_info[i][:-1] + [e[i] for e in classif_ret] + [lbatch_info[i][-1]])
+                    info.append(lbatch_info[i] + [e[i] for e in classif_ret])
                 lbatch_img = lbatch_img[self.batch_len:]
                 lbatch_info = lbatch_info[self.batch_len:]
 
@@ -303,9 +304,9 @@ class GenderVideo(AbstractGender):
             #info += tmpinfo
             classif_ret = self.classifier(lbatch_img)[1:]
             for i in range(len(lbatch_img)):
-                info.append(lbatch_info[i][:-1] + [e[i] for e in classif_ret] + [lbatch_info[i][-1]])
+                info.append(lbatch_info[i] + [e[i] for e in classif_ret])
         # todo : rename conf in face_detection_conf
-        return pd.DataFrame.from_records(info, columns = ['frame', 'bb'] + self.classifier.outnames[1:] + ['conf'])
+        return pd.DataFrame.from_records(info, columns = ['frame', 'bb', 'face_detect_conf'] + self.classifier.outnames[1:])
 
     def pred_from_vid_and_bblist(self, vidsrc, lbox, subsamp_coeff=1, start_frame=0):
         lret = []

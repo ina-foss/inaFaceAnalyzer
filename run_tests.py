@@ -71,7 +71,7 @@ class TestIFG(unittest.TestCase):
         ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=25)
         ret.bb = ret.bb.map(str)
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv',
-                        dtype={'conf': np.float32})
+                        dtype={'face_detect_conf': np.float32})
         assert_frame_equal(ret, df, rtol=.01)
 
     # TODO: update with serialized ouput!
@@ -125,11 +125,18 @@ class TestIFG(unittest.TestCase):
 
 
 
-    def test_video_iterator(self):
+    def test_video_iterator_seq_len(self):
         src = './media/pexels-artem-podrez-5725953.mp4'
         self.assertEqual(len([e for e in video_iterator(src,start=10, stop=20)]), 11)
         self.assertEqual(len([e for e in video_iterator(src)]), 358)
         self.assertEqual(len([e for e in video_iterator(src, time_unit='ms', start=500, stop=1000)]), 16)
+
+    def test_video_iterator_out_types(self):
+        src = './media/pexels-artem-podrez-5725953.mp4'
+        elts = [e for e in video_iterator(src,start=10, stop=20)]
+        self.assertIsInstance(elts[0][0], int)
+        self.assertIsInstance(elts[0][1], np.ndarray)
+
 
 
     def test_pred_from_vid_and_bblist(self):

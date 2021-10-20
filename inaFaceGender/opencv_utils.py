@@ -74,7 +74,7 @@ def video_iterator(src, time_unit='frame', start=None, stop=None, subsamp_coeff=
             plt.imshow(frame)
             plt.show()
 
-        yield iframe, frame
+        yield int(iframe), frame
 
     cap.release()
 
