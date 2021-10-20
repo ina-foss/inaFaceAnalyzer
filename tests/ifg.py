@@ -67,22 +67,17 @@ class TestIFG(unittest.TestCase):
         gv = GenderVideo(face_detector = OcvCnnFacedetector(paddpercent=0.))
         ret = gv('./media/pexels-artem-podrez-5725953.mp4')
         ret.bb = ret.bb.map(str)
-        df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv',
-                        dtype={'face_detect_conf': np.float32})
-        assert_frame_equal(ret, df, rtol=.01)
+        df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
+        assert_frame_equal(ret, df, rtol=.01, check_dtype=False)
         
 
     def test_video_subsamp(self):
         gv = GenderVideo(face_detector = OcvCnnFacedetector(paddpercent=0.))
         ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=25)
         ret.bb = ret.bb.map(str)
-
-
-        refdf = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv',
-                        dtype={'face_detect_conf': np.float32})
+        refdf = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
         refdf = refdf[(refdf.frame % 25) == 0].reset_index(drop=True)
-
-        assert_frame_equal(refdf, ret, rtol=.01)
+        assert_frame_equal(refdf, ret, rtol=.01, check_dtype=False)
 
     # TODO: update with serialized ouput!
     def test_video_res50(self):
