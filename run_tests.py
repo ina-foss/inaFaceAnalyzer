@@ -192,6 +192,10 @@ class TestIFG(unittest.TestCase):
         with self.assertRaises(AssertionError):
             gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=25)
 
+class TestClassifiers(unittest.TestCase):
+    def tearDown(self):
+        tf.keras.backend.clear_session()
+
     def test_single_image_single_output_vgg16(self):
         mat = np.zeros((224,224,3), dtype=np.uint8)
         c = Vggface_LSVM_YTF()
