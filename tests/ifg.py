@@ -63,14 +63,26 @@ class TestIFG(unittest.TestCase):
         self.assertAlmostEqual(ret[3], 6.621492606578991, places=1)
         self.assertAlmostEqual(ret[4], 0.99995565, places=4)
 
+    def test_video_simple(self):
+        gv = GenderVideo(face_detector = OcvCnnFacedetector(paddpercent=0.))
+        ret = gv('./media/pexels-artem-podrez-5725953.mp4')
+        ret.bb = ret.bb.map(str)
+        df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv',
+                        dtype={'face_detect_conf': np.float32})
+        assert_frame_equal(ret, df, rtol=.01)
+        
 
-    def test_video_basic(self):
+    def test_video_subsamp(self):
         gv = GenderVideo(face_detector = OcvCnnFacedetector(paddpercent=0.))
         ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=25)
         ret.bb = ret.bb.map(str)
-        df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv',
+
+
+        refdf = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv',
                         dtype={'face_detect_conf': np.float32})
-        assert_frame_equal(ret, df, rtol=.01)
+        refdf = refdf[(refdf.frame % 25) == 0].reset_index(drop=True)
+
+        assert_frame_equal(refdf, ret, rtol=.01)
 
     # TODO: update with serialized ouput!
     def test_video_res50(self):
@@ -123,7 +135,13 @@ class TestIFG(unittest.TestCase):
 
     def test_pred_from_vid_and_bblist(self):
         gv = GenderVideo(bbox_scaling=1, squarify=False)
-        df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv')
+        
+        
+        df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv',
+                        dtype={'face_detect_conf': np.float32})
+        df = df[(df.frame % 25) == 0].reset_index(drop=True)        
+        
+        
         # this method read a single face per frame
         df = df.drop_duplicates(subset='frame').reset_index()
         lbbox = list(df.bb.map(eval))

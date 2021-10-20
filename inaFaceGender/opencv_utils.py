@@ -62,12 +62,12 @@ def video_iterator(src, time_unit='frame', start=None, stop=None, subsamp_coeff=
             break
 
         # skip frames for subsampling reasons
-        if cap.get(cv2.CAP_PROP_POS_FRAMES) % subsamp_coeff != 0:
+        iframe = cap.get(cv2.CAP_PROP_POS_FRAMES) - 1        
+        if iframe % subsamp_coeff != 0:
             continue
 
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        iframe = cap.get(cv2.CAP_PROP_POS_FRAMES) - 1
 
         if verbose:
             print('frame ', iframe)
