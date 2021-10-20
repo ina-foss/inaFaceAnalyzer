@@ -35,18 +35,6 @@ from .face_preprocessing import preprocess_face
 
 
 
-def info2csv(df, csv_path):
-    """
-    Write df into a csv.
-
-
-    Parameters:
-    df (DataFrame): Dataframe to be written to csv.
-    csv_path (string): CSV output path.
-
-    """
-    df.to_csv(csv_path, index=False)
-
 def _label_decision_fun(x):
 
     if x>0:
