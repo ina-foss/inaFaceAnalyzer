@@ -87,9 +87,9 @@ setup(
     data_files = ['LICENSE'],
     long_description=LONGDESCRIPTION,
     long_description_content_type='text/markdown',
-    scripts=[os.path.join('scripts', script) for script in \
-             ['ina_face_gender.py']],
+#    scripts=[os.path.join('scripts', script) for script in \
+#             ['ina_face_gender.py']],
     classifiers=CLASSIFIERS,
-    python_requires='>=3.8',
+    python_requires='>=3.6.9',
 
 )

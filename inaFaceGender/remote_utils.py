@@ -51,6 +51,7 @@ def get_remote(model_fname):
     url = dmodels[model_fname]
     return get_file(model_fname, url + model_fname, cache_subdir='inaFaceGender')
 
+#TODO - download RC MALLI MODEL ALSO HERE
 def download_all():
     # usefull at the initalisation of a Docker image
     for k in dmodels:
