@@ -30,6 +30,8 @@ import unittest
 from tests.classifiers import TestClassifiers
 # here are remaining framework tests
 from tests.ifg import TestIFG
+# tests related to opencv_utils.py
+from tests.ocvutils import TestOpenCvUtils
 
 
 if __name__ == '__main__':
