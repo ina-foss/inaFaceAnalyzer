@@ -45,8 +45,10 @@ class Tracker:
         return inter / (inter + self.t.get_position().area() + bb.area())
 
     def update(self, frame):
-        self.last_frame = frame
-        return self.t.update(frame)
+        if frame != self.last_frame:
+            self.update_val = self.t.update(frame)
+            self.last_frame = frame
+        return self.update_val
 
     def tracking_quality(self, frame, bb):
         # should be above 7
@@ -54,9 +56,9 @@ class Tracker:
         self.t.start_track(frame, bb)
         return ret
 
-    def is_in_frame(self):
+    def is_in_frame(self, frame_shape):
         # at least one pixel in the frame
-        fheight, fwidth, _ = self.last_frame.shape
+        fheight, fwidth, _ = frame.shape
         pos = self.t.get_position()
         return (pos.right() > 0) and (pos.left() < fwidth) and (pos.top() < fheight) and (pos.bottom() > 0)
 
@@ -69,8 +71,9 @@ class TrackerList:
         self.i = 0
 
     def update(self, frame):
+        # if tracked element is lost, remove tracker
         for fid in list(self.d):
-            if self.d[fid].update(frame) < 7 or not self.d[fid].is_in_frame():
+            if self.d[fid].update(frame) < 7 or not self.d[fid].is_in_frame(frame.shape):
                 del self.d[fid]
 
     def ingest_detection(self, frame, lbox):
@@ -81,6 +84,7 @@ class TrackerList:
         to_remove = list(self.d)
         to_add = {}
 
+        # iterate on newly detected faces
         for bb in lbox:
             rmscore = [self.d[k].tracking_quality(frame, bb) if self.d[k].iou(bb) > 0.5 else 0 for k in to_remove]
             am = np.argmax(rmscore) if len(rmscore) > 0 else None
@@ -94,3 +98,36 @@ class TrackerList:
                 to_add[self.i] = Tracker(frame, bb, self.i)
                 self.i += 1
         self.d = to_add
+
+
+class TrackerDetector:
+    # detector could be any face detector class defined in face_detector.py
+    def __init__(self, detector, detection_period):
+        # TODO : create abstract face detector class and assert detector is an 
+        # instance of this abstract class
+        self.detector = detector
+        self.detection_period = detection_period
+        self.tl = TrackerList()        
+        self.iframe = 0
+        
+    def __call__(self, frame):
+        tl.update(frame)
+        
+        # detects faces and remove trackers that are too far from the detected faces
+        if self.iframe % self.detection_period:
+            detected_faces = [dlib.rectangle(*[int(x) for x in e[0]]) for e in self.face_detector(frame)]
+            tl.ingest_detection(frame, detected_faces)
+            
+        # process faces based on position found in trackers
+        lret = []
+        for faceid in tl.d:
+            bb = tl.d[faceid].t.get_position()
+            bb = (bb.left(), bb.top(), bb.right(), bb.bottom())
+            lret.append((bb, faceid))
+        
+        self.iframe += 1
+        return lret
+
+
+
+
