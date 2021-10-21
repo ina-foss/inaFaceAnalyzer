@@ -25,109 +25,153 @@
 
 import dlib
 import numpy as np
+from .opencv_utils import disp_frame_bblist
+from .face_utils import _rect_to_tuple, tuple2rect, intersection_over_union, tuple2drect
+
+def _matrix_argmax(m):
+    x = np.argmax(m)
+    dim = m.shape[1]
+    return x // dim, x % dim
 
 class Tracker:
-
-    def __init__(self, frame, bb, tid):
-        self.last_frame = frame
+    def __init__(self, frame, bb, detect_conf): #, min_confidence):
         self.t = dlib.correlation_tracker()
+        self.t.start_track(frame, tuple2rect(bb))
+        self.fshape = frame.shape
+        self.detect_conf = detect_conf
+        self.track_conf = None
+#        self.min_confidence = min_confidence
+
+    def update(self, frame, verbose=False):
+        update_val = self.t.update(frame)
+
+        fh, fw, _ = self.fshape
+
+        e = self.t.get_position()
+        x1, y1, x2, y2 = pos = _rect_to_tuple(e)
+
+
+        if verbose:
+            print('update', pos, update_val)
+            disp_frame_bblist(frame, [pos])
+
+        if not ((x2 > 0) and (x1 < fw) and (y2 > 0) and (y1 < fh)):
+            update_val = -1
+
+        self.detect_conf = None
+        self.track_conf = update_val
+        return update_val
+
+    def update_from_bb(self, frame, bb, detect_conf, verbose=True):
+        update_val = self.t.update(frame, tuple2drect(bb))
+        if verbose:
+            e = self.t.get_position()
+            print('dest', bb, 'new position', e)
+            disp_frame_bblist(frame, [_rect_to_tuple(e), _rect_to_tuple(bb)])
         self.t.start_track(frame, bb)
-        self.tid = tid
-
-    def intersect_area(self, bb):
-        pos = self.t.get_position()
-        tmp = dlib.rectangle(int(pos.left()), int(pos.top()), int(pos.right()), int(pos.bottom()))
-        return bb.intersect(tmp).area()
-
-    def iou(self, bb):
-        # intersection over union
-        inter = self.intersect_area(bb)
-        return inter / (inter + self.t.get_position().area() + bb.area())
-
-    def update(self, frame):
-        if frame != self.last_frame:
-            self.update_val = self.t.update(frame)
-            self.last_frame = frame
-        return self.update_val
-
-    def tracking_quality(self, frame, bb):
-        # should be above 7
-        ret = self.t.update(frame, bb)
-        self.t.start_track(frame, bb)
-        return ret
-
-    def is_in_frame(self, frame_shape):
-        # at least one pixel in the frame
-        fheight, fwidth, _ = frame.shape
-        pos = self.t.get_position()
-        return (pos.right() > 0) and (pos.left() < fwidth) and (pos.top() < fheight) and (pos.bottom() > 0)
-
-
-
-class TrackerList:
-
-    def __init__(self):
-        self.d = {}
-        self.i = 0
-
-    def update(self, frame):
-        # if tracked element is lost, remove tracker
-        for fid in list(self.d):
-            if self.d[fid].update(frame) < 7 or not self.d[fid].is_in_frame(frame.shape):
-                del self.d[fid]
-
-    def ingest_detection(self, frame, lbox):
-        # le nombre de tracker restant doit être égal au nombre de bbox
-        # au debut on envisage de tout enlever
-        # pour toute bbox, si intersection, alors on enleve pas le match
-        # si pas d'intersection, on enleve
-        to_remove = list(self.d)
-        to_add = {}
-
-        # iterate on newly detected faces
-        for bb in lbox:
-            rmscore = [self.d[k].tracking_quality(frame, bb) if self.d[k].iou(bb) > 0.5 else 0 for k in to_remove]
-            am = np.argmax(rmscore) if len(rmscore) > 0 else None
-            if am is not None and rmscore[am] > 7:
-                # update tracker with the new bb coords
-                idrm = to_remove[am]
-                to_remove.remove(idrm)
-                to_add[idrm] = Tracker(frame, bb, idrm)
-            else:
-                # new tracker
-                to_add[self.i] = Tracker(frame, bb, self.i)
-                self.i += 1
-        self.d = to_add
+        self.track_conf = update_val
+        self.detect_conf = detect_conf
+        return update_val
 
 
 class TrackerDetector:
-    # detector could be any face detector class defined in face_detector.py
+    # confidence is estimated as the peak to side-lobe ration returned
+    # on tracker's update
+    min_confidence = 7
+
+    # output labels
+    out_names = ['bb', 'face_id', 'face_detect_conf', 'tracking_conf']
+
     def __init__(self, detector, detection_period):
-        # TODO : create abstract face detector class and assert detector is an 
-        # instance of this abstract class
+        # dictionnary of tracked objects
+        self.d = {}
+        # number of instantiated trackers
+        # used to provide a numeric identifier to each new Tracker instance
+        self.nb_tracker = 0
+        # a face/object detection instance
+        # could be any face detector class defined in face_detector.py
         self.detector = detector
+        # Detection will be performed once every 'detection_period' frames
+        # ex: if detection_period is set to 5, detection will be performed
+        # for 1 frame, and tracking for the 4 remaining frames
+        # if detection_period is set to 1, the detection will be performed on
+        # every frame, and tracking will also be performed to know the detected
+        # faces belong to the same person
         self.detection_period = detection_period
-        self.tl = TrackerList()        
+        # count the amount of processed frames
+        # used to switch between detection and tracking every detection_period
         self.iframe = 0
-        
-    def __call__(self, frame):
-        tl.update(frame)
-        
-        # detects faces and remove trackers that are too far from the detected faces
-        if self.iframe % self.detection_period:
-            detected_faces = [dlib.rectangle(*[int(x) for x in e[0]]) for e in self.face_detector(frame)]
-            tl.ingest_detection(frame, detected_faces)
-            
-        # process faces based on position found in trackers
+
+
+    def update_trackers(self, frame, verbose = False):
+        if verbose:
+            print('update trackers')
+        # if tracked element is lost, remove tracker
+        for fid in list(self.d):
+            if self.d[fid].update(frame, verbose) < self.min_confidence:
+                del self.d[fid]
+                if verbose:
+                    print('deleting tracker', fid)
+
+    def update_from_detection(self, frame, lbox, verbose):
+
+        if verbose:
+            print('update from detection')
+
+        lkeys = list(self.d.keys())
+
+        # compute intersection over union matrix[#tracker, #detected bounding box]
+        # between tracker positions and detected bounding boxes
+        ioumat = np.ones((len(lkeys), len(lbox))) * -1
+        for i, k in enumerate(lkeys):
+            for j, (bb, detect_conf) in enumerate(lbox):
+                ioumat[i, j] = intersection_over_union(self.d[k].t.get_position(), tuple2drect(bb))
+
+        # while matrix not empty and IOU > 70%
+        while np.prod(ioumat.shape):
+            # find the largest intersection over union
+            #print(matrix_argmax(ioumat))
+            itracker, idetection = am = _matrix_argmax(ioumat)
+            if ioumat[am] <= 0.7:
+                break
+            # update closest bounding box and trackers and remove them from matrix
+            track_score = self.d[lkeys[itracker]].update_from_bb(frame, *lbox[idetection], verbose)
+            ioumat = np.delete(ioumat, itracker, axis = 0)
+#            ioutmat = np.delete(ioutmat, idetection, axis=1)
+            lkeys.pop(itracker)
+
+            # if close bounding box and tracker do not match, delete tracker
+            if track_score < self.min_confidence:
+                del self.d[itracker]
+            else:
+                # if bounding box and detected face match, remove
+                # the detection from the set
+                lbox.pop(idetection)
+
+        # remove trackers that do not match any detected box
+        for k in lkeys:
+            del self.d[k]
+
+        # add new trackers corresponding to detected faces that did not match
+        # any existing tracker
+        for bb, detect_conf in lbox:
+            self.d[self.nb_tracker] = Tracker(frame, bb, detect_conf)
+            self.nb_tracker += 1
+
+
+    def __call__(self, frame, verbose=False):
+
+        if self.iframe % self.detection_period == 0:
+            self.update_from_detection(frame, self.detector(frame, verbose), verbose)
+        else:
+            self.update_trackers(frame, verbose)
+
         lret = []
-        for faceid in tl.d:
-            bb = tl.d[faceid].t.get_position()
-            bb = (bb.left(), bb.top(), bb.right(), bb.bottom())
-            lret.append((bb, faceid))
-        
+        for faceid in self.d:
+            t = self.d[faceid]
+            bb = t.t.get_position()
+            lret.append((_rect_to_tuple(bb), faceid, t.detect_conf, t.track_conf))
+
         self.iframe += 1
+
         return lret
-
-
-
-

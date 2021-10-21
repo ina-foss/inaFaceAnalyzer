@@ -27,7 +27,7 @@ import dlib
 import numpy as np
 import pandas as pd
 from .opencv_utils import video_iterator, imread_rgb
-from .face_tracking import TrackerList
+from .face_tracking import TrackerDetector
 from .face_detector import OcvCnnFacedetector
 from .face_classifier import Vggface_LSVM_YTF
 from .face_alignment import Dlib68FaceAlignment

@@ -30,6 +30,8 @@
 
 import numpy as np
 import dlib
+from collections.abc import Iterable
+
 
 def _rect_to_tuple(rect):
     left = rect.left()
@@ -41,14 +43,15 @@ def _rect_to_tuple(rect):
 def tuple2rect(t):
     return dlib.rectangle(*[int(x) for x in np.round(t)])
 
+def tuple2drect(t):
+    return dlib.drectangle(*t)
+
 def intersection_over_union(x, y):
     # intersection over union
-    if type(x) == tuple:
+    if isinstance(x, dlib.rectangle) and isinstance(x, Iterable):
         x = tuple2rect(x)
-    if type(y) == tuple:
+    if not isinstance(y, dlib.rectangle) and isinstance(y, Iterable):
         y = tuple2rect(y)
-    assert isinstance(x, dlib.rectangle)
-    assert isinstance(y, dlib.rectangle)
     inter = x.intersect(y).area()
     union = x.area() + y.area() - inter
     return inter / union
