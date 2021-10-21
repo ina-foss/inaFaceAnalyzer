@@ -28,7 +28,7 @@ import pandas as pd
 import numpy as np
 import cv2
 import tensorflow as tf
-from inaFaceGender.inaFaceGender import GenderVideo, GenderImage
+from inaFaceGender.inaFaceGender import GenderVideo, GenderImage, GenderTracking
 from inaFaceGender.face_preprocessing import _norm_bbox, _squarify_bbox
 from pandas.testing import assert_frame_equal, assert_series_equal
 from inaFaceGender.opencv_utils import video_iterator
@@ -69,7 +69,7 @@ class TestIFG(unittest.TestCase):
         ret.bb = ret.bb.map(str)
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
         assert_frame_equal(ret, df, rtol=.01, check_dtype=False)
-        
+
 
     def test_video_subsamp(self):
         gv = GenderVideo(face_detector = OcvCnnFacedetector(paddpercent=0.))
@@ -91,13 +91,15 @@ class TestIFG(unittest.TestCase):
 
     # TODO: update with serialized ouput!
     def test_tracking_nofail_singleoutput(self):
-        gv = GenderVideo(face_classifier=Vggface_LSVM_YTF())
-        ret = gv.detect_with_tracking('./media/pexels-artem-podrez-5725953.mp4', k_frames=5, subsamp_coeff=25)
+        gv = GenderTracking(detection_period=5)
+        ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=10)
+        # TODO test output
 
     # TODO: update with serialized ouput!
     def test_tracking_nofail_multioutput(self):
-        gv = GenderVideo(face_classifier=Resnet50FairFaceGRA())
-        ret = gv.detect_with_tracking('./media/pexels-artem-podrez-5725953.mp4', k_frames=5, subsamp_coeff=25)
+        gv = GenderTracking(face_classifier=Resnet50FairFaceGRA(), detection_period=5)
+        ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=10)
+        # TODO test output
 
 
 
@@ -130,13 +132,13 @@ class TestIFG(unittest.TestCase):
 
     def test_pred_from_vid_and_bblist(self):
         gv = GenderVideo(bbox_scaling=1, squarify=False)
-        
-        
+
+
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv',
                         dtype={'face_detect_conf': np.float32})
-        df = df[(df.frame % 25) == 0].reset_index(drop=True)        
-        
-        
+        df = df[(df.frame % 25) == 0].reset_index(drop=True)
+
+
         # this method read a single face per frame
         df = df.drop_duplicates(subset='frame').reset_index()
         lbbox = list(df.bb.map(eval))

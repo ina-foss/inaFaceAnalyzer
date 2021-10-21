@@ -48,7 +48,7 @@ def tuple2drect(t):
 
 def intersection_over_union(x, y):
     # intersection over union
-    if isinstance(x, dlib.rectangle) and isinstance(x, Iterable):
+    if not isinstance(x, dlib.rectangle) and isinstance(x, Iterable):
         x = tuple2rect(x)
     if not isinstance(y, dlib.rectangle) and isinstance(y, Iterable):
         y = tuple2rect(y)

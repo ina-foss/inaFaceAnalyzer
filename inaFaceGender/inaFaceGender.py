@@ -35,29 +35,6 @@ from .face_preprocessing import preprocess_face
 
 
 
-def _label_decision_fun(x):
-
-    if x>0:
-        return 'm'
-    else:
-        return 'f'
-
-def _smooth_labels(df):
-    if len(df) == 0:
-        df['smoothed_decision'] = []
-        df['smoothed_label'] = []
-        return df
-
-    byfaceid = pd.DataFrame(df.groupby('faceid')['decision'].mean())
-    byfaceid.rename(columns = {'decision':'smoothed_decision'}, inplace=True)
-    new_df = df.merge(byfaceid, on= 'faceid')
-    new_df['smoothed_label'] = new_df['smoothed_decision'].map(_label_decision_fun)
-
-    return new_df
-
-
-
-
 class AbstractGender:
     """
     This is an abstract class containg the common code to be used to process
@@ -182,63 +159,6 @@ class GenderVideo(AbstractGender):
     def __init__(self, face_detector = OcvCnnFacedetector(), face_classifier=Vggface_LSVM_YTF(), bbox_scaling=1.1, squarify=True, verbose = False):
         AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
 
-    # TODO: BUILD A SEPARATE CLASS FOR DETECTION+TRACKING
-    def detect_with_tracking(self, video_path, k_frames, subsamp_coeff = 1, offset = -1):
-        """
-        Pipeline for gender classification from videos using correlation filters based tracking (dlib's).
-
-        Parameters:
-            video_path (string): Path for input video.
-            k_frames (int) : Number of frames for which continue tracking the faces without renewing face detection.
-            subsamp_coeff (int) : only 1/subsamp_coeff frames will be processed
-            offset (float) : Time in milliseconds to skip at the beginning of the video.
-
-        Returns:
-            info (DataFrame): A Dataframe with frame and face information (coordinates, decision function, smoothed and non smoothed labels)
-        """
-        oshape = self.classifier.input_shape[:-1]
-        nb_track_frames = k_frames
-
-        tl = TrackerList()
-
-        info = []
-        lbatch = []
-
-        for iframe, frame in video_iterator(video_path,subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
-
-            tl.update(frame)
-
-            # detect faces every k frames
-            if nb_track_frames >= k_frames:
-                faces_info = self.face_detector(frame)
-                nb_track_frames = 0
-
-                tl.ingest_detection(frame, [dlib.rectangle(*[int(x) for x in e[0]]) for e in faces_info])
-            nb_track_frames += 1
-
-            # process faces based on position found in trackers
-            for fid in tl.d:
-                bb = tl.d[fid].t.get_position()
-                bb = (bb.left(), bb.top(), bb.right(), bb.bottom())
-
-                face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, True, self.face_alignment, oshape, self.verbose)
-                lbatch.append((iframe, bb, fid, face_img, bbox)) # add detect/track confidence
-
-
-            while len(lbatch) > self.batch_len:
-                lbatch, tmpinfo = self.process_batch(lbatch)
-                info += tmpinfo
-
-        while len(lbatch) > 0:
-            lbatch, tmpinfo = self.process_batch(lbatch)
-            info += tmpinfo
-
-
-
-        track_res = pd.DataFrame.from_records(info, columns = ['frame', 'bb', 'faceid', 'label', 'decision']) #, 'conf'])
-        info = _smooth_labels(track_res)
-
-        return info
 
     def __call__(self, video_path, subsamp_coeff = 1 ,  offset = -1):
 
@@ -315,3 +235,83 @@ class GenderVideo(AbstractGender):
                 print()
         assert len(lret) == len(lbox), '%d bounding box provided, and only %d frames processed' % (len(lbox), len(lret))
         return np.concatenate(lfeat), pd.DataFrame.from_records(lret, columns=['bb']+ self.classifier.outnames[1:])
+
+
+class GenderTracking(AbstractGender):
+    def __init__(self, detection_period, face_detector = OcvCnnFacedetector(), face_classifier=Vggface_LSVM_YTF(), bbox_scaling=1.1, squarify=True, verbose = False):
+        AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
+        self.detection_period = detection_period
+
+    def __call__(self, video_path, subsamp_coeff = 1 ,  offset = -1):
+
+        """
+        Pipeline function for gender classification from videos without tracking.
+
+        Parameters:
+            video_path (string): Path for input video.
+            subsamp_coeff (int) : only 1/subsamp_coeff frames will be processed
+            offset (float) : Time in milliseconds to skip at the beginning of the video.
+
+
+        Returns:
+            info: A Dataframe with frame and face information (coordinates, decision function,labels..)
+        """
+
+
+        oshape = self.classifier.input_shape[:-1]
+        classif_desc = ','.join(self.classifier.outnames[1:])
+        detector = TrackerDetector(self.face_detector, self.detection_period)
+
+        info = []
+        lbatch_img = []
+        lbatch_info = []
+
+        for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
+
+            for bb, faceid, detect_conf, track_conf in detector(frame):
+                if self.verbose:
+                    print(detector.outnames, bb, faceid, detect_conf, track_conf)
+
+
+                face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, True, self.face_alignment, oshape, self.verbose)
+
+                #lbatch.append((iframe, bb, detect_conf, face_img, bbox))
+                lbatch_info.append([iframe, bbox, faceid, detect_conf, track_conf])
+                lbatch_img.append(face_img)
+
+            while len(lbatch_img) > self.batch_len:
+                # TODO : it's dirty to skip the features !
+                classif_ret = self.classifier(lbatch_img[:self.batch_len])[1:]
+                for i in range(self.batch_len):
+                    info.append(lbatch_info[i] + [e[i] for e in classif_ret])
+                lbatch_img = lbatch_img[self.batch_len:]
+                lbatch_info = lbatch_info[self.batch_len:]
+
+        if len(lbatch_img) > 0:
+            classif_ret = self.classifier(lbatch_img)[1:]
+            for i in range(len(lbatch_img)):
+                info.append(lbatch_info[i] + [e[i] for e in classif_ret])
+        # todo : rename conf in face_detection_conf
+        df = pd.DataFrame.from_records(info, columns = ['frame', 'bb'] + detector.out_names[1:]+ self.classifier.outnames[1:])
+        return _smooth_labels(df)
+
+
+def _label_decision_fun(x):
+
+    if x>0:
+        return 'm'
+    else:
+        return 'f'
+
+def _smooth_labels(df):
+    if len(df) == 0:
+        df['smoothed_decision'] = []
+        df['smoothed_label'] = []
+        return df
+
+    byfaceid = pd.DataFrame(df.groupby('face_id')['sex_decision_function'].mean())
+    byfaceid.rename(columns = {'sex_decision_function':'smoothed_decision'}, inplace=True)
+    new_df = df.merge(byfaceid, on= 'face_id')
+    new_df['smoothed_label'] = new_df['smoothed_decision'].map(_label_decision_fun)
+
+    return new_df
