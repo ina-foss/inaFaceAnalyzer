@@ -52,6 +52,19 @@ class TestIFG(unittest.TestCase):
         self.assertAlmostEqual(ret[3], -3.305765917955594, places=1)
         self.assertAlmostEqual(ret[4], 0.99964356, places=4)
 
+    def test_image_all_diallo_multioutput(self):
+        gi = GenderImage(face_classifier=Resnet50FairFaceGRA())
+        ret = gi('./media/Europa21_-_2.jpg')
+        self.assertEqual(len(ret), 1)
+        ret = ret[0]
+        self.assertEqual(ret[1], (432, 246, 988, 802))
+        self.assertEqual(ret[2], 'f')
+        # TODO - CHEKC REMANIING VALUES !!!!
+        #todo : places = 1 due to changes in rotation procedure
+        #self.assertAlmostEqual(ret[3], -3.305765917955594, places=1)
+        #self.assertAlmostEqual(ret[4], 0.99964356, places=4)
+
+
     def test_image_knuth(self):
         gi = GenderImage(face_detector = OcvCnnFacedetector(paddpercent=0.))
         ret = gi('./media/20091020222328!KnuthAtOpenContentAlliance.jpg')
@@ -69,7 +82,7 @@ class TestIFG(unittest.TestCase):
         ret.bb = ret.bb.map(str)
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
         assert_frame_equal(ret, df, rtol=.01, check_dtype=False)
-        
+
 
     def test_video_subsamp(self):
         gv = GenderVideo(face_detector = OcvCnnFacedetector(paddpercent=0.))
@@ -130,13 +143,13 @@ class TestIFG(unittest.TestCase):
 
     def test_pred_from_vid_and_bblist(self):
         gv = GenderVideo(bbox_scaling=1, squarify=False)
-        
-        
+
+
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv',
                         dtype={'face_detect_conf': np.float32})
-        df = df[(df.frame % 25) == 0].reset_index(drop=True)        
-        
-        
+        df = df[(df.frame % 25) == 0].reset_index(drop=True)
+
+
         # this method read a single face per frame
         df = df.drop_duplicates(subset='frame').reset_index()
         lbbox = list(df.bb.map(eval))
