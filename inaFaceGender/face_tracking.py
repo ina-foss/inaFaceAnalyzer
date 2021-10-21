@@ -67,8 +67,8 @@ class Tracker:
         if verbose:
             e = self.t.get_position()
             print('dest', bb, 'new position', e)
-            disp_frame_bblist(frame, [_rect_to_tuple(e), _rect_to_tuple(bb)])
-        self.t.start_track(frame, bb)
+            disp_frame_bblist(frame, [_rect_to_tuple(e), bb])
+        self.t.start_track(frame, tuple2drect(bb))
         self.track_conf = update_val
         self.detect_conf = detect_conf
         return update_val
@@ -138,15 +138,17 @@ class TrackerDetector:
             track_score = self.d[lkeys[itracker]].update_from_bb(frame, *lbox[idetection], verbose)
             ioumat = np.delete(ioumat, itracker, axis = 0)
 #            ioutmat = np.delete(ioutmat, idetection, axis=1)
-            lkeys.pop(itracker)
+            k = lkeys.pop(itracker)
 
             # if close bounding box and tracker do not match, delete tracker
             if track_score < self.min_confidence:
-                del self.d[itracker]
+                del self.d[k]
             else:
                 # if bounding box and detected face match, remove
                 # the detection from the set
                 lbox.pop(idetection)
+                ioumat = np.delete(ioumat, idetection, axis = 1)
+
 
         # remove trackers that do not match any detected box
         for k in lkeys:
