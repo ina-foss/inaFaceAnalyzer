@@ -39,7 +39,7 @@ def _rect_to_tuple(rect):
     return left, top, right, bottom
 
 def tuple2rect(t):
-    return dlib.rectangle(*[int(x) for x in np.floor(t)])
+    return dlib.rectangle(*[int(x) for x in np.round(t)])
 
 def intersection_over_union(x, y):
     # intersection over union
