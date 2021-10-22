@@ -42,15 +42,15 @@ class TestIFG(unittest.TestCase):
     # VIDEO
 
     def test_video_simple(self):
-        gv = GenderVideo(face_detector = OcvCnnFacedetector(paddpercent=0.))
+        gv = GenderVideo()
         ret = gv('./media/pexels-artem-podrez-5725953.mp4')
         ret.bb = ret.bb.map(str)
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
-        assert_frame_equal(ret, df, rtol=.01, check_dtype=False)
+        assert_frame_equal(ret, df, atol=.01, check_dtype=False)
 
 
     def test_video_subsamp(self):
-        gv = GenderVideo(face_detector = OcvCnnFacedetector(paddpercent=0.))
+        gv = GenderVideo()
         ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=25)
         ret.bb = ret.bb.map(str)
         refdf = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
@@ -123,7 +123,7 @@ class TestIFG(unittest.TestCase):
         # this method read a single face per frame
         df = df.drop_duplicates(subset='frame').reset_index()
         lbbox = list(df.bb.map(eval))
-        _, retdf = gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=25)
+        _, retdf = gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=30)
         self.assertEqual(len(retdf), len(lbbox))
         self.assertEqual(list(retdf.bb), lbbox)
         # in theory should be the same - even if it was obtained with a different NN

@@ -157,7 +157,7 @@ class GenderVideo(AbstractGender):
         vgg_feature_extractor: VGGFace neural model used for feature extraction.
         threshold: quality of face detection considered acceptable, value between 0 and 1.
     """
-    def __init__(self, face_detector = OcvCnnFacedetector(), face_classifier=Vggface_LSVM_YTF(), bbox_scaling=1.1, squarify=True, verbose = False):
+    def __init__(self, face_detector = OcvCnnFacedetector(paddpercent=0.), face_classifier=Vggface_LSVM_YTF(), bbox_scaling=1.1, squarify=True, verbose = False):
         AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
 
 

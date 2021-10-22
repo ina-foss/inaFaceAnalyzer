@@ -62,8 +62,9 @@ class TestTracking(unittest.TestCase):
     def test_tracking_singleoutput(self):
         gv = GenderTracking(5, face_classifier=Vggface_LSVM_YTF())
         dfpred = gv(_vid, subsamp_coeff=10)
+        dfpred.bb = dfpred.bb.map(str)
         dfref = pd.read_csv('./media/pexels-artem-podrez-tracking5-subsamp10-VggFace_LSVM_YTF.csv')
-        assert_frame_equal(dfref, dfpred, rtol=.01, check_dtype=False)
+        assert_frame_equal(dfref, dfpred, atol=.01, check_dtype=False)
 
 
     # TODO: update with serialized ouput!
@@ -71,11 +72,12 @@ class TestTracking(unittest.TestCase):
         gv = GenderTracking(5, face_classifier=Resnet50FairFaceGRA())
         ret = gv(_vid, subsamp_coeff=10)
         # TODO test output
+        raise NotImplementedError('testing reference output should be done')
 
     # compare with and without tracking using non smooth columns only
     def test_trackingVSvideo(self):
         detector = OcvCnnFacedetector(paddpercent=0.)
-        for c in [Vggface_LSVM_YTF, Resnet50FairFace]: # add GRA later
+        for c in [Vggface_LSVM_YTF, Resnet50FairFace, Resnet50FairFaceGRA]:
             classif = c()
             gv = GenderVideo(face_detector = detector, face_classifier = classif)
             gvdf = gv(_vid, subsamp_coeff=30)
