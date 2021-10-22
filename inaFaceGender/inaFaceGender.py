@@ -103,16 +103,17 @@ class AbstractGender:
 
 
     #TODO : test in multi output
+    # may be deprecated in a near future since it does not takes advantage of batches
     def classif_from_frame_and_bbox(self, frame, bbox, bbox_square, bbox_scale, bbox_norm):
 
         oshape = self.classifier.input_shape[:-1]
         fa, vrb = (self.face_alignment, self.verbose)
         face_img, bbox = preprocess_face(frame, bbox, bbox_square, bbox_scale, bbox_norm, fa, oshape, vrb)
 
-        feats, label, decision_value = self.classifier(face_img)
-        ret = [feats, bbox, label, decision_value]
-
-        return ret
+        ret = self.classifier(face_img)
+        # dirty trick used for retro compatibility
+        # should return ret + [bbox]
+        return [ret[0], bbox] + ret[1:]
 
     def detect_and_classify_faces_from_frame(self, frame):
         ret = []
@@ -122,7 +123,8 @@ class AbstractGender:
             ret.append(self.classif_from_frame_and_bbox(frame, bb, self.squarify_bbox, self.bbox_scaling, True) + [detect_conf])
 
             if self.verbose:
-                print('bounding box (x1, y1, x2, y2), sex label, sex classification decision function, face detection confidence')
+                ## TO CHANGE
+                print('bounding box (x1, y1, x2, y2),' + ','.join(self.classifier.outnames[1:]) + ',face detection confidence')
                 print(ret[-1][1:])
                 print()
         return ret

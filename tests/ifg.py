@@ -40,41 +40,7 @@ class TestIFG(unittest.TestCase):
     def tearDown(self):
         tf.keras.backend.clear_session()
 
-
-    def test_image_all_diallo(self):
-        gi = GenderImage(face_detector = OcvCnnFacedetector(paddpercent=0.))
-        ret = gi('./media/Europa21_-_2.jpg')
-        self.assertEqual(len(ret), 1)
-        ret = ret[0]
-        self.assertEqual(ret[1], (432, 246, 988, 802))
-        self.assertEqual(ret[2], 'f')
-        #todo : places = 1 due to changes in rotation procedure
-        self.assertAlmostEqual(ret[3], -3.305765917955594, places=1)
-        self.assertAlmostEqual(ret[4], 0.99964356, places=4)
-
-    def test_image_all_diallo_multioutput(self):
-        gi = GenderImage(face_classifier=Resnet50FairFaceGRA())
-        ret = gi('./media/Europa21_-_2.jpg')
-        self.assertEqual(len(ret), 1)
-        ret = ret[0]
-        self.assertEqual(ret[1], (432, 246, 988, 802))
-        self.assertEqual(ret[2], 'f')
-        # TODO - CHEKC REMANIING VALUES !!!!
-        #todo : places = 1 due to changes in rotation procedure
-        #self.assertAlmostEqual(ret[3], -3.305765917955594, places=1)
-        #self.assertAlmostEqual(ret[4], 0.99964356, places=4)
-
-
-    def test_image_knuth(self):
-        gi = GenderImage(face_detector = OcvCnnFacedetector(paddpercent=0.))
-        ret = gi('./media/20091020222328!KnuthAtOpenContentAlliance.jpg')
-        self.assertEqual(len(ret), 1)
-        ret = ret[0]
-        self.assertEqual(ret[1], (78, 46, 321, 289))
-        self.assertEqual(ret[2], 'm')
-        #todo : places = 1 due to changes in rotation procedure
-        self.assertAlmostEqual(ret[3], 6.621492606578991, places=1)
-        self.assertAlmostEqual(ret[4], 0.99995565, places=4)
+    # VIDEO
 
     def test_video_simple(self):
         gv = GenderVideo(face_detector = OcvCnnFacedetector(paddpercent=0.))
@@ -112,7 +78,7 @@ class TestIFG(unittest.TestCase):
         gv = GenderVideo(face_classifier=Resnet50FairFaceGRA())
         ret = gv.detect_with_tracking('./media/pexels-artem-podrez-5725953.mp4', k_frames=5, subsamp_coeff=25)
 
-
+    # DETECTOR
 
     def test_opencv_cnn_detection(self):
         detector = OcvCnnFacedetector(paddpercent=0.)
@@ -140,6 +106,8 @@ class TestIFG(unittest.TestCase):
         self.assertAlmostEqual(bb, [501.6525077819824, 128.37764537334442, 656.5784645080566, 328.3189299106598])
         ret = detector.get_closest_face(frame, (700, 0, 800, 200), min_iou=.1)
         self.assertIsNone(ret)
+
+    # VIDEO
 
     def test_pred_from_vid_and_bblist(self):
         gv = GenderVideo(bbox_scaling=1, squarify=False)
@@ -171,7 +139,7 @@ class TestIFG(unittest.TestCase):
         # in theory should be the same - even if it was obtained with a different NN
         self.assertEqual(list(retdf.sex_label), list(df.sex_label))
         # will require to gen a new reference csv
-        assert_series_equal(retdf.sex_decision_function, df.sex_decision_function, rtol=.01)
+        assert_series_equal(retdf.sex_decision_function, df.sex_decision_function, rtol=.01, check_dtype=False)
         # todo: check the values of the remaining outputs ??
         assert False
 
