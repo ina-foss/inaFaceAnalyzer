@@ -3,7 +3,7 @@
 
 # The MIT License
 
-# Copyright (c) 2019 Ina (David Doukhan - http://www.ina.fr/)
+# Copyright (c) 2021 Ina (David Doukhan - http://www.ina.fr/)
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,5 +23,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from .inaFaceGender import GenderVideo, GenderImage, GenderTracking
-from .display_utils import incrust_faces_in_video
+import unittest
+import pandas as pd
+from inaFaceGender.inaFaceGender import GenderTracking
+from inaFaceGender.face_classifier import Resnet50FairFaceGRA, Vggface_LSVM_YTF
+import tensorflow as tf
+
+class TestTracking(unittest.TestCase):
+
+    def tearDown(self):
+        tf.keras.backend.clear_session()
+
+    # TODO: update with serialized ouput!
+    def test_tracking_nofail_singleoutput(self):
+        gv = GenderTracking(face_classifier=Vggface_LSVM_YTF(), detection_period=5)
+        ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=10)
+        # TODO test output
+
+    # TODO: update with serialized ouput!
+    def test_tracking_nofail_multioutput(self):
+        gv = GenderTracking(face_classifier=Resnet50FairFaceGRA(), detection_period=5)
+        ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=10)
+        # TODO test output
+
+## TODO compare to gender video on non smooth stuffs

@@ -239,7 +239,7 @@ class GenderVideo(AbstractGender):
 
 
 class GenderTracking(AbstractGender):
-    def __init__(self, detection_period, face_detector = OcvCnnFacedetector(), face_classifier=Vggface_LSVM_YTF(), bbox_scaling=1.1, squarify=True, verbose = False):
+    def __init__(self, detection_period, face_detector = OcvCnnFacedetector(paddpercent=0.), face_classifier=Vggface_LSVM_YTF(), bbox_scaling=1.1, squarify=True, verbose = False):
         AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
         self.detection_period = detection_period
 
@@ -308,13 +308,14 @@ def _label_decision_fun(x):
 
 def _smooth_labels(df):
     if len(df) == 0:
-        df['smoothed_decision'] = []
-        df['smoothed_label'] = []
+        df['avg_sex_decision_function'] = []
+        df['avg_sex_label'] = []
         return df
 
     byfaceid = pd.DataFrame(df.groupby('face_id')['sex_decision_function'].mean())
-    byfaceid.rename(columns = {'sex_decision_function':'smoothed_decision'}, inplace=True)
+    byfaceid.rename(columns = {'sex_decision_function':'avg_sex_decision_function'}, inplace=True)
     new_df = df.merge(byfaceid, on= 'face_id')
-    new_df['smoothed_label'] = new_df['smoothed_decision'].map(_label_decision_fun)
+    new_df['avg_sex_label'] = new_df['avg_sex_decision_function'].map(_label_decision_fun)
 
-    return new_df
+    # I guess with a different joining/merging strategy, there would be no need to sort
+    return new_df.sort_values(by = ['frame', 'face_id'])

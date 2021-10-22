@@ -30,8 +30,10 @@ import unittest
 from tests.classifiers import TestClassifiers
 # tests related to opencv_utils.py
 from tests.ocvutils import TestOpenCvUtils
-# single image related testes
+# single image related tests
 from tests.singleimage import TestSingleImage
+# tracking pipeline tests
+from tests.tracking import TestTracking
 # here are remaining framework tests
 from tests.ifg import TestIFG
 

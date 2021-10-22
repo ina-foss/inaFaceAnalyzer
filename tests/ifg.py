@@ -28,7 +28,7 @@ import pandas as pd
 import numpy as np
 import cv2
 import tensorflow as tf
-from inaFaceGender.inaFaceGender import GenderVideo, GenderImage, GenderTracking
+from inaFaceGender.inaFaceGender import GenderVideo, GenderImage
 from inaFaceGender.face_preprocessing import _norm_bbox, _squarify_bbox
 from pandas.testing import assert_frame_equal, assert_series_equal
 from inaFaceGender.opencv_utils import video_iterator
@@ -68,17 +68,6 @@ class TestIFG(unittest.TestCase):
         gv = GenderVideo(face_classifier=Resnet50FairFaceGRA())
         ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=25)
 
-    # TODO: update with serialized ouput!
-    def test_tracking_nofail_singleoutput(self):
-        gv = GenderTracking(detection_period=5)
-        ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=10)
-        # TODO test output
-
-    # TODO: update with serialized ouput!
-    def test_tracking_nofail_multioutput(self):
-        gv = GenderTracking(face_classifier=Resnet50FairFaceGRA(), detection_period=5)
-        ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=10)
-        # TODO test output
 
     # DETECTOR
 
