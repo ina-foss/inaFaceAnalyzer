@@ -213,7 +213,6 @@ class GenderVideo(AbstractGender):
             classif_ret = self.classifier(lbatch_img)[1:]
             for i in range(len(lbatch_img)):
                 info.append(lbatch_info[i] + [e[i] for e in classif_ret])
-        # todo : rename conf in face_detection_conf
         return pd.DataFrame.from_records(info, columns = ['frame', 'bb', 'face_detect_conf'] + self.classifier.outnames[1:])
 
     def pred_from_vid_and_bblist(self, vidsrc, lbox, subsamp_coeff=1, start_frame=0):
@@ -291,11 +290,13 @@ class GenderTracking(AbstractGender):
             classif_ret = self.classifier(lbatch_img)[1:]
             for i in range(len(lbatch_img)):
                 info.append(lbatch_info[i] + [e[i] for e in classif_ret])
-        # todo : rename conf in face_detection_conf
         df = pd.DataFrame.from_records(info, columns = ['frame', 'bb'] + detector.out_names[1:]+ self.classifier.outnames[1:])
         return _smooth_labels(df)
 
 
+# should be moved in face_classifier
+# face classifiers should implement their own smoothing procedure and
+# define the fields requiring smoothing
 def _label_decision_fun(x):
 
     if x>0:
