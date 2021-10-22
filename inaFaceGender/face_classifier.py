@@ -25,7 +25,6 @@
 
 import numpy as np
 import numbers
-import pandas as pd
 from abc import ABC, abstractmethod
 from keras_vggface.vggface import VGGFace
 from keras_vggface import utils
@@ -57,20 +56,22 @@ class FaceClassifier(ABC):
     @abstractmethod
     def outnames(): pass
 
+    @abstractmethod
+    def decision_map() : pass
+
     def average_results(self, df):
         if len(df) == 0:
-            df['avg_sex_decision_function'] = []
-            df['avg_sex_label'] = []
+            for k in self.decision_map:
+                df[k + '_avg'] = []
+            for k in self.decision_map:
+                df[self.decision_map[k][0] + '_avg'] = []
             return df
 
-        byfaceid = pd.DataFrame(df.groupby('face_id')['sex_decision_function'].mean())
-        byfaceid.rename(columns = {'sex_decision_function':'avg_sex_decision_function'}, inplace=True)
-        new_df = df.merge(byfaceid, on= 'face_id')
-#        new_df['avg_sex_label'] = new_df['avg_sex_decision_function'].map(self.decision_map['sex_decision_function'])
-        new_df['avg_sex_label'] = self.decision_map['sex_decision_function'](new_df['avg_sex_decision_function'])
-
-        # I guess with a different joining/merging strategy, there would be no need to sort
-        return new_df.sort_values(by = ['frame', 'face_id']).reset_index(drop=True)
+        gbm = df.groupby('face_id')[sorted(self.decision_map)].mean()
+        for k in sorted(self.decision_map):
+            colname, dec2lab = self.decision_map[k]
+            gbm[colname] = dec2lab(gbm[k])
+        return df.join(gbm, on='face_id', rsuffix='_avg')
 
     # Keras trick for async READ ?
     # bench execution time : time spent in read/exce . CPU vs GPU
@@ -140,7 +141,7 @@ def _fairface_sexdec2sexlabel(sex_decision):
 class Resnet50FairFace(FaceClassifier):
     input_shape = (224, 224, 3)
     outnames = ['bottleneck_face_feats', 'sex_label', 'sex_decision_function']
-    decision_map = {'sex_decision_function': _fairface_sexdec2sexlabel}
+    decision_map = {'sex_decision_function': ('sex_label', _fairface_sexdec2sexlabel)}
 
     def __init__(self):
         m = keras.models.load_model(get_remote('keras_resnet50_fairface.h5'), compile=False)
@@ -154,7 +155,7 @@ class Resnet50FairFace(FaceClassifier):
         decisions, feats = self.model.predict(x)
         decisions = decisions.ravel()
         assert len(decisions) == len(x)
-        labels = self.decision_map['sex_decision_function'](decisions)
+        labels = self.decision_map['sex_decision_function'][1](decisions)
         return feats, labels, decisions
 
 
@@ -180,7 +181,7 @@ def _fairface_agedec2age(age_dec):
 class Resnet50FairFaceGRA(Resnet50FairFace):
     outnames = ['bottleneck_face_feats', 'sex_label', 'age_label', 'sex_decision_function', 'age_decision_function']
     decision_map = {**Resnet50FairFace.decision_map,
-                    **{'age_decision_function': _fairface_agedec2age}}
+                    **{'age_decision_function': ('age_label', _fairface_agedec2age)}}
     def __init__(self):
         m = keras.models.load_model(get_remote('keras_resnet50_fairface_GRA.h5'), compile=False)
         self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs + [m.layers[-5].output])
@@ -203,13 +204,16 @@ class OxfordVggFace(FaceClassifier):
     input_shape = (224, 224, 3)
     outnames = ['face_embeddings', 'sex_label', 'sex_decision_function']
 
+    @property
+    def decision_map(self):
+        return {'sex_decision_function': ('sex_label', self.decision2label)}
+
     def __init__(self, hdf5_svm=None):
         # Face feature extractor from aligned and detected faces
         self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = self.input_shape, pooling ='avg')
         # SVM trained on VGG neural features
         if hdf5_svm is not None:
             self.gender_svm = svm_load(hdf5_svm)
-        self.decision_map = {'sex_decision_function': self.decision2label}
 
     def decision2label(self, decision):
         #print('OXVFF', decision)

@@ -1,4 +1,4 @@
-frame,bb,face_id,face_detect_conf,tracking_conf,sex_label,sex_decision_function,avg_sex_decision_function,avg_sex_label
+frame,bb,face_id,face_detect_conf,tracking_conf,sex_label,sex_decision_function,sex_decision_function_avg,sex_label_avg
 0,"(61, 100, 274, 313)",0,0.998,,f,-9.418,-9.287,f
 0,"(951, -6, 1130, 172)",1,0.988,,m,11.824,11.246,m
 0,"(744, 17, 932, 206)",2,0.987,,f,-6.632,-6.382,f

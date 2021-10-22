@@ -58,7 +58,7 @@ class TestTracking(unittest.TestCase):
         trackbb = _rect_to_tuple(t.t.get_position())
         np.testing.assert_almost_equal(bb, trackbb)
         np.testing.assert_almost_equal(2.7552027282149045, conf)
-    
+
     def test_tracking_singleoutput(self):
         gv = GenderTracking(5, face_classifier=Vggface_LSVM_YTF())
         dfpred = gv(_vid, subsamp_coeff=10)
@@ -73,6 +73,14 @@ class TestTracking(unittest.TestCase):
         ret = gv(_vid, subsamp_coeff=10)
         # TODO test output
         raise NotImplementedError('testing reference output should be done')
+
+    def test_tracking_nofaces(self):
+        gv = GenderTracking(5, face_classifier=Resnet50FairFaceGRA(), face_detector=lambda x, y: [])
+        df = gv(_vid, subsamp_coeff=10)
+        self.assertEqual(len(df), 0)
+        self.assertEqual(len(df.columns), 13)
+
+
 
     # compare with and without tracking using non smooth columns only
     def test_trackingVSvideo(self):
