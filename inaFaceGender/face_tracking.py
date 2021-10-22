@@ -26,7 +26,7 @@
 import dlib
 import numpy as np
 from .opencv_utils import disp_frame_bblist
-from .face_utils import _rect_to_tuple, tuple2rect, intersection_over_union, tuple2drect
+from .face_utils import _rect_to_tuple, intersection_over_union, tuple2drect
 
 def _matrix_argmax(m):
     x = np.argmax(m)
@@ -34,13 +34,12 @@ def _matrix_argmax(m):
     return x // dim, x % dim
 
 class Tracker:
-    def __init__(self, frame, bb, detect_conf): #, min_confidence):
+    def __init__(self, frame, bb, detect_conf):
         self.t = dlib.correlation_tracker()
         self.t.start_track(frame, tuple2drect(bb))
         self.fshape = frame.shape
         self.detect_conf = detect_conf
         self.track_conf = None
-#        self.min_confidence = min_confidence
 
     def update(self, frame, verbose=False):
         update_val = self.t.update(frame)
@@ -130,14 +129,12 @@ class TrackerDetector:
         # while matrix not empty and IOU > 70%
         while np.prod(ioumat.shape):
             # find the largest intersection over union
-            #print(matrix_argmax(ioumat))
             itracker, idetection = am = _matrix_argmax(ioumat)
             if ioumat[am] <= 0.7:
                 break
             # update closest bounding box and trackers and remove them from matrix
             track_score = self.d[lkeys[itracker]].update_from_bb(frame, *lbox[idetection], verbose)
             ioumat = np.delete(ioumat, itracker, axis = 0)
-#            ioutmat = np.delete(ioutmat, idetection, axis=1)
             k = lkeys.pop(itracker)
 
             # if close bounding box and tracker do not match, delete tracker
