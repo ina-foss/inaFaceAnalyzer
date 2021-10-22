@@ -27,6 +27,7 @@ import unittest
 import tensorflow as tf
 import numpy as np
 from inaFaceGender.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
+from inaFaceGender.opencv_utils import imread_rgb
 
 
 class TestClassifiers(unittest.TestCase):
@@ -100,3 +101,13 @@ class TestClassifiers(unittest.TestCase):
         np.testing.assert_almost_equal(ref_ageL, al, decimal=5)
         np.testing.assert_almost_equal(ref_genderD, gd, decimal=5)
         np.testing.assert_almost_equal(ref_ageD, ad, decimal=5)
+    
+    def test_batch_order(self):
+        # test if image position in batch has an impact on decision value
+        limg = [imread_rgb('./media/diallo224.jpg'), imread_rgb('./media/knuth224.jpg')] * 32
+        c = Resnet50FairFace()
+        _, _, decisions = c(limg)
+        d1 = decisions[::2]
+        d2 = decisions[1::2]        
+        np.testing.assert_almost_equal([d1[0]] * 32, d1)
+        np.testing.assert_almost_equal([d2[0]] * 32, d2)
