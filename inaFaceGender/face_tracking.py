@@ -36,7 +36,7 @@ def _matrix_argmax(m):
 class Tracker:
     def __init__(self, frame, bb, detect_conf): #, min_confidence):
         self.t = dlib.correlation_tracker()
-        self.t.start_track(frame, tuple2rect(bb))
+        self.t.start_track(frame, tuple2drect(bb))
         self.fshape = frame.shape
         self.detect_conf = detect_conf
         self.track_conf = None
@@ -62,7 +62,7 @@ class Tracker:
         self.track_conf = update_val
         return update_val
 
-    def update_from_bb(self, frame, bb, detect_conf, verbose=True):
+    def update_from_bb(self, frame, bb, detect_conf, verbose=False):
         update_val = self.t.update(frame, tuple2drect(bb))
         if verbose:
             e = self.t.get_position()

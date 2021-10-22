@@ -25,13 +25,12 @@
 
 import unittest
 import pandas as pd
+from pandas.testing import assert_frame_equal, assert_series_equal
 import numpy as np
 import cv2
 import tensorflow as tf
-from inaFaceGender.inaFaceGender import GenderVideo, GenderImage
+from inaFaceGender.inaFaceGender import GenderVideo
 from inaFaceGender.face_preprocessing import _norm_bbox, _squarify_bbox
-from pandas.testing import assert_frame_equal, assert_series_equal
-from inaFaceGender.opencv_utils import video_iterator
 from inaFaceGender.face_detector import OcvCnnFacedetector
 from inaFaceGender.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
 
@@ -129,6 +128,7 @@ class TestIFG(unittest.TestCase):
         self.assertEqual(list(retdf.bb), lbbox)
         # in theory should be the same - even if it was obtained with a different NN
         self.assertEqual(list(retdf.sex_label), list(df.sex_label))
+        raise NotImplementedError('reference csv should be generated for this test')
         # will require to gen a new reference csv
         assert_series_equal(retdf.sex_decision_function, df.sex_decision_function, rtol=.01, check_dtype=False)
         # todo: check the values of the remaining outputs ??

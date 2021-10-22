@@ -23,7 +23,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import dlib
 import numpy as np
 import pandas as pd
 from .opencv_utils import video_iterator, imread_rgb
@@ -126,7 +125,7 @@ class AbstractGender:
         for i, (iframe, _, detect_conf, _, bbox) in enumerate(batch):
             info.append((iframe, bbox, *[e[i] for e in classif_ret[1:]], detect_conf))
             if self.verbose:
-                print('iframe, bounding box (x1, y1, x2, y2), %s, face detection confidence' % batch_desc)
+                print('iframe, bounding box (x1, y1, x2, y2), %s, face detection confidence' % classif_desc)
                 last = info[-1]
                 print(*last)
                 print()
@@ -179,7 +178,7 @@ class GenderVideo(AbstractGender):
 
 
         oshape = self.classifier.input_shape[:-1]
-        classif_desc = ','.join(self.classifier.outnames[1:])
+        #classif_desc = ','.join(self.classifier.outnames[1:])
 
         info = []
         lbatch_img = []
@@ -238,6 +237,8 @@ class GenderVideo(AbstractGender):
         return np.concatenate(lfeat), pd.DataFrame.from_records(lret, columns=['bb']+ self.classifier.outnames[1:])
 
 
+# TODO : kwarfs for providing arguments to super class ??
+# use super name also !
 class GenderTracking(AbstractGender):
     def __init__(self, detection_period, face_detector = OcvCnnFacedetector(paddpercent=0.), face_classifier=Vggface_LSVM_YTF(), bbox_scaling=1.1, squarify=True, verbose = False):
         AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
@@ -260,7 +261,7 @@ class GenderTracking(AbstractGender):
 
 
         oshape = self.classifier.input_shape[:-1]
-        classif_desc = ','.join(self.classifier.outnames[1:])
+        #classif_desc = ','.join(self.classifier.outnames[1:])
         detector = TrackerDetector(self.face_detector, self.detection_period)
 
         info = []
@@ -271,8 +272,7 @@ class GenderTracking(AbstractGender):
 
             for bb, faceid, detect_conf, track_conf in detector(frame):
                 if self.verbose:
-                    print(detector.outnames, bb, faceid, detect_conf, track_conf)
-
+                    print(detector.out_names, bb, faceid, detect_conf, track_conf)
 
                 face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, True, self.face_alignment, oshape, self.verbose)
 
@@ -318,4 +318,4 @@ def _smooth_labels(df):
     new_df['avg_sex_label'] = new_df['avg_sex_decision_function'].map(_label_decision_fun)
 
     # I guess with a different joining/merging strategy, there would be no need to sort
-    return new_df.sort_values(by = ['frame', 'face_id'])
+    return new_df.sort_values(by = ['frame', 'face_id']).reset_index(drop=True)
