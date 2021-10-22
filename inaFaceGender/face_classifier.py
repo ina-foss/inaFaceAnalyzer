@@ -25,6 +25,7 @@
 
 import numpy as np
 import numbers
+from abc import ABC, abstractmethod
 from keras_vggface.vggface import VGGFace
 from keras_vggface import utils
 import tensorflow
@@ -38,7 +39,21 @@ from .remote_utils import get_remote
 # TODO : return dictionary with label & decision function name
 # this may require additional refactoring
 
-class AbstractFaceClassifier:
+class FaceClassifier(ABC):
+
+    @abstractmethod
+    def list2batch(self, limg): pass
+
+    @abstractmethod
+    def inference(self, bfeats): pass
+
+    @classmethod
+    @abstractmethod
+    def input_shape(): pass
+
+    @classmethod
+    @abstractmethod
+    def outnames(): pass
 
     # Keras trick for async READ ?
     # bench execution time : time spent in read/exce . CPU vs GPU
@@ -101,14 +116,10 @@ class AbstractFaceClassifier:
             return batch_ret
         return [e[0] for e in batch_ret]
 
-    def list2batch(self, limg):
-        raise NotImplementedError()
-
-    def inference(self, bfeats):
-       raise NotImplementedError()
 
 
-class Resnet50FairFace(AbstractFaceClassifier):
+
+class Resnet50FairFace(FaceClassifier):
     input_shape = (224, 224, 3)
     outnames = ['bottleneck_face_feats', 'sex_label', 'sex_decision_function']
 
@@ -164,7 +175,7 @@ class Resnet50FairFaceGRA(Resnet50FairFace):
         return feats, gender_labels, age_labels, gender_dec, age_dec
 
 
-class OxfordVggFace(AbstractFaceClassifier):
+class OxfordVggFace(FaceClassifier):
     input_shape = (224, 224, 3)
     outnames = ['face_embeddings', 'sex_label', 'sex_decision_function']
 
