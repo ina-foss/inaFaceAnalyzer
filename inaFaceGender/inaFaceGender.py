@@ -293,29 +293,4 @@ class GenderTracking(AbstractGender):
             for i in range(len(lbatch_img)):
                 info.append(lbatch_info[i] + [e[i] for e in classif_ret])
         df = pd.DataFrame.from_records(info, columns = ['frame', 'bb'] + detector.out_names[1:]+ self.classifier.outnames[1:])
-        return _smooth_labels(df)
-
-
-# should be moved in face_classifier
-# face classifiers should implement their own smoothing procedure and
-# define the fields requiring smoothing
-def _label_decision_fun(x):
-
-    if x>0:
-        return 'm'
-    else:
-        return 'f'
-
-def _smooth_labels(df):
-    if len(df) == 0:
-        df['avg_sex_decision_function'] = []
-        df['avg_sex_label'] = []
-        return df
-
-    byfaceid = pd.DataFrame(df.groupby('face_id')['sex_decision_function'].mean())
-    byfaceid.rename(columns = {'sex_decision_function':'avg_sex_decision_function'}, inplace=True)
-    new_df = df.merge(byfaceid, on= 'face_id')
-    new_df['avg_sex_label'] = new_df['avg_sex_decision_function'].map(_label_decision_fun)
-
-    # I guess with a different joining/merging strategy, there would be no need to sort
-    return new_df.sort_values(by = ['frame', 'face_id']).reset_index(drop=True)
+        return self.classifier.average_results(df)
