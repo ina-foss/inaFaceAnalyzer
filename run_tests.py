@@ -28,10 +28,12 @@ import unittest
 
 # here are tests related to face_classifiers.py
 from tests.classifiers import TestClassifiers
-# here are remaining framework tests
-from tests.ifg import TestIFG
 # tests related to opencv_utils.py
 from tests.ocvutils import TestOpenCvUtils
+# single image related testes
+from tests.singleimage import TestSingleImage
+# here are remaining framework tests
+from tests.ifg import TestIFG
 
 
 if __name__ == '__main__':
