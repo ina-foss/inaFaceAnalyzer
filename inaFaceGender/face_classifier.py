@@ -39,6 +39,9 @@ from .remote_utils import get_remote
 # TODO : return dictionary with label & decision function name
 # this may require additional refactoring
 
+### RETURN PD.DATAFRAME ????
+### OPTION FOR NOT RETURNING FEATURES!!!
+
 
 class FaceClassifier(ABC):
 
@@ -75,20 +78,24 @@ class FaceClassifier(ABC):
 
     # Keras trick for async READ ?
     # bench execution time : time spent in read/exce . CPU vs GPU
-    def imgpaths_batch(self, lfiles, batch_len=32):
+    def imgpaths_batch(self, lfiles, return_features, batch_len=32):
         """
         images are assumed to be faces already detected, scaled, aligned, croped
         """
         assert len(lfiles) > 0
 
+        if return_features:
+            raise NotImplementedError()
+
         lbatchret = []
 
         for i in range(0, len(lfiles), batch_len):
             xbatch = [imread_rgb(e) for e in lfiles[i:(i+batch_len)]]
-            lbatchret.append(self(xbatch))
+
+            lbatchret.append(self(xbatch, False)) # to change when return features will be managed
+
 
         lenb = len(lbatchret[0])
-        assert all(len(e) == lenb for e in lbatchret)
 
         lret = []
         for i in range(lenb):
@@ -103,7 +110,7 @@ class FaceClassifier(ABC):
                 raise NotImplementedError(ti)
         return tuple(lret)
 
-    def __call__(self, limg):
+    def __call__(self, limg, return_features):
         """
         Classify a list of images
         images are supposed to be preprocessed faces: aligned, cropped
@@ -128,11 +135,16 @@ class FaceClassifier(ABC):
             limg = [limg]
 
         assert np.all([e.shape == self.input_shape for e in limg])
-        batch_ret = self.inference(self.list2batch(limg))
+        batch_ret_feats, batch_ret_preds = self.inference(self.list2batch(limg))
 
         if islist:
-            return batch_ret
-        return [e[0] for e in batch_ret]
+            if return_features:
+                return batch_ret_feats, batch_ret_preds
+            return batch_ret_preds
+
+        if return_features:
+            return  batch_ret_feats[0, :], [e[0] for e in batch_ret_preds]
+        return [e[0] for e in batch_ret_preds]
 
 
 def _fairface_sexdec2sexlabel(sex_decision):
@@ -156,7 +168,7 @@ class Resnet50FairFace(FaceClassifier):
         decisions = decisions.ravel()
         assert len(decisions) == len(x)
         labels = self.decision_map['sex_decision_function'][1](decisions)
-        return feats, labels, decisions
+        return feats, (labels, decisions)
 
 
 def _fairface_agedec2age(age_dec):
@@ -197,7 +209,7 @@ class Resnet50FairFaceGRA(Resnet50FairFace):
         age_dec = age.ravel()
         age_labels = _fairface_agedec2age(age_dec)
 
-        return feats, gender_labels, age_labels, gender_dec, age_dec
+        return feats, (gender_labels, age_labels, gender_dec, age_dec)
 
 
 class OxfordVggFace(FaceClassifier):
@@ -232,7 +244,7 @@ class OxfordVggFace(FaceClassifier):
     def inference(self, x):
         decisions = self.gender_svm.decision_function(x)
         labels = [self.gender_svm.classes_[1 if x > 0 else 0] for x in decisions]
-        return np.array(x), labels, decisions
+        return np.array(x), (labels, decisions)
 
 class Vggface_LSVM_YTF(OxfordVggFace):
     def __init__(self):

@@ -86,10 +86,10 @@ class AbstractGender:
         fa, vrb = (self.face_alignment, self.verbose)
         face_img, bbox = preprocess_face(frame, bbox, bbox_square, bbox_scale, bbox_norm, fa, oshape, vrb)
 
-        ret = self.classifier(face_img)
+        feats, preds = self.classifier(face_img, True)
         # dirty trick used for retro compatibility
         # should return ret + [bbox]
-        return [ret[0], bbox] + ret[1:]
+        return [feats, bbox] + preds
 
     def detect_and_classify_faces_from_frame(self, frame):
         ret = []
@@ -104,35 +104,6 @@ class AbstractGender:
                 print(ret[-1][1:])
                 print()
         return ret
-
-
-    # THIS METHOD SHOULD BE REMOVED IN A NEAR FUTRE
-    # it is removed in __call__
-    # it should be now removed in detect with tracking
-    def process_batch(self, lbatch):
-        # TODO: is it possible to provide only list of images ???
-        # lbatch cpontains tuples (iframe, bb (original bounding box), detect_conf, face_img, bbox)
-
-        # TODO : Batch should be already set to its size of max batchlen
-        batch = lbatch[:self.batch_len]
-
-
-        classif_ret = self.classifier([e[3] for e in batch])
-        classif_desc = ','.join(self.classifier.outnames[1:])
-
-        # TO BE DONE OUTSIDE
-        info = []
-        for i, (iframe, _, detect_conf, _, bbox) in enumerate(batch):
-            info.append((iframe, bbox, *[e[i] for e in classif_ret[1:]], detect_conf))
-            if self.verbose:
-                print('iframe, bounding box (x1, y1, x2, y2), %s, face detection confidence' % classif_desc)
-                last = info[-1]
-                print(*last)
-                print()
-
-        # TODO : should not return the updated batch....
-        return lbatch[self.batch_len:], info
-
 
 
 class GenderImage(AbstractGender):
@@ -201,7 +172,7 @@ class GenderVideo(AbstractGender):
                 #lbatch, tmpinfo = self.process_batch(lbatch)
                 #info += tmpinfo
                 # TODO : it's dirty to skip the features !
-                classif_ret = self.classifier(lbatch_img[:self.batch_len])[1:]
+                classif_ret = self.classifier(lbatch_img[:self.batch_len], False)
                 for i in range(self.batch_len):
                     # TODO: its dirty to put face confidence at the end, its for test retro compatibility
                     info.append(lbatch_info[i] + [e[i] for e in classif_ret])
@@ -211,7 +182,7 @@ class GenderVideo(AbstractGender):
         if len(lbatch_img) > 0:
             #lbatch, tmpinfo = self.process_batch(lbatch)
             #info += tmpinfo
-            classif_ret = self.classifier(lbatch_img)[1:]
+            classif_ret = self.classifier(lbatch_img, False)
             for i in range(len(lbatch_img)):
                 info.append(lbatch_info[i] + [e[i] for e in classif_ret])
         return pd.DataFrame.from_records(info, columns = ['frame', 'bb', 'face_detect_conf'] + self.classifier.outnames[1:])
@@ -282,14 +253,14 @@ class GenderTracking(AbstractGender):
 
             while len(lbatch_img) > self.batch_len:
                 # TODO : it's dirty to skip the features !
-                classif_ret = self.classifier(lbatch_img[:self.batch_len])[1:]
+                classif_ret = self.classifier(lbatch_img[:self.batch_len], False)
                 for i in range(self.batch_len):
                     info.append(lbatch_info[i] + [e[i] for e in classif_ret])
                 lbatch_img = lbatch_img[self.batch_len:]
                 lbatch_info = lbatch_info[self.batch_len:]
 
         if len(lbatch_img) > 0:
-            classif_ret = self.classifier(lbatch_img)[1:]
+            classif_ret = self.classifier(lbatch_img, False)
             for i in range(len(lbatch_img)):
                 info.append(lbatch_info[i] + [e[i] for e in classif_ret])
         df = pd.DataFrame.from_records(info, columns = ['frame', 'bb'] + detector.out_names[1:]+ self.classifier.outnames[1:])
