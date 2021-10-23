@@ -44,6 +44,7 @@ class TestSingleImage(unittest.TestCase):
         self.assertEqual(ret[1], (432, 246, 988, 802))
         self.assertEqual(ret[2], 'f')
         #todo : places = 1 due to changes in rotation procedure
+        # same value used in test with micro processing difference
         self.assertAlmostEqual(ret[3], -3.305765917955594, places=1)
         self.assertAlmostEqual(ret[4], 0.99964356, places=4)
 
@@ -51,14 +52,13 @@ class TestSingleImage(unittest.TestCase):
         gi = GenderImage(face_classifier=Resnet50FairFaceGRA())
         ret = gi('./media/Europa21_-_2.jpg')
         self.assertEqual(len(ret), 1)
-        ret = ret[0]
-        self.assertEqual(ret[1], (421, 234, 997, 810))
-        self.assertEqual(ret[2], 'f')
-        raise NotImplementedError('minimal checks ok but test should be completed')
-        # TODO - CHEKC REMANIING VALUES !!!!
-        #todo : places = 1 due to changes in rotation procedure
-        #self.assertAlmostEqual(ret[3], -3.305765917955594, places=1)
-        #self.assertAlmostEqual(ret[4], 0.99964356, places=4)
+        _, bb, sex, age, sex_decisionf, age_decisionf, face_detect_conf = ret[0]
+        self.assertEqual(bb, (421, 234, 997, 810))
+        self.assertEqual(sex, 'f')
+        self.assertAlmostEqual(age, 25.239, places=2)
+        self.assertAlmostEqual(sex_decisionf, -5.258, places=2)
+        self.assertAlmostEqual(age_decisionf, 3.023, places=2)
+        self.assertAlmostEqual(face_detect_conf, 0.987, places=2)
 
 
     def test_image_knuth(self):
