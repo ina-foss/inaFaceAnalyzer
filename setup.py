@@ -71,9 +71,9 @@ LONGDESCRIPTION='''Detect faces in video streams and does gender classification.
 
 setup(
     name = "inaFaceGender",
-    version = "0.0.2",
-    author = "Zohra Rezgui, David Doukhan",
-    author_email = "zohra.rzg@gmail.com, david.doukhan@gmail.com",
+    version = "0.0.3",
+    author = "David Doukhan, Zohra Rezgui",
+    author_email = "david.doukhan@gmail.com, zohra.rzg@gmail.com",
     test_suite="run_tests.py",
     description = DESCRIPTION,
     license = "MIT",
@@ -82,11 +82,11 @@ setup(
     packages=['inaFaceGender'],
     keywords = KEYWORDS,
     #packages = find_packages(),
-    #package_data = {'inaSpeechSegmenter': ['*.hdf5']},
     include_package_data = True,
     data_files = ['LICENSE'],
     long_description=LONGDESCRIPTION,
     long_description_content_type='text/markdown',
+# TODO: add webcam script
 #    scripts=[os.path.join('scripts', script) for script in \
 #             ['ina_face_gender.py']],
     classifiers=CLASSIFIERS,
