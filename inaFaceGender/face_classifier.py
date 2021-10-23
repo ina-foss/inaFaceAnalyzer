@@ -24,6 +24,7 @@
 # THE SOFTWARE.
 
 import numpy as np
+import pandas as pd
 import numbers
 from abc import ABC, abstractmethod
 from keras_vggface.vggface import VGGFace
@@ -36,14 +37,11 @@ from .opencv_utils import imread_rgb
 from .remote_utils import get_remote
 
 
-# TODO : return dictionary with label & decision function name
-# this may require additional refactoring
-
-### RETURN PD.DATAFRAME ????
-### OPTION FOR NOT RETURNING FEATURES!!!
-
-
 class FaceClassifier(ABC):
+
+    @classmethod
+    @abstractmethod
+    def input_shape(): pass
 
     @abstractmethod
     def list2batch(self, limg): pass
@@ -51,16 +49,8 @@ class FaceClassifier(ABC):
     @abstractmethod
     def inference(self, bfeats): pass
 
-    @classmethod
     @abstractmethod
-    def input_shape(): pass
-
-    @classmethod
-    @abstractmethod
-    def outnames(): pass
-
-    @abstractmethod
-    def decision_map() : pass
+    def decisionfunction2labels(self, df): pass
 
     def average_results(self, df):
         if len(df) == 0:
@@ -94,21 +84,7 @@ class FaceClassifier(ABC):
 
             lbatchret.append(self(xbatch, False)) # to change when return features will be managed
 
-
-        lenb = len(lbatchret[0])
-
-        lret = []
-        for i in range(lenb):
-            li = [e[i] for e in lbatchret]
-            ti = type(li[0])
-            assert all(type(e) == ti for e in li)
-            if ti == np.ndarray:
-                lret.append(np.concatenate(li))
-            elif ti == list:
-                lret.append([e for lis in li for e in lis])
-            else:
-                raise NotImplementedError(ti)
-        return tuple(lret)
+        return pd.concat(lbatchret).reset_index(drop=True)
 
     def __call__(self, limg, return_features):
         """
@@ -136,24 +112,20 @@ class FaceClassifier(ABC):
 
         assert np.all([e.shape == self.input_shape for e in limg])
         batch_ret_feats, batch_ret_preds = self.inference(self.list2batch(limg))
+        batch_ret_preds = self.decisionfunction2labels(batch_ret_preds)
 
         if islist:
             if return_features:
                 return batch_ret_feats, batch_ret_preds
             return batch_ret_preds
 
+        ret = next(batch_ret_preds.itertuples(index=False, name='FaceClassifierResult'))
         if return_features:
-            return  batch_ret_feats[0, :], [e[0] for e in batch_ret_preds]
-        return [e[0] for e in batch_ret_preds]
-
-
-def _fairface_sexdec2sexlabel(sex_decision):
-    return ['m' if e > 0 else 'f' for e in sex_decision]
+            return  batch_ret_feats[0, :], ret
+        return ret
 
 class Resnet50FairFace(FaceClassifier):
     input_shape = (224, 224, 3)
-    outnames = ['bottleneck_face_feats', 'sex_label', 'sex_decision_function']
-    decision_map = {'sex_decision_function': ('sex_label', _fairface_sexdec2sexlabel)}
 
     def __init__(self):
         m = keras.models.load_model(get_remote('keras_resnet50_fairface.h5'), compile=False)
@@ -165,10 +137,12 @@ class Resnet50FairFace(FaceClassifier):
 
     def inference(self, x):
         decisions, feats = self.model.predict(x)
-        decisions = decisions.ravel()
-        assert len(decisions) == len(x)
-        labels = self.decision_map['sex_decision_function'][1](decisions)
-        return feats, (labels, decisions)
+        df = pd.DataFrame(decisions.ravel(), columns=['sex_decfunc'])
+        return feats, df
+
+    def decisionfunction2labels(self, df):
+        df['sex_label'] = df.sex_decfunc.map(lambda x: 'm' if x > 0 else 'f' )
+        return df
 
 
 def _fairface_agedec2age(age_dec):
@@ -185,41 +159,28 @@ def _fairface_agedec2age(age_dec):
     idec = np.round(age_dec).astype(np.int32)
 
     age_label = ages_mean[idec] + (age_dec - idec) * ages_range[idec]
-    return age_label.astype(np.float32)
+    return age_label
 
 
 
 
 class Resnet50FairFaceGRA(Resnet50FairFace):
-    outnames = ['bottleneck_face_feats', 'sex_label', 'age_label', 'sex_decision_function', 'age_decision_function']
-    decision_map = {**Resnet50FairFace.decision_map,
-                    **{'age_decision_function': ('age_label', _fairface_agedec2age)}}
     def __init__(self):
         m = keras.models.load_model(get_remote('keras_resnet50_fairface_GRA.h5'), compile=False)
         self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs + [m.layers[-5].output])
 
     def inference(self, x):
         gender, _, age, feats = self.model.predict(x)
+        df = pd.DataFrame(zip(gender.ravel(), age.ravel()), columns=['sex_decfunc', 'age_decfunc'])
+        return feats, df
 
-        # TODO gender stuffs - similar to mother class => factorize
-        gender_dec = gender.ravel()
-        assert(len(gender_dec) == len(x))
-        gender_labels = ['m' if e > 0 else 'f' for e in gender_dec]
-
-        age_dec = age.ravel()
-        age_labels = _fairface_agedec2age(age_dec)
-
-        return feats, (gender_labels, age_labels, gender_dec, age_dec)
-
+    def decisionfunction2labels(self, df):
+        df = super().decisionfunction2labels(df)
+        df['age_label'] = _fairface_agedec2age(df.age_decfunc)
+        return df
 
 class OxfordVggFace(FaceClassifier):
     input_shape = (224, 224, 3)
-    outnames = ['face_embeddings', 'sex_label', 'sex_decision_function']
-
-    @property
-    def decision_map(self):
-        return {'sex_decision_function': ('sex_label', self.decision2label)}
-
     def __init__(self, hdf5_svm=None):
         # Face feature extractor from aligned and detected faces
         self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = self.input_shape, pooling ='avg')
@@ -227,9 +188,9 @@ class OxfordVggFace(FaceClassifier):
         if hdf5_svm is not None:
             self.gender_svm = svm_load(hdf5_svm)
 
-    def decision2label(self, decision):
-        #print('OXVFF', decision)
-        return [self.gender_svm.classes_[1 if x > 0 else 0] for x in decision]
+    def decisionfunction2labels(self, df):
+        df['sex_label'] = [self.gender_svm.classes_[1 if x > 0 else 0] for x in df.sex_decfunc]
+        return df
 
     def list2batch(self, limg):
         """
@@ -242,9 +203,7 @@ class OxfordVggFace(FaceClassifier):
         return self.vgg_feature_extractor(x)
 
     def inference(self, x):
-        decisions = self.gender_svm.decision_function(x)
-        labels = [self.gender_svm.classes_[1 if x > 0 else 0] for x in decisions]
-        return np.array(x), (labels, decisions)
+        return np.array(x), pd.DataFrame(self.gender_svm.decision_function(x), columns=['sex_decfunc'])
 
 class Vggface_LSVM_YTF(OxfordVggFace):
     def __init__(self):

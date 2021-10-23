@@ -39,45 +39,41 @@ class TestClassifiers(unittest.TestCase):
         c = Vggface_LSVM_YTF()
         ret = c(mat, True)
         self.assertEqual(len(ret), 2)
-        feats, (label, dec) = ret
-        self.assertIsInstance(feats, np.ndarray)
-        self.assertIsInstance(label, str)
-        self.assertIsInstance(dec, float)
+        feats, rett = ret
 
-    def test_2image_single_output_vgg16(self):
+        self.assertIsInstance(feats, np.ndarray)
+        self.assertIsInstance(rett.sex_label, str)
+        self.assertIsInstance(rett.sex_decfunc, float)
+
+    def test_2images_single_output_vgg16(self):
         mat = np.zeros((224,224,3), dtype=np.uint8)
         c = Vggface_LSVM_YTF()
         ret = c([mat, mat], True)
         self.assertEqual(len(ret), 2)
-        feats, (label, dec) = ret
+        feats, retdf = ret
+
         self.assertIsInstance(feats, np.ndarray)
-        #self.assertIsInstance(label, str)
-        #self.assertIsInstance(dec, float)
-        [self.assertIsInstance(e, str) for e in label]
-        [self.assertIsInstance(e, float) for e in dec]
+        [self.assertIsInstance(e, str) for e in retdf.sex_label]
+        [self.assertIsInstance(e, float) for e in retdf.sex_decfunc]
 
 
     def test_single_image_single_output_res50(self):
         mat = np.zeros((224,224,3), dtype=np.uint8)
         c = Resnet50FairFace()
-        ret = c(mat, True)
-        self.assertEqual(len(ret), 2)
-        feats, (label, dec) = ret
+        feats ,ret = c(mat, True)
         self.assertIsInstance(feats, np.ndarray)
-        self.assertIsInstance(label, str)
-        self.assertIsInstance(dec, np.float32)
+        self.assertIsInstance(ret.sex_label, str)
+        self.assertIsInstance(ret.sex_decfunc, float)
 
     def test_single_image_multi_output(self):
         mat = np.zeros((224,224,3), dtype=np.uint8)
         c = Resnet50FairFaceGRA()
-        ret = c(mat, True)
-        self.assertEqual(len(ret), 2)
-        feats, (genderL, ageL, genderD, ageD) = ret
+        feats, ret = c(mat, True)
         self.assertIsInstance(feats, np.ndarray)
-        self.assertIsInstance(genderL, str)
-        self.assertIsInstance(ageL, np.float32, type(ageL))
-        self.assertIsInstance(ageD, np.float32, type(ageD))
-        self.assertIsInstance(genderD, np.float32, type(genderD))
+        self.assertIsInstance(ret.sex_label, str)
+        self.assertIsInstance(ret.age_label, float, type(ret.age_label))
+        self.assertIsInstance(ret.age_decfunc, float, type(ret.age_label))
+        self.assertIsInstance(ret.sex_decfunc, float, type(ret.age_label))
 
 
     def test_fairface_age_mapping(self):
@@ -86,40 +82,40 @@ class TestClassifiers(unittest.TestCase):
         # simple
         x = [0, 1, 2, 3, 9]
         y = np.array([1.5, 6.5, 15, 25, 90])
-        np.testing.assert_almost_equal(y, _fairface_agedec2age(x))
+        np.testing.assert_almost_equal(y, _fairface_agedec2age(x), decimal=5)
         # test limits
         x = [-1, -0.5, 9.5, 11]
         y = [0, 0, 100, 100]
-        np.testing.assert_almost_equal(y, _fairface_agedec2age(x))
+        np.testing.assert_almost_equal(y, _fairface_agedec2age(x), decimal=5)
         # harder - stuffs around centers...
         x = [-1/3./2, 4.5]
         y = [1, 40]
-        np.testing.assert_almost_equal(y, _fairface_agedec2age(x))
+        np.testing.assert_almost_equal(y, _fairface_agedec2age(x), decimal=5)
 
     def test_imgpaths_batch_singleoutput(self):
         c = Vggface_LSVM_YTF()
-        l, d = c.imgpaths_batch(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], False, batch_len=2)
-        self.assertSequenceEqual(['f', 'm', 'f'], l)
-        np.testing.assert_almost_equal([-3.1886155, 6.7310688, -3.1886155], d, decimal=5)
+        df = c.imgpaths_batch(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], False, batch_len=2)
+        self.assertSequenceEqual(['f', 'm', 'f'], list(df.sex_label))
+        np.testing.assert_almost_equal([-3.1886155, 6.7310688, -3.1886155], df.sex_decfunc, decimal=5)
 
     def test_imgpaths_batch_multioutput(self):
         c = Resnet50FairFaceGRA()
-        gl, al, gd, ad = c.imgpaths_batch(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], False, batch_len=2)
+        df = c.imgpaths_batch(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], False, batch_len=2)
         ref_genderL = ['f', 'm', 'f']
         ref_ageL =[25.723361, 61.890726, 25.723361]
         ref_genderD = [-5.632368, 7.2553654, -5.632368]
         ref_ageD = [3.0723362, 6.6890726, 3.0723362]
-        self.assertSequenceEqual(ref_genderL, gl)
-        np.testing.assert_almost_equal(ref_ageL, al, decimal=5)
-        np.testing.assert_almost_equal(ref_genderD, gd, decimal=5)
-        np.testing.assert_almost_equal(ref_ageD, ad, decimal=5)
+        self.assertSequenceEqual(ref_genderL, list(df.sex_label))
+        np.testing.assert_almost_equal(ref_ageL, df.age_label, decimal=5)
+        np.testing.assert_almost_equal(ref_genderD, df.sex_decfunc, decimal=5)
+        np.testing.assert_almost_equal(ref_ageD, df.age_decfunc, decimal=5)
 
     def test_batch_order(self):
         # test if image position in batch has an impact on decision value
         limg = [imread_rgb('./media/diallo224.jpg'), imread_rgb('./media/knuth224.jpg')] * 32
         c = Resnet50FairFace()
-        _, decisions = c(limg, False)
-        d1 = decisions[::2]
-        d2 = decisions[1::2]
+        retdf = c(limg, False)
+        d1 = retdf.sex_decfunc[::2].reset_index(drop=True)
+        d2 = retdf.sex_decfunc[1::2].reset_index(drop=True)
         np.testing.assert_almost_equal([d1[0]] * 32, d1)
         np.testing.assert_almost_equal([d2[0]] * 32, d2)
