@@ -173,10 +173,10 @@ class GenderVideo(AbstractGender):
                 df.insert(0, 'frame', [e[0] for e in lbatch_info[:self.batch_len]])
                 df.insert(1, 'bbox', [e[1] for e in lbatch_info[:self.batch_len]])
                 df.insert(2, 'face_detect_conf', [e[2] for e in lbatch_info[:self.batch_len]])
+                ldf.append(df)
 
                 lbatch_img = lbatch_img[self.batch_len:]
                 lbatch_info = lbatch_info[self.batch_len:]
-                ldf.append(df)
 
         if len(lbatch_img) > 0:
             df = self.classifier(lbatch_img, False)
@@ -185,7 +185,14 @@ class GenderVideo(AbstractGender):
             df['face_detect_conf'] = [e[2] for e in lbatch_info]
             ldf.append(df)
 
-        return pd.concat(ldf).reset_index(drop=True)
+        if len(ldf) > 0:
+            return pd.concat(ldf).reset_index(drop=True)
+
+        fake_input = [np.zeros(self.classifier.input_shape)]
+        cols = list(self.classifier(fake_input, False).columns)
+        return pd.DataFrame(None, columns=(['frame', 'bbox', 'face_detect_conf'] + cols))
+
+
 
 
     def pred_from_vid_and_bblist(self, vidsrc, lbox, subsamp_coeff=1, start_frame=0):
@@ -232,9 +239,9 @@ class GenderTracking(AbstractGender):
         #classif_desc = ','.join(self.classifier.outnames[1:])
         detector = TrackerDetector(self.face_detector, self.detection_period)
 
-        info = []
         lbatch_img = []
         lbatch_info = []
+        ldf = []
 
         for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
 
@@ -249,16 +256,34 @@ class GenderTracking(AbstractGender):
                 lbatch_img.append(face_img)
 
             while len(lbatch_img) > self.batch_len:
-                # TODO : it's dirty to skip the features !
-                classif_ret = self.classifier(lbatch_img[:self.batch_len], False)
-                for i in range(self.batch_len):
-                    info.append(lbatch_info[i] + [e[i] for e in classif_ret])
+
+                df = self.classifier(lbatch_img[:self.batch_len], False)
+
+                df.insert(0, 'frame', [e[0] for e in lbatch_info[:self.batch_len]])
+                df.insert(1, 'bbox', [e[1] for e in lbatch_info[:self.batch_len]])
+                df.insert(2, 'face_id', [e[2] for e in lbatch_info[:self.batch_len]])
+                df.insert(3, 'face_detect_conf', [e[3] for e in lbatch_info[:self.batch_len]])
+                df.insert(4, 'face_track_conf', [e[4] for e in lbatch_info[:self.batch_len]])
+
+                ldf.append(df)
+
+
                 lbatch_img = lbatch_img[self.batch_len:]
                 lbatch_info = lbatch_info[self.batch_len:]
 
         if len(lbatch_img) > 0:
-            classif_ret = self.classifier(lbatch_img, False)
-            for i in range(len(lbatch_img)):
-                info.append(lbatch_info[i] + [e[i] for e in classif_ret])
-        df = pd.DataFrame.from_records(info, columns = ['frame', 'bbox'] + detector.out_names[1:]+ self.classifier.outnames[1:])
+            df = self.classifier(lbatch_img, False)
+
+            df.insert(0, 'frame', [e[0] for e in lbatch_info])
+            df.insert(1, 'bbox', [e[1] for e in lbatch_info])
+            df.insert(2, 'face_id', [e[2] for e in lbatch_info])
+            df.insert(3, 'face_detect_conf', [e[3] for e in lbatch_info])
+            df.insert(4, 'face_track_conf', [e[4] for e in lbatch_info])
+
+            ldf.append(df)
+
+        if len(ldf) == 0:
+            df = pd.DataFrame(None, columns=['frame', 'bbox', 'face_id', 'face_detect_conf', 'face_track_conf'])
+        else:
+            df = pd.concat(ldf).reset_index(drop=True)
         return self.classifier.average_results(df)

@@ -54,16 +54,14 @@ class FaceClassifier(ABC):
 
     def average_results(self, df):
         if len(df) == 0:
-            for k in self.decision_map:
-                df[k + '_avg'] = []
-            for k in self.decision_map:
-                df[self.decision_map[k][0] + '_avg'] = []
-            return df
+            fake_input = [np.zeros(self.input_shape)]
+            for c in self(fake_input, False).columns:
+                df[c] = []
 
-        gbm = df.groupby('face_id')[sorted(self.decision_map)].mean()
-        for k in sorted(self.decision_map):
-            colname, dec2lab = self.decision_map[k]
-            gbm[colname] = dec2lab(gbm[k])
+        cols = [e for e in df.columns if e.endswith('_decfunc')]
+        gbm = df.groupby('face_id')[cols].mean()
+        gbm = self.decisionfunction2labels(gbm)
+
         return df.join(gbm, on='face_id', rsuffix='_avg')
 
     # Keras trick for async READ ?

@@ -34,6 +34,8 @@ from inaFaceGender.face_preprocessing import _norm_bbox, _squarify_bbox
 from inaFaceGender.face_detector import OcvCnnFacedetector
 from inaFaceGender.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
 
+_vid = './media/pexels-artem-podrez-5725953.mp4'
+
 class TestIFG(unittest.TestCase):
 
     def tearDown(self):
@@ -43,7 +45,7 @@ class TestIFG(unittest.TestCase):
 
     def test_video_simple(self):
         gv = GenderVideo()
-        ret = gv('./media/pexels-artem-podrez-5725953.mp4')
+        ret = gv(_vid)
         ret.bbox = ret.bbox.map(str)
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
         assert_frame_equal(ret, df, atol=.01, check_dtype=False)
@@ -51,7 +53,7 @@ class TestIFG(unittest.TestCase):
 
     def test_video_subsamp(self):
         gv = GenderVideo()
-        ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=30)
+        ret = gv(_vid, subsamp_coeff=30)
         ret.bbox = ret.bbox.map(str)
         refdf = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
         refdf = refdf[(refdf.frame % 30) == 0].reset_index(drop=True)
@@ -157,3 +159,9 @@ class TestIFG(unittest.TestCase):
         # the processing of these boxes should throw an exception
         with self.assertRaises(AssertionError):
             gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=25)
+
+    def test_vid_nofaces(self):
+        gv = GenderVideo(face_classifier=Resnet50FairFaceGRA(), face_detector=lambda x: [])
+        df = gv(_vid, subsamp_coeff=30)
+        self.assertEqual(len(df), 0)
+        self.assertEqual(len(df.columns), 7, df.columns)

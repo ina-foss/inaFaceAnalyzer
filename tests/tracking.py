@@ -62,7 +62,7 @@ class TestTracking(unittest.TestCase):
     def test_tracking_singleoutput(self):
         gv = GenderTracking(5, face_classifier=Vggface_LSVM_YTF())
         dfpred = gv(_vid, subsamp_coeff=10)
-        dfpred.bb = dfpred.bb.map(str)
+        dfpred.bbox = dfpred.bbox.map(str)
         dfref = pd.read_csv('./media/pexels-artem-podrez-tracking5-subsamp10-VggFace_LSVM_YTF.csv')
         assert_frame_equal(dfref, dfpred, atol=.01, check_dtype=False)
 
@@ -70,7 +70,7 @@ class TestTracking(unittest.TestCase):
     def test_tracking_nofail_multioutput(self):
         gv = GenderTracking(5, face_classifier=Resnet50FairFaceGRA())
         dfpred = gv(_vid, subsamp_coeff=10)
-        dfpred.bb = dfpred.bb.map(str)
+        dfpred.bbox = dfpred.bbox.map(str)
         dfref = pd.read_csv('./media/pexels-artem-podrez-tracking5-subsamp10-Resnet50FFGRA.csv')
         assert_frame_equal(dfref, dfpred, atol=.01, check_dtype=False)
 
@@ -90,10 +90,10 @@ class TestTracking(unittest.TestCase):
             classif = c()
             gv = GenderVideo(face_detector = detector, face_classifier = classif)
             gvdf = gv(_vid, subsamp_coeff=30)
-            gvdf = gvdf.sort_values(by = ['frame', 'bb']).reset_index(drop=True)
+            gvdf = gvdf.sort_values(by = ['frame', 'bbox']).reset_index(drop=True)
             gt = GenderTracking(1, face_detector = detector, face_classifier = classif)
             gtdf = gt(_vid, subsamp_coeff = 30)
-            gtdf = gtdf.sort_values(by = ['frame', 'bb']).reset_index(drop=True)
+            gtdf = gtdf.sort_values(by = ['frame', 'bbox']).reset_index(drop=True)
             for col in gvdf.columns:
                 with self.subTest(i=str(c) + col):
                     assert_series_equal(gvdf[col], gtdf[col], check_dtype=False, rtol=0.01)
