@@ -51,22 +51,24 @@ class TestIFG(unittest.TestCase):
 
     def test_video_subsamp(self):
         gv = GenderVideo()
-        ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=25)
+        ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=30)
         ret.bb = ret.bb.map(str)
         refdf = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
-        refdf = refdf[(refdf.frame % 25) == 0].reset_index(drop=True)
+        refdf = refdf[(refdf.frame % 30) == 0].reset_index(drop=True)
         assert_frame_equal(refdf, ret, rtol=.01, check_dtype=False)
 
     # TODO: update with serialized ouput!
     def test_video_res50(self):
         gv = GenderVideo(face_classifier=Resnet50FairFace())
         ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=25)
+        raise NotImplementedError('test should be improved')
 
-    # TODO: update with serialized ouput!
     def test_videocall_multioutput(self):
         gv = GenderVideo(face_classifier=Resnet50FairFaceGRA())
-        ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=25)
-
+        preddf = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=30)
+        refdf = pd.read_csv('./media/pexels-artem-podrez-subsamp30-Resnet50FFGRA.csv')
+        refdf.bb = refdf.bb.map(eval)
+        assert_frame_equal(refdf, preddf, rtol=.01, check_dtype=False)
 
     # DETECTOR
 
@@ -119,20 +121,15 @@ class TestIFG(unittest.TestCase):
 
     def test_pred_from_vid_and_bblist_multioutput(self):
         gv = GenderVideo(bbox_scaling=1, squarify=False, face_classifier=Resnet50FairFaceGRA())
-        df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv')
-        # this method read a single face per frame
-        df = df.drop_duplicates(subset='frame').reset_index()
-        lbbox = list(df.bb.map(eval))
+        df = pd.read_csv('./media/pexels-artem-podrez-subsamp30-Resnet50FFGRA.csv')
+        # this trick keeps only single face per frame
+        df = df.drop_duplicates(subset='frame').reset_index(drop=True)
+        df.bb = df.bb.map(eval)
+        lbbox = list(df.bb)
+        df = df.drop(['face_detect_conf', 'frame'], axis=1)
         _, retdf = gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=30)
-        self.assertEqual(len(retdf), len(lbbox))
-        self.assertEqual(list(retdf.bb), lbbox)
-        # in theory should be the same - even if it was obtained with a different NN
-        self.assertEqual(list(retdf.sex_label), list(df.sex_label))
-        raise NotImplementedError('reference csv should be generated for this test')
-        # will require to gen a new reference csv
-        assert_series_equal(retdf.sex_decision_function, df.sex_decision_function, rtol=.01, check_dtype=False)
-        # todo: check the values of the remaining outputs ??
-        assert False
+
+        assert_frame_equal(df, retdf, rtol=.01, check_dtype=False)
 
 
     def test_pred_from_vid_and_bblist_res50(self):
@@ -147,6 +144,8 @@ class TestIFG(unittest.TestCase):
         # TODO : get test content
         #self.assertEqual(list(retdf.label), list(df.label))
         #assert_series_equal(retdf.decision, df.decision, rtol=.01)
+        raise NotImplementedError('reference csv should be generated for this test')
+
 
 
 

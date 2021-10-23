@@ -67,12 +67,13 @@ class TestTracking(unittest.TestCase):
         assert_frame_equal(dfref, dfpred, atol=.01, check_dtype=False)
 
 
-    # TODO: update with serialized ouput!
     def test_tracking_nofail_multioutput(self):
         gv = GenderTracking(5, face_classifier=Resnet50FairFaceGRA())
-        ret = gv(_vid, subsamp_coeff=10)
-        # TODO test output
-        raise NotImplementedError('testing reference output should be done')
+        dfpred = gv(_vid, subsamp_coeff=10)
+        dfpred.bb = dfpred.bb.map(str)
+        dfref = pd.read_csv('./media/pexels-artem-podrez-tracking5-subsamp10-Resnet50FFGRA.csv')
+        assert_frame_equal(dfref, dfpred, atol=.01, check_dtype=False)
+
 
     def test_tracking_nofaces(self):
         gv = GenderTracking(5, face_classifier=Resnet50FairFaceGRA(), face_detector=lambda x, y: [])
