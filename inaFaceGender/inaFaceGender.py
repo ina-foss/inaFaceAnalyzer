@@ -28,7 +28,7 @@ import pandas as pd
 from .opencv_utils import video_iterator, imread_rgb
 from .face_tracking import TrackerDetector
 from .face_detector import OcvCnnFacedetector
-from .face_classifier import Vggface_LSVM_YTF
+from .face_classifier import Resnet50FairFaceGRA
 from .face_alignment import Dlib68FaceAlignment
 from .face_preprocessing import preprocess_face
 
@@ -105,11 +105,13 @@ class AbstractGender:
                 print(','.join(df.columns))
                 print(df)
                 print()
-        return pd.concat(lret).reset_index(drop=True)
 
+        if len(lret) > 0:
+            return pd.concat(lret).reset_index(drop=True)
+        return pd.DataFrame(columns=['feats', 'bbox'] + self.classifier.output_cols + ['face_detect_conf'])
 
 class GenderImage(AbstractGender):
-    def __init__(self, face_detector = OcvCnnFacedetector(), face_classifier=Vggface_LSVM_YTF(), bbox_scaling=1.1, squarify=True, verbose = False):
+    def __init__(self, face_detector = OcvCnnFacedetector(), face_classifier=Resnet50FairFaceGRA(), bbox_scaling=1.1, squarify=True, verbose = False):
         AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
 
 
@@ -130,7 +132,7 @@ class GenderVideo(AbstractGender):
         vgg_feature_extractor: VGGFace neural model used for feature extraction.
         threshold: quality of face detection considered acceptable, value between 0 and 1.
     """
-    def __init__(self, face_detector = OcvCnnFacedetector(paddpercent=0.), face_classifier=Vggface_LSVM_YTF(), bbox_scaling=1.1, squarify=True, verbose = False):
+    def __init__(self, face_detector = OcvCnnFacedetector(paddpercent=0.), face_classifier=Resnet50FairFaceGRA(), bbox_scaling=1.1, squarify=True, verbose = False):
         AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
 
 
@@ -187,10 +189,7 @@ class GenderVideo(AbstractGender):
 
         if len(ldf) > 0:
             return pd.concat(ldf).reset_index(drop=True)
-
-        fake_input = [np.zeros(self.classifier.input_shape)]
-        cols = list(self.classifier(fake_input, False).columns)
-        return pd.DataFrame(None, columns=(['frame', 'bbox', 'face_detect_conf'] + cols))
+        return pd.DataFrame(None, columns=(['frame', 'bbox', 'face_detect_conf'] + self.classifier.output_cols))
 
 
 
@@ -215,7 +214,7 @@ class GenderVideo(AbstractGender):
 # TODO : kwarfs for providing arguments to super class ??
 # use super name also !
 class GenderTracking(AbstractGender):
-    def __init__(self, detection_period, face_detector = OcvCnnFacedetector(paddpercent=0.), face_classifier=Vggface_LSVM_YTF(), bbox_scaling=1.1, squarify=True, verbose = False):
+    def __init__(self, detection_period, face_detector = OcvCnnFacedetector(paddpercent=0.), face_classifier=Resnet50FairFaceGRA(), bbox_scaling=1.1, squarify=True, verbose = False):
         AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
         self.detection_period = detection_period
 

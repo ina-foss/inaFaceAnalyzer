@@ -25,11 +25,11 @@
 
 import cv2
 from inaFaceGender import GenderImage
-from inaFaceGender.face_classifier import Resnet50FairFace
-#import sys
+from inaFaceGender.face_classifier import Resnet50FairFaceGRA
 
 
-gi = GenderImage(face_classifier=Resnet50FairFace())
+
+gi = GenderImage(face_classifier=Resnet50FairFaceGRA())
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -44,14 +44,13 @@ while True:
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     faces = gi.detect_and_classify_faces_from_frame(frame)
-    print(ret)
 
     # Draw a rectangle around the faces
-    for _, bb, lab, dec, _ in faces:
-        x1, y1, x2, y2 = bb
+    for e in faces.itertuples():
+        x1, y1, x2, y2 = e.bbox
 
-        text = '%s - %.1f' % (lab, dec)
-        if lab == 'm': # blue
+        text = 'sex: %s - %.1f; age: %.1f' % (e.sex_label, e.sex_decfunc, e.age_label)
+        if e.sex_label == 'm': # blue
             color = (0,0,255)
         else: # red
             color = (255,0,0)

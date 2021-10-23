@@ -38,10 +38,16 @@ from .remote_utils import get_remote
 
 
 class FaceClassifier(ABC):
-
+    """
+    Abstract class to be implemented by face classifiers
+    """
     @classmethod
     @abstractmethod
-    def input_shape(): pass
+    def input_shape():
+        """
+        input image dimensions required by the classifier (width, height, depth)
+        """
+        pass
 
     @abstractmethod
     def list2batch(self, limg): pass
@@ -52,10 +58,16 @@ class FaceClassifier(ABC):
     @abstractmethod
     def decisionfunction2labels(self, df): pass
 
+    @property
+    def output_cols(self):
+        if not hasattr(self, '_output_cols'):
+            fake_input = [np.zeros(self.input_shape)]
+            self._output_cols = list(self(fake_input, False).columns)
+        return self._output_cols
+
     def average_results(self, df):
         if len(df) == 0:
-            fake_input = [np.zeros(self.input_shape)]
-            for c in self(fake_input, False).columns:
+            for c in self.output_cols:
                 df[c] = []
 
         cols = [e for e in df.columns if e.endswith('_decfunc')]
@@ -192,7 +204,6 @@ class OxfordVggFace(FaceClassifier):
 
     def list2batch(self, limg):
         """
-
         returns VGG16 Features
         limg is a list of preprocessed images supposed to be aligned and cropped and resized to 224*224
         """
