@@ -86,24 +86,26 @@ class AbstractGender:
         fa, vrb = (self.face_alignment, self.verbose)
         face_img, bbox = preprocess_face(frame, bbox, bbox_square, bbox_scale, bbox_norm, fa, oshape, vrb)
 
-        feats, preds = self.classifier(face_img, True)
-        # dirty trick used for retro compatibility
-        # should return ret + [bbox]
-        return [feats, bbox] + preds
+        feats, df = self.classifier([face_img], True)
+        df.insert(0, 'feats', [feats])
+        df.insert(1, 'bbox', [bbox])
+
+        return df
 
     def detect_and_classify_faces_from_frame(self, frame):
-        ret = []
+        lret = []
         for bb, detect_conf in self.face_detector(frame):
             if self.verbose:
                 print('bbox: %s, conf: %f' % (bb, detect_conf))
-            ret.append(self.classif_from_frame_and_bbox(frame, bb, self.squarify_bbox, self.bbox_scaling, True) + [detect_conf])
+            df = self.classif_from_frame_and_bbox(frame, bb, self.squarify_bbox, self.bbox_scaling, True)
+            df['face_detect_conf'] = detect_conf
+            lret.append(df)
 
             if self.verbose:
-                ## TO CHANGE
-                print('bounding box (x1, y1, x2, y2),' + ','.join(self.classifier.outnames[1:]) + ',face detection confidence')
-                print(ret[-1][1:])
+                print(','.join(df.columns))
+                print(df)
                 print()
-        return ret
+        return pd.concat(lret).reset_index(drop=True)
 
 
 class GenderImage(AbstractGender):
@@ -149,11 +151,10 @@ class GenderVideo(AbstractGender):
 
 
         oshape = self.classifier.input_shape[:-1]
-        #classif_desc = ','.join(self.classifier.outnames[1:])
 
-        info = []
         lbatch_img = []
         lbatch_info = []
+        ldf = []
 
         for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
 
@@ -164,49 +165,45 @@ class GenderVideo(AbstractGender):
 
                 face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, True, self.face_alignment, oshape, self.verbose)
 
-                #lbatch.append((iframe, bb, detect_conf, face_img, bbox))
                 lbatch_info.append([iframe, bbox, detect_conf])
                 lbatch_img.append(face_img)
 
             while len(lbatch_img) > self.batch_len:
-                #lbatch, tmpinfo = self.process_batch(lbatch)
-                #info += tmpinfo
-                # TODO : it's dirty to skip the features !
-                classif_ret = self.classifier(lbatch_img[:self.batch_len], False)
-                for i in range(self.batch_len):
-                    # TODO: its dirty to put face confidence at the end, its for test retro compatibility
-                    info.append(lbatch_info[i] + [e[i] for e in classif_ret])
+                df = self.classifier(lbatch_img[:self.batch_len], False)
+                df.insert(0, 'frame', [e[0] for e in lbatch_info[:self.batch_len]])
+                df.insert(1, 'bbox', [e[1] for e in lbatch_info[:self.batch_len]])
+                df.insert(2, 'face_detect_conf', [e[2] for e in lbatch_info[:self.batch_len]])
+
                 lbatch_img = lbatch_img[self.batch_len:]
                 lbatch_info = lbatch_info[self.batch_len:]
+                ldf.append(df)
 
         if len(lbatch_img) > 0:
-            #lbatch, tmpinfo = self.process_batch(lbatch)
-            #info += tmpinfo
-            classif_ret = self.classifier(lbatch_img, False)
-            for i in range(len(lbatch_img)):
-                info.append(lbatch_info[i] + [e[i] for e in classif_ret])
-        return pd.DataFrame.from_records(info, columns = ['frame', 'bb', 'face_detect_conf'] + self.classifier.outnames[1:])
+            df = self.classifier(lbatch_img, False)
+            df.insert(0, 'frame', [e[0] for e in lbatch_info])
+            df.insert(1, 'bbox', [e[1] for e in lbatch_info])
+            df['face_detect_conf'] = [e[2] for e in lbatch_info]
+            ldf.append(df)
+
+        return pd.concat(ldf).reset_index(drop=True)
+
 
     def pred_from_vid_and_bblist(self, vidsrc, lbox, subsamp_coeff=1, start_frame=0):
-        lret = []
-        lfeat = []
+        ldf = []
 
         for (iframe, frame), bbox in zip(video_iterator(vidsrc, subsamp_coeff=subsamp_coeff, start=start_frame, verbose=self.verbose),lbox):
-            if self.verbose:
-                print('iframe: %s, bbox: %s' % (iframe, bbox))
 
-            ret = self.classif_from_frame_and_bbox(frame, bbox, self.squarify_bbox, self.bbox_scaling, True)
+            df = self.classif_from_frame_and_bbox(frame, bbox, self.squarify_bbox, self.bbox_scaling, True)
 
-            lret.append(ret[1:])
-            lfeat.append(ret[0])
+            ldf.append(df)
 
             if self.verbose:
-                print('bounding box (x1, y1, x2, y2),' + ','.join(self.classifier.outnames[1:]))
-                print(lret[-1])
+                print(df.drop('feats', axis=1))
                 print()
-        assert len(lret) == len(lbox), '%d bounding box provided, and only %d frames processed' % (len(lbox), len(lret))
-        return np.concatenate(lfeat), pd.DataFrame.from_records(lret, columns=['bb']+ self.classifier.outnames[1:])
+        assert len(ldf) == len(lbox), '%d bounding box provided, and only %d frames processed' % (len(lbox), len(ldf))
 
+        df = pd.concat(ldf).reset_index(drop=True)
+        return np.concatenate(df.feats), df.drop('feats', axis=1)
 
 # TODO : kwarfs for providing arguments to super class ??
 # use super name also !
@@ -263,5 +260,5 @@ class GenderTracking(AbstractGender):
             classif_ret = self.classifier(lbatch_img, False)
             for i in range(len(lbatch_img)):
                 info.append(lbatch_info[i] + [e[i] for e in classif_ret])
-        df = pd.DataFrame.from_records(info, columns = ['frame', 'bb'] + detector.out_names[1:]+ self.classifier.outnames[1:])
+        df = pd.DataFrame.from_records(info, columns = ['frame', 'bbox'] + detector.out_names[1:]+ self.classifier.outnames[1:])
         return self.classifier.average_results(df)

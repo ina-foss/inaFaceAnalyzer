@@ -44,7 +44,7 @@ class TestIFG(unittest.TestCase):
     def test_video_simple(self):
         gv = GenderVideo()
         ret = gv('./media/pexels-artem-podrez-5725953.mp4')
-        ret.bb = ret.bb.map(str)
+        ret.bbox = ret.bbox.map(str)
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
         assert_frame_equal(ret, df, atol=.01, check_dtype=False)
 
@@ -52,7 +52,7 @@ class TestIFG(unittest.TestCase):
     def test_video_subsamp(self):
         gv = GenderVideo()
         ret = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=30)
-        ret.bb = ret.bb.map(str)
+        ret.bbox = ret.bbox.map(str)
         refdf = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
         refdf = refdf[(refdf.frame % 30) == 0].reset_index(drop=True)
         assert_frame_equal(refdf, ret, rtol=.01, check_dtype=False)
@@ -67,7 +67,7 @@ class TestIFG(unittest.TestCase):
         gv = GenderVideo(face_classifier=Resnet50FairFaceGRA())
         preddf = gv('./media/pexels-artem-podrez-5725953.mp4', subsamp_coeff=30)
         refdf = pd.read_csv('./media/pexels-artem-podrez-subsamp30-Resnet50FFGRA.csv')
-        refdf.bb = refdf.bb.map(eval)
+        refdf.bbox = refdf.bbox.map(eval)
         assert_frame_equal(refdf, preddf, rtol=.01, check_dtype=False)
 
     # DETECTOR
@@ -112,20 +112,20 @@ class TestIFG(unittest.TestCase):
 
         # this method read a single face per frame
         df = df.drop_duplicates(subset='frame').reset_index()
-        lbbox = list(df.bb.map(eval))
+        lbbox = list(df.bbox.map(eval))
         _, retdf = gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=25)
         self.assertEqual(len(retdf), len(lbbox))
-        self.assertEqual(list(retdf.bb), lbbox)
+        self.assertEqual(list(retdf.bbox), lbbox)
         self.assertEqual(list(retdf.sex_label), list(df.sex_label))
-        assert_series_equal(retdf.sex_decision_function, df.sex_decision_function, rtol=.01)
+        assert_series_equal(retdf.sex_decfunc, df.sex_decfunc, rtol=.01)
 
     def test_pred_from_vid_and_bblist_multioutput(self):
         gv = GenderVideo(bbox_scaling=1, squarify=False, face_classifier=Resnet50FairFaceGRA())
         df = pd.read_csv('./media/pexels-artem-podrez-subsamp30-Resnet50FFGRA.csv')
         # this trick keeps only single face per frame
         df = df.drop_duplicates(subset='frame').reset_index(drop=True)
-        df.bb = df.bb.map(eval)
-        lbbox = list(df.bb)
+        df.bbox = df.bbox.map(eval)
+        lbbox = list(df.bbox)
         df = df.drop(['face_detect_conf', 'frame'], axis=1)
         _, retdf = gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=30)
 
@@ -137,10 +137,10 @@ class TestIFG(unittest.TestCase):
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv')
         # this method read a single face per frame
         df = df.drop_duplicates(subset='frame').reset_index()
-        lbbox = list(df.bb.map(eval))
+        lbbox = list(df.bbox.map(eval))
         _, retdf = gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=25)
         self.assertEqual(len(retdf), len(lbbox))
-        self.assertEqual(list(retdf.bb), lbbox)
+        self.assertEqual(list(retdf.bbox), lbbox)
         # TODO : get test content
         #self.assertEqual(list(retdf.label), list(df.label))
         #assert_series_equal(retdf.decision, df.decision, rtol=.01)
@@ -153,7 +153,7 @@ class TestIFG(unittest.TestCase):
         gv = GenderVideo(bbox_scaling=1, squarify=False)
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv')
         # there will be much more boxes than frames
-        lbbox = list(df.bb.map(eval))
+        lbbox = list(df.bbox.map(eval))
         # the processing of these boxes should throw an exception
         with self.assertRaises(AssertionError):
             gv.pred_from_vid_and_bblist('./media/pexels-artem-podrez-5725953.mp4', lbbox, subsamp_coeff=25)

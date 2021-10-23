@@ -38,36 +38,38 @@ class TestSingleImage(unittest.TestCase):
 
     def test_image_all_diallo(self):
         gi = GenderImage(face_detector = OcvCnnFacedetector(paddpercent=0.))
-        ret = gi('./media/Europa21_-_2.jpg')
-        self.assertEqual(len(ret), 1)
-        ret = ret[0]
-        self.assertEqual(ret[1], (432, 246, 988, 802))
-        self.assertEqual(ret[2], 'f')
-        #todo : places = 1 due to changes in rotation procedure
-        # same value used in test with micro processing difference
-        self.assertAlmostEqual(ret[3], -3.305765917955594, places=1)
-        self.assertAlmostEqual(ret[4], 0.99964356, places=4)
+        df = gi('./media/Europa21_-_2.jpg')
+        self.assertEqual(len(df), 1)
+        self.assertEqual(df.bbox[0], (432, 246, 988, 802))
+        self.assertEqual(df.sex_label[0], 'f')
+        self.assertAlmostEqual(df.sex_decfunc[0], -3.323815, places=5)
+        self.assertAlmostEqual(df.face_detect_conf[0], 0.99964356, places=4)
 
     def test_image_all_diallo_multioutput(self):
         gi = GenderImage(face_classifier=Resnet50FairFaceGRA())
-        ret = gi('./media/Europa21_-_2.jpg')
-        self.assertEqual(len(ret), 1)
-        _, bb, sex, age, sex_decisionf, age_decisionf, face_detect_conf = ret[0]
-        self.assertEqual(bb, (421, 234, 997, 810))
-        self.assertEqual(sex, 'f')
-        self.assertAlmostEqual(age, 25.239, places=2)
-        self.assertAlmostEqual(sex_decisionf, -5.258, places=2)
-        self.assertAlmostEqual(age_decisionf, 3.023, places=2)
-        self.assertAlmostEqual(face_detect_conf, 0.987, places=2)
+        df = gi('./media/Europa21_-_2.jpg')
+        self.assertEqual(len(df), 1)
+        e = next(df.itertuples(index=False, name = 'useless'))
+        self.assertEqual(e.bbox, (421, 234, 997, 810))
+        self.assertEqual(e.sex_label, 'f')
+        self.assertAlmostEqual(e.age_label, 25.239, places=2)
+        self.assertAlmostEqual(e.sex_decfunc, -5.258, places=2)
+        self.assertAlmostEqual(e.age_decfunc, 3.023, places=2)
+        self.assertAlmostEqual(e.face_detect_conf, 0.987, places=2)
 
 
     def test_image_knuth(self):
         gi = GenderImage(face_detector = OcvCnnFacedetector(paddpercent=0.))
-        ret = gi('./media/20091020222328!KnuthAtOpenContentAlliance.jpg')
-        self.assertEqual(len(ret), 1)
-        ret = ret[0]
-        self.assertEqual(ret[1], (78, 46, 321, 289))
-        self.assertEqual(ret[2], 'm')
-        #todo : places = 1 due to changes in rotation procedure
-        self.assertAlmostEqual(ret[3], 6.621492606578991, places=1)
-        self.assertAlmostEqual(ret[4], 0.99995565, places=4)
+        df = gi('./media/20091020222328!KnuthAtOpenContentAlliance.jpg')
+        self.assertEqual(len(df), 1)
+        e = next(df.itertuples(index=False, name = 'useless'))
+        self.assertEqual(e.bbox, (78, 46, 321, 289))
+        self.assertEqual(e.sex_label, 'm')
+        self.assertAlmostEqual(e.sex_decfunc, 6.615791, places=5)
+        self.assertAlmostEqual(e.face_detect_conf, 0.99995565, places=4)
+
+    def test_multifaceimage(self):
+        gi = GenderImage()
+        ret = gi('./media/800px-India_(236650352).jpg')
+        self.assertEqual(len(ret), 5)
+        # TODO: complete test later
