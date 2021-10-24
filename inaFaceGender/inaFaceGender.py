@@ -92,13 +92,28 @@ class AbstractGender:
 
         return df
 
+
+class GenderImage(AbstractGender):
+    analyzer_cols = ['frame', 'bbox', 'face_detect_conf']
+
+    def __init__(self, face_detector = OcvCnnFacedetector(), face_classifier=Resnet50FairFaceGRA(), bbox_scaling=1.1, squarify=True, verbose = False):
+        # assert instance opencvfacedetector ??
+        AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
+
+
+    def __call__(self, img_path):
+        frame = imread_rgb(img_path, self.verbose)
+        return self.detect_and_classify_faces_from_frame(frame)
+
+
     def detect_and_classify_faces_from_frame(self, frame):
         lret = []
+        # iterate on "generic" detect_info ??
         for bb, detect_conf in self.face_detector(frame):
             if self.verbose:
                 print('bbox: %s, conf: %f' % (bb, detect_conf))
             df = self.classif_from_frame_and_bbox(frame, bb, self.squarify_bbox, self.bbox_scaling, True)
-            df['face_detect_conf'] = detect_conf
+            df.insert(2, 'face_detect_conf', [detect_conf])
             lret.append(df)
 
             if self.verbose:
@@ -108,18 +123,7 @@ class AbstractGender:
 
         if len(lret) > 0:
             return pd.concat(lret).reset_index(drop=True)
-        return pd.DataFrame(columns=['feats', 'bbox'] + self.classifier.output_cols + ['face_detect_conf'])
-
-class GenderImage(AbstractGender):
-    def __init__(self, face_detector = OcvCnnFacedetector(), face_classifier=Resnet50FairFaceGRA(), bbox_scaling=1.1, squarify=True, verbose = False):
-        AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
-
-
-
-    def __call__(self, img_path):
-        frame = imread_rgb(img_path, self.verbose)
-        return self.detect_and_classify_faces_from_frame(frame)
-
+        return pd.DataFrame(columns = self.analyzer_cols + self.classifier.output_cols)
 
 class GenderVideo(AbstractGender):
     """
