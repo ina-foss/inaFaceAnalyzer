@@ -132,6 +132,9 @@ class GenderVideo(AbstractGender):
         vgg_feature_extractor: VGGFace neural model used for feature extraction.
         threshold: quality of face detection considered acceptable, value between 0 and 1.
     """
+
+    analyzer_cols = ['frame', 'bbox', 'face_detect_conf']
+
     def __init__(self, face_detector = OcvCnnFacedetector(paddpercent=0.), face_classifier=Resnet50FairFaceGRA(), bbox_scaling=1.1, squarify=True, verbose = False):
         AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
 
@@ -155,7 +158,7 @@ class GenderVideo(AbstractGender):
         oshape = self.classifier.input_shape[:-1]
 
         lbatch_img = []
-        lbatch_info = []
+        linfo = []
         ldf = []
 
         for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
@@ -167,31 +170,24 @@ class GenderVideo(AbstractGender):
 
                 face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, True, self.face_alignment, oshape, self.verbose)
 
-                lbatch_info.append([iframe, bbox, detect_conf])
+                linfo.append([iframe, bbox, detect_conf])
                 lbatch_img.append(face_img)
 
             while len(lbatch_img) > self.batch_len:
                 df = self.classifier(lbatch_img[:self.batch_len], False)
-                df.insert(0, 'frame', [e[0] for e in lbatch_info[:self.batch_len]])
-                df.insert(1, 'bbox', [e[1] for e in lbatch_info[:self.batch_len]])
-                df.insert(2, 'face_detect_conf', [e[2] for e in lbatch_info[:self.batch_len]])
                 ldf.append(df)
-
                 lbatch_img = lbatch_img[self.batch_len:]
-                lbatch_info = lbatch_info[self.batch_len:]
 
         if len(lbatch_img) > 0:
             df = self.classifier(lbatch_img, False)
-            df.insert(0, 'frame', [e[0] for e in lbatch_info])
-            df.insert(1, 'bbox', [e[1] for e in lbatch_info])
-            df['face_detect_conf'] = [e[2] for e in lbatch_info]
             ldf.append(df)
 
-        if len(ldf) > 0:
-            return pd.concat(ldf).reset_index(drop=True)
-        return pd.DataFrame(None, columns=(['frame', 'bbox', 'face_detect_conf'] + self.classifier.output_cols))
+        if len(ldf) == 0:
+            return pd.DataFrame(None, columns=(self.analyzer_cols + self.classifier.output_cols))
 
-
+        dfL = pd.DataFrame.from_records(linfo, columns = self.analyzer_cols)
+        dfR = pd.concat(ldf).reset_index(drop=True)
+        return pd.concat([dfL, dfR], axis = 1)
 
 
     def pred_from_vid_and_bblist(self, vidsrc, lbox, subsamp_coeff=1, start_frame=0):
@@ -214,6 +210,7 @@ class GenderVideo(AbstractGender):
 # TODO : kwarfs for providing arguments to super class ??
 # use super name also !
 class GenderTracking(AbstractGender):
+    analyzer_cols = ['frame', 'bbox', 'face_id', 'face_detect_conf', 'face_track_conf']
     def __init__(self, detection_period, face_detector = OcvCnnFacedetector(paddpercent=0.), face_classifier=Resnet50FairFaceGRA(), bbox_scaling=1.1, squarify=True, verbose = False):
         AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
         self.detection_period = detection_period
@@ -233,13 +230,11 @@ class GenderTracking(AbstractGender):
             info: A Dataframe with frame and face information (coordinates, decision function,labels..)
         """
 
-
         oshape = self.classifier.input_shape[:-1]
-        #classif_desc = ','.join(self.classifier.outnames[1:])
         detector = TrackerDetector(self.face_detector, self.detection_period)
 
         lbatch_img = []
-        lbatch_info = []
+        linfo = []
         ldf = []
 
         for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
@@ -250,39 +245,23 @@ class GenderTracking(AbstractGender):
 
                 face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, True, self.face_alignment, oshape, self.verbose)
 
-                #lbatch.append((iframe, bb, detect_conf, face_img, bbox))
-                lbatch_info.append([iframe, bbox, faceid, detect_conf, track_conf])
+                linfo.append([iframe, bbox, faceid, detect_conf, track_conf])
                 lbatch_img.append(face_img)
 
             while len(lbatch_img) > self.batch_len:
-
                 df = self.classifier(lbatch_img[:self.batch_len], False)
-
-                df.insert(0, 'frame', [e[0] for e in lbatch_info[:self.batch_len]])
-                df.insert(1, 'bbox', [e[1] for e in lbatch_info[:self.batch_len]])
-                df.insert(2, 'face_id', [e[2] for e in lbatch_info[:self.batch_len]])
-                df.insert(3, 'face_detect_conf', [e[3] for e in lbatch_info[:self.batch_len]])
-                df.insert(4, 'face_track_conf', [e[4] for e in lbatch_info[:self.batch_len]])
-
                 ldf.append(df)
-
-
                 lbatch_img = lbatch_img[self.batch_len:]
-                lbatch_info = lbatch_info[self.batch_len:]
 
         if len(lbatch_img) > 0:
             df = self.classifier(lbatch_img, False)
-
-            df.insert(0, 'frame', [e[0] for e in lbatch_info])
-            df.insert(1, 'bbox', [e[1] for e in lbatch_info])
-            df.insert(2, 'face_id', [e[2] for e in lbatch_info])
-            df.insert(3, 'face_detect_conf', [e[3] for e in lbatch_info])
-            df.insert(4, 'face_track_conf', [e[4] for e in lbatch_info])
-
             ldf.append(df)
 
         if len(ldf) == 0:
-            df = pd.DataFrame(None, columns=['frame', 'bbox', 'face_id', 'face_detect_conf', 'face_track_conf'])
+            df = pd.DataFrame(None, columns=(self.analyzer_cols + self.classifier.output_cols))
         else:
-            df = pd.concat(ldf).reset_index(drop=True)
+            dfL = pd.DataFrame.from_records(linfo, columns = self.analyzer_cols)
+            dfR = pd.concat(ldf).reset_index(drop=True)
+            df = pd.concat([dfL, dfR], axis = 1)
+
         return self.classifier.average_results(df)

@@ -44,7 +44,7 @@ class TestIFG(unittest.TestCase):
     # VIDEO
 
     def test_video_simple(self):
-        gv = GenderVideo()
+        gv = GenderVideo(face_classifier = Vggface_LSVM_YTF())
         ret = gv(_vid)
         ret.bbox = ret.bbox.map(str)
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
@@ -52,7 +52,7 @@ class TestIFG(unittest.TestCase):
 
 
     def test_video_subsamp(self):
-        gv = GenderVideo()
+        gv = GenderVideo(face_classifier = Vggface_LSVM_YTF())
         ret = gv(_vid, subsamp_coeff=30)
         ret.bbox = ret.bbox.map(str)
         refdf = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
@@ -104,7 +104,7 @@ class TestIFG(unittest.TestCase):
     # VIDEO
 
     def test_pred_from_vid_and_bblist(self):
-        gv = GenderVideo(bbox_scaling=1, squarify=False)
+        gv = GenderVideo(bbox_scaling=1, squarify=False, face_classifier = Vggface_LSVM_YTF())
 
 
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv',
@@ -152,7 +152,7 @@ class TestIFG(unittest.TestCase):
 
 
     def test_pred_from_vid_and_bblist_boxlist_toolong(self):
-        gv = GenderVideo(bbox_scaling=1, squarify=False)
+        gv = GenderVideo(bbox_scaling=1, squarify=False, face_classifier = Vggface_LSVM_YTF())
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv')
         # there will be much more boxes than frames
         lbbox = list(df.bbox.map(eval))
