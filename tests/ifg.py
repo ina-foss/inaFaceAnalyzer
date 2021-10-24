@@ -104,7 +104,7 @@ class TestIFG(unittest.TestCase):
     # VIDEO
 
     def test_pred_from_vid_and_bblist(self):
-        gv = GenderVideo(bbox_scaling=1, squarify=False, face_classifier = Vggface_LSVM_YTF())
+        gv = GenderVideo(bbox_scaling=1, squarify_bbox=False, face_classifier = Vggface_LSVM_YTF())
 
 
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv',
@@ -122,7 +122,7 @@ class TestIFG(unittest.TestCase):
         assert_series_equal(retdf.sex_decfunc, df.sex_decfunc, rtol=.01)
 
     def test_pred_from_vid_and_bblist_multioutput(self):
-        gv = GenderVideo(bbox_scaling=1, squarify=False, face_classifier=Resnet50FairFaceGRA())
+        gv = GenderVideo(bbox_scaling=1, squarify_bbox=False, face_classifier=Resnet50FairFaceGRA())
         df = pd.read_csv('./media/pexels-artem-podrez-subsamp30-Resnet50FFGRA.csv')
         # this trick keeps only single face per frame
         df = df.drop_duplicates(subset='frame').reset_index(drop=True)
@@ -135,7 +135,7 @@ class TestIFG(unittest.TestCase):
 
 
     def test_pred_from_vid_and_bblist_res50(self):
-        gv = GenderVideo(bbox_scaling=1, squarify=False, face_classifier=Resnet50FairFace())
+        gv = GenderVideo(bbox_scaling=1, squarify_bbox=False, face_classifier=Resnet50FairFace())
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv')
         # this method read a single face per frame
         df = df.drop_duplicates(subset='frame').reset_index()
@@ -152,7 +152,7 @@ class TestIFG(unittest.TestCase):
 
 
     def test_pred_from_vid_and_bblist_boxlist_toolong(self):
-        gv = GenderVideo(bbox_scaling=1, squarify=False, face_classifier = Vggface_LSVM_YTF())
+        gv = GenderVideo()
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv')
         # there will be much more boxes than frames
         lbbox = list(df.bbox.map(eval))

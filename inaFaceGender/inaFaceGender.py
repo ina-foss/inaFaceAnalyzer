@@ -41,7 +41,7 @@ class AbstractGender:
     """
     batch_len = 32
 
-    def __init__(self, face_detector, face_classifier, bbox_scaling, squarify_bbox, verbose):
+    def __init__(self, face_detector = None, face_classifier = None, bbox_scaling = 1.1, squarify_bbox = True, verbose = False):
         """
         Constructor
         Parameters
@@ -58,7 +58,11 @@ class AbstractGender:
             If True, will display several usefull intermediate images and results
         """
         # face detection system
-        self.face_detector = face_detector
+        if face_detector is None:
+            self.face_detector = OcvCnnFacedetector(paddpercent=0.)
+        else:
+            self.face_detector = face_detector
+
 
         # set all bounding box shapes to square
         self.squarify_bbox = squarify_bbox
@@ -70,7 +74,10 @@ class AbstractGender:
         self.face_alignment = Dlib68FaceAlignment()
 
         # Face feature extractor from aligned and detected faces
-        self.classifier = face_classifier
+        if face_classifier is None:
+            self.classifier = Resnet50FairFaceGRA()
+        else:
+            self.classifier = face_classifier
 
         # True if some verbose is required
         self.verbose = verbose
@@ -96,10 +103,10 @@ class AbstractGender:
 class GenderImage(AbstractGender):
     analyzer_cols = ['frame', 'bbox', 'face_detect_conf']
 
-    def __init__(self, face_detector = OcvCnnFacedetector(), face_classifier=Resnet50FairFaceGRA(), bbox_scaling=1.1, squarify=True, verbose = False):
-        # assert instance opencvfacedetector ??
-        AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
-
+    def __init__(self, **kwargs):
+        if 'face_detector' not in kwargs:
+            kwargs['face_detector'] = OcvCnnFacedetector()
+        AbstractGender.__init__(self, **kwargs)
 
     def __call__(self, img_path):
         frame = imread_rgb(img_path, self.verbose)
@@ -139,9 +146,8 @@ class GenderVideo(AbstractGender):
 
     analyzer_cols = ['frame', 'bbox', 'face_detect_conf']
 
-    def __init__(self, face_detector = OcvCnnFacedetector(paddpercent=0.), face_classifier=Resnet50FairFaceGRA(), bbox_scaling=1.1, squarify=True, verbose = False):
-        AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
-
+    def __init__(self, **kwargs):
+        AbstractGender.__init__(self, **kwargs)
 
     def __call__(self, video_path, subsamp_coeff = 1 ,  offset = -1):
 
@@ -215,8 +221,8 @@ class GenderVideo(AbstractGender):
 # use super name also !
 class GenderTracking(AbstractGender):
     analyzer_cols = ['frame', 'bbox', 'face_id', 'face_detect_conf', 'face_track_conf']
-    def __init__(self, detection_period, face_detector = OcvCnnFacedetector(paddpercent=0.), face_classifier=Resnet50FairFaceGRA(), bbox_scaling=1.1, squarify=True, verbose = False):
-        AbstractGender.__init__(self, face_detector, face_classifier, bbox_scaling, squarify, verbose)
+    def __init__(self, detection_period, **kwargs):
+        AbstractGender.__init__(self, **kwargs)
         self.detection_period = detection_period
 
     def __call__(self, video_path, subsamp_coeff = 1 ,  offset = -1):
