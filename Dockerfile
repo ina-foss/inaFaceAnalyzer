@@ -27,7 +27,7 @@
 FROM tensorflow/tensorflow:2.6.0-gpu-jupyter
 
 RUN apt-get update \
-    && apt-get install -y cmake libgl1-mesa-glx \
+    && apt-get install -y cmake libgl1-mesa-glx ffmpeg \
     && apt-get clean \
     && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/*
