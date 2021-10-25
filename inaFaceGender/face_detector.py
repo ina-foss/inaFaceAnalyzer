@@ -83,7 +83,7 @@ class OcvCnnFacedetector:
     opencv default CNN face detector
     Future : define an abstract class allowing to implement several detection methods
     """
-    def __init__(self, minconf=0.65, paddpercent=0.15, resize=(300, 300)):
+    def __init__(self, minconf=0.65, paddpercent=0.15):
         """
         Parameters
         ----------
@@ -96,7 +96,6 @@ class OcvCnnFacedetector:
         """
         self.minconf = minconf
         self.paddpercent = paddpercent
-        self.resize = resize
 
         fpb = get_remote('opencv_face_detector_uint8.pb')
         fpbtxt = get_remote('opencv_face_detector.pbtxt')
@@ -122,17 +121,7 @@ class OcvCnnFacedetector:
 
         # The CNN is intended to work images resized to 300*300
         #blob = cv2.dnn.blobFromImage(frame, 1.0, (int(w*300./minhw), int(h*300./minhw)), [104, 117, 123], True, False)
-
-        if self.resize is None:
-            rs = (w, h)
-        elif isinstance(self.resize, int):
-            mindim = min([w, h])
-            rs = [int(e * self.resize / mindim) for e in [w, h]]
-        else:
-            assert(len(self.resize) == 2)
-            rs = self.resize
-
-        blob = cv2.dnn.blobFromImage(frame, 1.0, rs, [104, 117, 123], True, False)
+        blob = cv2.dnn.blobFromImage(frame, 1.0, (300, 300), [104, 117, 123], True, False)
         self.model.setInput(blob)
         detections = self.model.forward()
 
