@@ -30,7 +30,7 @@ import numpy as np
 from .remote_utils import get_remote
 from .opencv_utils import disp_frame_bblist
 from .face_preprocessing import _squarify_bbox
-from .face_utils import intersection_over_union
+from .face_utils import intersection_over_union, intersection_over_e1
 
 
 def _get_opencvcnn_bbox(detections, face_idx):
@@ -83,7 +83,7 @@ class OcvCnnFacedetector:
     opencv default CNN face detector
     Future : define an abstract class allowing to implement several detection methods
     """
-    def __init__(self, minconf=0.65, paddpercent=0.15, resize=(300, 300)):
+    def __init__(self, minconf=0.65, paddpercent = 0.15, max_rel_dim = None):
         """
         Parameters
         ----------
@@ -96,7 +96,7 @@ class OcvCnnFacedetector:
         """
         self.minconf = minconf
         self.paddpercent = paddpercent
-        self.resize = resize
+        self.max_rel_dim = max_rel_dim
 
         fpb = get_remote('opencv_face_detector_uint8.pb')
         fpbtxt = get_remote('opencv_face_detector.pbtxt')
@@ -121,18 +121,8 @@ class OcvCnnFacedetector:
         h, w, z = frame.shape
 
         # The CNN is intended to work images resized to 300*300
-        #blob = cv2.dnn.blobFromImage(frame, 1.0, (int(w*300./minhw), int(h*300./minhw)), [104, 117, 123], True, False)
 
-        if self.resize is None:
-            rs = (w, h)
-        elif isinstance(self.resize, int):
-            mindim = min([w, h])
-            rs = [int(e * self.resize / mindim) for e in [w, h]]
-        else:
-            assert(len(self.resize) == 2)
-            rs = self.resize
-
-        blob = cv2.dnn.blobFromImage(frame, 1.0, rs, [104, 117, 123], True, False)
+        blob = cv2.dnn.blobFromImage(frame, 1.0, (300, 300), [104, 117, 123], True, False)
         self.model.setInput(blob)
         detections = self.model.forward()
 
@@ -143,12 +133,19 @@ class OcvCnnFacedetector:
             if confidence < self.minconf:
                 break
 
-            bbox = _get_opencvcnn_bbox(detections, i)
+            x1, y1, x2, y2 = bbox = _get_opencvcnn_bbox(detections, i)
             # remove noisy detections coordinates
-            if bbox[0] >= 1 or bbox[1] >= 1 or bbox[2] <= 0 or bbox[3] <= 0:
+            if x1 >= 1 or y1 >= 1 or x2 <= 0 or y2 <= 0:
                 continue
-            if bbox[0] >= bbox[2] or bbox[1] >= bbox[3]:
+            if x1 >= x2 or y1 >= y2:
                 continue
+            if x2-x1 > .7 or y2-y1 > .7:
+                continue
+            if x1 < -.1 or y1 < -.1 or x2 > 1.1 or y2 > 1.1:
+                continue
+#            print('confidence', confidence)
+#            print('rel diff', x2 - x1, y2 - y1)
+#            print('rel box', bbox)
 
             bbox = _rel_to_abs(bbox, w, h)
             #bbox = [e - offset for e in bbox]
@@ -227,6 +224,64 @@ class IdentityFaceDetector:
         pass
     def __call__(self, frame):
         return [((0, 0, frame.shape[1], frame.shape[0]), np.NAN)]
+
+
+class OverlapFaceDetector:
+    def __init__(self, win_len = 300, win_hop = 200):
+        self.large_detect = OcvCnnFacedetector(paddpercent=.15)
+        self.small_detect = OcvCnnFacedetector(paddpercent=0.)
+        self.win_len = win_len
+        self.win_hop = win_hop
+
+    def __call__(self, frame, verbose = False):
+        ldetect = []
+
+        # detect at small scale on subportions of image
+        for y in range(0, frame.shape[0], self.win_hop):
+            for x in range(0, frame.shape[1], self.win_hop):
+                faces = self.small_detect(frame[y:(y+self.win_len), x:(x+self.win_len), :])
+                for (x1, y1, x2, y2), conf in faces:
+                    ldetect.append(((x1+x, y1+y, x2+x, y2+y), conf))
+        # detect at image scale
+        ldetect += self.large_detect(frame)
+
+        # compute intersection over union between all detected faces
+        #ioumat = np.zeros((len(ldetect), len(ldetect)))
+        #for i, (bb1, conf1) in enumerate(ldetect):
+        #    for j, (bb2, conf2) in enumerate(ldetect[:i]):
+        #        ioumat[i, j] = ioumat[j, i] = intersection_over_union(bb1, bb2)
+        # compute intersection over union between all detected faces
+        ioumat = np.zeros((len(ldetect), len(ldetect)))
+        for i, (bb1, conf1) in enumerate(ldetect):
+            for j, (bb2, conf2) in enumerate(ldetect):
+                if i != j:
+                    ioumat[i, j] = intersection_over_e1(bb1, bb2)
+
+        # if 2 detections have IOU > 0.5, keep the detection with the biggest confidence
+        while len(ioumat) > 0:
+            am = ioumat.argmax()
+            m = ioumat.ravel()[am]
+            if m < 0.5:
+                break
+            #print(am, m)
+            x = am // len(ioumat)
+            y = am % len(ioumat)
+            #print(x, ldetect[x])
+            #print(y, ldetect[y])
+            #todelete = y if ldetect[x][1] > ldetect[y][1] else x
+            todelete = x
+            ldetect.pop(todelete)
+            ioumat = np.delete(ioumat, todelete, axis = 0)
+            ioumat = np.delete(ioumat, todelete, axis = 1)
+
+        if verbose:
+            disp_frame_bblist(frame, [e[0] for e in ldetect])
+            for bbox, conf in ldetect:
+                x1, y1, x2, y2 = [int(e) for e in bbox]
+                print(bbox, conf)
+                disp_frame(frame[y1:y2, x1:x2, :])
+        return ldetect
+
 
 
 # class RetinaFaceDetector:

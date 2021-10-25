@@ -56,6 +56,15 @@ def intersection_over_union(x, y):
     union = x.area() + y.area() - inter
     return inter / union
 
+def intersection_over_e1(e1, e2):
+    # intersection over union
+    if not isinstance(e1, dlib.rectangle) and isinstance(e1, Iterable):
+        e1 = tuple2rect(e1)
+    if not isinstance(e2, dlib.rectangle) and isinstance(e2, Iterable):
+        e2 = tuple2rect(e2)
+    inter = e1.intersect(e2).area()
+    return inter / e1.area()
+
 
 def _extract_eye(shape, eye_indices):
     points = map(lambda i: shape.part(i), eye_indices)
