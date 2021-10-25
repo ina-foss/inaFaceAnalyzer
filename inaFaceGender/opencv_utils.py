@@ -62,7 +62,7 @@ def video_iterator(src, time_unit='frame', start=None, stop=None, subsamp_coeff=
             break
 
         # skip frames for subsampling reasons
-        iframe = cap.get(cv2.CAP_PROP_POS_FRAMES) - 1        
+        iframe = cap.get(cv2.CAP_PROP_POS_FRAMES) - 1
         if iframe % subsamp_coeff != 0:
             continue
 
@@ -78,15 +78,19 @@ def video_iterator(src, time_unit='frame', start=None, stop=None, subsamp_coeff=
 
     cap.release()
 
-def get_fps(src):
+def get_video_properties(src):
     cap = cv2.VideoCapture(src)
 
     if not cap.isOpened():
         raise Exception("Video file %s does not exist or is invalid" % src)
 
-    fps = cap.get(cv2.CAP_PROP_FPS)
+    dret = {}
+    dret['fps'] = int(cap.get(cv2.CAP_PROP_FPS))
+    dret['width'] = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    dret ['height'] = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    print(dret)
     cap.release()
-    return fps
+    return dret
 
 def disp_frame(frame):
     plt.imshow(frame)
