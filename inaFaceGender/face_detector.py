@@ -28,7 +28,7 @@ import numpy as np
 # from retinaface import RetinaFace
 
 from .remote_utils import get_remote
-from .opencv_utils import disp_frame_bblist
+from .opencv_utils import disp_frame_bblist, disp_frame
 from .face_preprocessing import _squarify_bbox
 from .face_utils import intersection_over_union, intersection_over_e1
 
@@ -76,6 +76,15 @@ def _blackpadd(frame, paddpercent):
     ret[yoffset:(y + yoffset), xoffset:(x + xoffset), :] = frame
     return ret, yoffset, xoffset
 
+def _square_padd(frame):
+    # add black around image to make it square
+    y, x, z = frame.shape
+    mdim = max(x, y)
+    ret = np.zeros((mdim, mdim, z), dtype=frame.dtype)
+    yoffset = (mdim - y) // 2
+    xoffset = (mdim - x) // 2
+    ret[yoffset:(y + yoffset), xoffset:(x + xoffset), :] = frame
+    return ret, yoffset, xoffset
 
 
 class OcvCnnFacedetector:
@@ -83,7 +92,7 @@ class OcvCnnFacedetector:
     opencv default CNN face detector
     Future : define an abstract class allowing to implement several detection methods
     """
-    def __init__(self, minconf=0.65, paddpercent = 0.15, max_rel_dim = None):
+    def __init__(self, minconf=0.65, paddpercent = 0.15, square_padd=False, resize=True, max_prop=1.):
         """
         Parameters
         ----------
@@ -96,7 +105,9 @@ class OcvCnnFacedetector:
         """
         self.minconf = minconf
         self.paddpercent = paddpercent
-        self.max_rel_dim = max_rel_dim
+        self.square_padd = square_padd
+        self.resize = resize
+        self.max_prop = max_prop
 
         fpb = get_remote('opencv_face_detector_uint8.pb')
         fpbtxt = get_remote('opencv_face_detector.pbtxt')
@@ -116,13 +127,32 @@ class OcvCnnFacedetector:
                                 - face detection confidence score
         """
 
+        srcframe = frame
+
         faces_data = []
-        frame, yoffset, xoffset = _blackpadd(frame, self.paddpercent)
+
+        # square padding
+        if self.square_padd:
+            frame, yoffset, xoffset = _square_padd(frame)
+        else:
+            yoffset = xoffset = 0
+
+        # border padding
+        frame, yoff, xoff = _blackpadd(frame, self.paddpercent)
+        yoffset += yoff
+        xoffset += xoff
+
+
         h, w, z = frame.shape
+
+        if self.resize:
+            rs = (300, 300)
+        else:
+            rs = (w, h)
 
         # The CNN is intended to work images resized to 300*300
 
-        blob = cv2.dnn.blobFromImage(frame, 1.0, (300, 300), [104, 117, 123], True, False)
+        blob = cv2.dnn.blobFromImage(frame, 1.0, rs, [104, 117, 123], True, False)
         self.model.setInput(blob)
         detections = self.model.forward()
 
@@ -139,24 +169,33 @@ class OcvCnnFacedetector:
                 continue
             if x1 >= x2 or y1 >= y2:
                 continue
-            if x2-x1 > .7 or y2-y1 > .7:
+
+            if x2-x1 > self.max_prop or y2-y1 > self.max_prop:
                 continue
             if x1 < -.1 or y1 < -.1 or x2 > 1.1 or y2 > 1.1:
                 continue
+
+
 #            print('confidence', confidence)
 #            print('rel diff', x2 - x1, y2 - y1)
 #            print('rel box', bbox)
 
-            bbox = _rel_to_abs(bbox, w, h)
+            (x1, y1, x2, y2) = bbox = _rel_to_abs(bbox, w, h)
             #bbox = [e - offset for e in bbox]
-            if verbose:
-                print('detected face at %s with confidence %s' % (bbox, confidence))
-                disp_frame_bblist(frame, [bbox])
+            # if verbose:
+            #     print('detected face at %s with confidence %s' % (bbox, confidence))
+            #     disp_frame_bblist(frame, [bbox])
 
 
-            bbox = [bbox[0] - xoffset, bbox[1] - yoffset, bbox[2] - xoffset, bbox[3] - yoffset]
+            bbox = [x1 - xoffset, y1 - yoffset, x2 - xoffset, y2 - yoffset]
             faces_data.append((bbox, confidence))
 
+        if verbose:
+            disp_frame_bblist(srcframe, [e[0] for e in faces_data])
+            for bbox, conf in faces_data:
+                x1, y1, x2, y2 = [int(e) for e in bbox]
+                print(bbox, conf)
+                disp_frame(srcframe[y1:y2, x1:x2, :])
 
         return faces_data
 
@@ -226,10 +265,10 @@ class IdentityFaceDetector:
         return [((0, 0, frame.shape[1], frame.shape[0]), np.NAN)]
 
 
-class OverlapFaceDetector:
+class SlidingWinFaceDetector:
     def __init__(self, win_len = 300, win_hop = 200):
-        self.large_detect = OcvCnnFacedetector(paddpercent=.15)
-        self.small_detect = OcvCnnFacedetector(paddpercent=0.)
+        self.large_detect = OcvCnnFacedetector(paddpercent=.15, minconf=.4)
+        self.small_detect = OcvCnnFacedetector(minconf = .8, paddpercent=0, max_prop=.5)
         self.win_len = win_len
         self.win_hop = win_hop
 
@@ -237,8 +276,8 @@ class OverlapFaceDetector:
         ldetect = []
 
         # detect at small scale on subportions of image
-        for y in range(0, frame.shape[0], self.win_hop):
-            for x in range(0, frame.shape[1], self.win_hop):
+        for y in range(0, frame.shape[0] - self.win_len + self.win_hop, self.win_hop):
+            for x in range(0, frame.shape[1] - self.win_len + self.win_hop, self.win_hop):
                 faces = self.small_detect(frame[y:(y+self.win_len), x:(x+self.win_len), :])
                 for (x1, y1, x2, y2), conf in faces:
                     ldetect.append(((x1+x, y1+y, x2+x, y2+y), conf))
