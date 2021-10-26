@@ -268,7 +268,7 @@ class IdentityFaceDetector:
 class SlidingWinFaceDetector:
     def __init__(self, win_len = 300, win_hop = 200):
         self.large_detect = OcvCnnFacedetector(paddpercent=.15, minconf=.4)
-        self.small_detect = OcvCnnFacedetector(minconf = .8, paddpercent=0, max_prop=.5)
+        self.small_detect = OcvCnnFacedetector(minconf = .9, paddpercent=0, max_prop=.5)
         self.win_len = win_len
         self.win_hop = win_hop
 
