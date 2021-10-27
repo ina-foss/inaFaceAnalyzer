@@ -222,6 +222,10 @@ class LibFaceDetection:
     This class wraps the detection model provided in libfacedetection
     See: https://github.com/ShiqiYu/libfacedetection
     """
+    
+    # TODO - ADD OPTION TO FILTER SMALL FACES
+    # TODO - RETURN EYE POSITION
+    
     def __init__(self, minconf=.98):
         self.model = cv2.dnn.readNet(get_remote('libfacedetection-yunet.onnx'))
         self.conf_thresh = minconf # Threshold for filtering out faces with conf < conf_thresh
