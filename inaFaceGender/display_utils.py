@@ -87,7 +87,7 @@ def incrust_faces_in_video(invid, incsv, outvid, subsamp_coeff=1, collabel='labe
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         out = cv2.VideoWriter(tmpout,fourcc,
                       invid_props['fps'] / subsamp_coeff, (invid_props['width'],invid_props['height']))
-        print('out', out)
+        #print('out', out)
 
 
         for iframe, frame in video_iterator(invid, subsamp_coeff=subsamp_coeff):
@@ -109,7 +109,7 @@ def incrust_faces_in_video(invid, incsv, outvid, subsamp_coeff=1, collabel='labe
                 cv2.rectangle(frame, (x1, y1), (x2, y2), color, 8)
 
             ret = out.write(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-            print(ret)
+            #print(ret)
 
         out.release()
         os.system('ffmpeg -y -i %s -i %s -map 0:v:0 -map 1:a? -vcodec libx264 -acodec copy %s' % (tmpout, invid, outvid))
