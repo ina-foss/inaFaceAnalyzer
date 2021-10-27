@@ -24,11 +24,8 @@
 # THE SOFTWARE.
 
 import dlib
-import cv2
-import pylab as plt
-import numpy as np
 from .remote_utils import get_remote
-from .face_utils import extract_right_eye_center, extract_left_eye_center, _angle_between_2_points#, get_rotation_matrix
+from .face_utils import extract_right_eye_center, extract_left_eye_center, tuple2rect
 
 class Dlib68FaceAlignment:
     """
@@ -50,7 +47,7 @@ class Dlib68FaceAlignment:
         self.model = dlib.shape_predictor(get_remote('shape_predictor_68_face_landmarks.dat'))
         self.verbose = verbose
 
-    def detect_eye_centers(self, frame, bb):
+    def __call__(self, frame, bb):
         """
         Detects left and right eye centers
 
@@ -72,50 +69,7 @@ class Dlib68FaceAlignment:
         """
         if bb is None:
             bb = (0, 0, frame.shape[1], frame.shape[0])
-        bb = dlib.rectangle(*bb)
-        shape = self.model(frame, bb)
+        shape = self.model(frame, tuple2rect(bb))
         left_eye = extract_left_eye_center(shape)
         right_eye = extract_right_eye_center(shape)
         return left_eye, right_eye
-
-    def __call__(self, frame, bb):
-        """
-        Performs eye centers detection and rotate image such as the eyes lie
-        on a horizontal line
-
-        Parameters
-        ----------
-        frame : numpy.ndarray (height,with, 3)
-            RGB image data
-        bb : (x1, y1, x2, y2) or None
-            Location of the face in the frame
-            If set to None, the whole image is considered as a face
-
-        Returns
-        -------
-        rotated_frame : numpy.ndarray (height,with, 3)
-            RGB rotated image data
-        left_eye : (x,y)
-            Center of the left eye in the input image
-        right_eye : (x,y)
-            Center of the right eye in the input image
-
-        """
-        left_eye, right_eye = self.detect_eye_centers(frame, bb)
-        w = bb[2] - bb[0]
-        h = bb[3] - bb[1]
-
-        angle = _angle_between_2_points(left_eye, right_eye)
-        xc = (left_eye[0] + right_eye[0]) / 2
-        yc = (left_eye[1] + right_eye[1]) / 2
-        M = cv2.getRotationMatrix2D((xc, yc), angle, 1)
-        M += np.array([[0, 0, -bb[0]], [0, 0, -bb[1]]])
-
-
-        rotated_frame = cv2.warpAffine(frame, M, (w, h), flags=cv2.INTER_CUBIC)
-
-        if self.verbose:
-            print('after rotation')
-            plt.imshow(rotated_frame)
-            plt.show()
-        return rotated_frame, left_eye, right_eye

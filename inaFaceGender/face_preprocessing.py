@@ -24,22 +24,9 @@
 # THE SOFTWARE.
 
 import cv2
+import numpy as np
 from matplotlib import pyplot as plt
-
-# def crop_image_fill(frame, bb):
-#     x1, y1, x2, y2 = bb
-#     hframe, wframe = (frame.shape[0], frame.shape[1])
-#     if x1 >= 0 and y1 >= 0 and x2 <= wframe and y2 <= hframe:
-#         return frame[top:bottom, left:right]
-#     w = x2 - x1
-#     h = y2 - y1
-#     sframe = frame[max(0, y1):min(y2, hframe), max(0, x1):min(x2, wframe),:]
-#     ret = np.zeros((h, w, 3), np.uint8)
-#     yoff = (h - sframe.shape[0]) // 2
-#     xoff = (w - sframe.shape[1]) // 2
-#     print('xoff', xoff, 'yoff', yoff)
-#     ret[yoff:(h+yoff), xoff:(w+xoff), :] = sframe[:,:,:]
-#     return ret
+from .face_utils import _angle_between_2_points
 
 def _scale_bbox(x1, y1, x2, y2, scale):
     w = x2 - x1
@@ -57,7 +44,6 @@ def _squarify_bbox(bbox):
     Convert a rectangle bounding box to a square
     width sides equal to the maximum between width and height
     """
-    #print('sq' , bbox)
     x1, y1, x2, y2 = bbox
     w = x2 - x1
     h = y2 - y1
@@ -66,16 +52,45 @@ def _squarify_bbox(bbox):
     y_center = (y1+y2) / 2
     return x_center - offset, y_center - offset, x_center + offset, y_center + offset
 
-# TODO: this may cause a stretching in a latter stage
-# TODO conversion to int should be done after scaling
-def _norm_bbox(bbox, frame_width, frame_height):
-    """
-    convert to int and crop bbox to 0:frame_shape
-    """
-    x1, y1, x2, y2 = [int(e) for e in bbox]
-    return x1, y1, x2, y2
 
-def preprocess_face(frame, bbox, squarify, bbox_scale, norm, face_alignment, output_shape, verbose=False):
+def alignCrop(frame, bb, left_eye, right_eye, verbose=False):
+    """
+    Rotate image such as the eyes lie on a horizontal line
+
+    Parameters
+    ----------
+    frame : numpy.ndarray (height,with, 3)
+        RGB image data
+    bb : (x1, y1, x2, y2)
+    left_eye: x, y
+    right_eye: x, y
+
+    Returns
+    -------
+    rotated_frame : numpy.ndarray (height,with, 3)
+        RGB rotated and cropped image data
+    """
+    w = int(bb[2] - bb[0])
+    h = int(bb[3] - bb[1])
+
+    angle = _angle_between_2_points(left_eye, right_eye)
+    xc = (left_eye[0] + right_eye[0]) / 2
+    yc = (left_eye[1] + right_eye[1]) / 2
+    M = cv2.getRotationMatrix2D((xc, yc), angle, 1)
+    M += np.array([[0, 0, -bb[0]], [0, 0, -bb[1]]])
+
+
+    rotated_frame = cv2.warpAffine(frame, M, (w, h), flags=cv2.INTER_CUBIC)
+
+    if verbose:
+        print('after rotation & crop')
+        plt.imshow(rotated_frame)
+        plt.show()
+    return rotated_frame
+
+
+
+def preprocess_face(frame, bbox, squarify, bbox_scale, face_alignment, output_shape, verbose=False):
     """
     Apply preprocessing pipeline to a detected face and returns the
     corresponding image with the following optional processings
@@ -94,9 +109,6 @@ def preprocess_face(frame, bbox, squarify, bbox_scale, norm, face_alignment, out
         resize the bounding box to consider larger (bbox_scale > 1) or
         smaller (bbox_scale < 1) areas around faces. If set to 1, the
         original bounding box is used
-    norm : boolean
-        if set to True, bounding boxes will be converted from float to int
-        and will be cropped to fit inside the input frame
     face_alignment: instance of class defined in face_alignment.py or None
         if set to None, do nothing
         if set to an instance of class defined in face_alignment.py
@@ -117,6 +129,7 @@ def preprocess_face(frame, bbox, squarify, bbox_scale, norm, face_alignment, out
     if bbox is None:
         bbox = (0, 0, frame_w, frame_h)
 
+
     # if True, extend the bounding box to the smallest square containing
     # the orignal bounding box
     if squarify:
@@ -126,20 +139,14 @@ def preprocess_face(frame, bbox, squarify, bbox_scale, norm, face_alignment, out
     # the detected face
     bbox = _scale_bbox(*bbox, bbox_scale)
 
-    # bounding box normalization to int and to fit in input frame
-    if norm:
-        bbox = _norm_bbox(bbox, frame_w, frame_h)
 
-    # if verbose, display the image and the bounding box
-    if verbose:
-       tmpframe = frame.copy()
-       cv2.rectangle(tmpframe, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 8)
-       plt.imshow(tmpframe)
-       plt.show()
+    # in future - use rounded values
+    bbox = tuple([int(e) for e in bbox])
 
     # performs face alignment based on facial landmark detection
     if face_alignment is not None:
-        frame, left_eye, right_eye = face_alignment(frame, bbox)
+        left_eye, right_eye = face_alignment(frame, bbox)
+        frame = alignCrop(frame, bbox, left_eye, right_eye, verbose=verbose)
     else:
         # crop image to the bounding box
 	# TODO: replace by a wrap affine => management of out of frame

@@ -87,11 +87,11 @@ class AbstractGender:
 
     #TODO : test in multi output
     # may be deprecated in a near future since it does not takes advantage of batches
-    def classif_from_frame_and_bbox(self, frame, bbox, bbox_square, bbox_scale, bbox_norm):
+    def classif_from_frame_and_bbox(self, frame, bbox, bbox_square, bbox_scale):
 
         oshape = self.classifier.input_shape[:-1]
         fa, vrb = (self.face_alignment, self.verbose)
-        face_img, bbox = preprocess_face(frame, bbox, bbox_square, bbox_scale, bbox_norm, fa, oshape, vrb)
+        face_img, bbox = preprocess_face(frame, bbox, bbox_square, bbox_scale, fa, oshape, vrb)
 
         feats, df = self.classifier([face_img], True)
         df.insert(0, 'feats', [feats])
@@ -117,9 +117,7 @@ class GenderImage(AbstractGender):
         lret = []
         # iterate on "generic" detect_info ??
         for bb, detect_conf in self.face_detector(frame, self.verbose):
-#            if self.verbose:
-#                print('bbox: %s, conf: %f' % (bb, detect_conf))
-            df = self.classif_from_frame_and_bbox(frame, bb, self.squarify_bbox, self.bbox_scaling, True)
+            df = self.classif_from_frame_and_bbox(frame, bb, self.squarify_bbox, self.bbox_scaling)
             df.insert(2, 'face_detect_conf', [detect_conf])
             lret.append(df)
 
@@ -178,7 +176,7 @@ class GenderVideo(AbstractGender):
                     print('bbox: %s, conf: %f' % (bb, detect_conf))
 
 
-                face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, True, self.face_alignment, oshape, self.verbose)
+                face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, self.face_alignment, oshape, self.verbose)
 
                 linfo.append([iframe, bbox, detect_conf])
                 lbatch_img.append(face_img)
@@ -205,7 +203,7 @@ class GenderVideo(AbstractGender):
 
         for (iframe, frame), bbox in zip(video_iterator(vidsrc, subsamp_coeff=subsamp_coeff, start=start_frame, verbose=self.verbose),lbox):
 
-            df = self.classif_from_frame_and_bbox(frame, bbox, self.squarify_bbox, self.bbox_scaling, True)
+            df = self.classif_from_frame_and_bbox(frame, bbox, self.squarify_bbox, self.bbox_scaling)
 
             ldf.append(df)
 
@@ -253,7 +251,7 @@ class GenderTracking(AbstractGender):
                 if self.verbose:
                     print(detector.out_names, bb, faceid, detect_conf, track_conf)
 
-                face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, True, self.face_alignment, oshape, self.verbose)
+                face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, self.face_alignment, oshape, self.verbose)
 
                 linfo.append([iframe, bbox, faceid, detect_conf, track_conf])
                 lbatch_img.append(face_img)

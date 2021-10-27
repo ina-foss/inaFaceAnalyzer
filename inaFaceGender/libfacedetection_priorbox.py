@@ -7,7 +7,7 @@
 # https://github.com/ShiqiYu/libfacedetection/blob/master/LICENSE
 
 # To cite this work please refer to the 2 following papers :
-    
+
 # @article{facedetect-yu,
 #  author={Yuantao Feng and Shiqi Yu and Hanyang Peng and Yan-ran Li and Jianguo Zhang}
 #  title={Detect Faces Efficiently: A Survey and Evaluations},
@@ -17,8 +17,8 @@
 
 # @article{eiou,
 #  author={Peng, Hanyang and Yu, Shiqi},
-#  journal={IEEE Transactions on Image Processing}, 
-#  title={A Systematic IoU-Related Method: Beyond Simplified Regression for Better Localization}, 
+#  journal={IEEE Transactions on Image Processing},
+#  title={A Systematic IoU-Related Method: Beyond Simplified Regression for Better Localization},
 #  year={2021},
 #  volume={30},
 #  pages={5032-5044},
@@ -27,7 +27,6 @@
 #  https://ieeexplore.ieee.org/document/9429909
 
 import sys
-import cv2
 import numpy as np
 from itertools import product
 from typing import List, Tuple
@@ -93,7 +92,7 @@ class PriorBox(object):
             iou (np.ndarray): iou produced from iou layers of shape [num_priors, 1]. '1' for [iou].
             ignore_score (float): used to filter out low score instances.
         Return:
-            dets (np.ndarray): dets is concatenated by bboxes, landmarks and scores. 
+            dets (np.ndarray): dets is concatenated by bboxes, landmarks and scores.
                 bboxes consists of num_priors * (x1, y1, x2, y2) of shape [num_priors, 4].
                 landmarks consists of num_priors * (x_le, y_le, x_re, y_r2, x_n, y_n, x_ml, y_ml, x_mr, y_mr) of shape [num_priors, 5*2].
         '''
@@ -139,15 +138,3 @@ class PriorBox(object):
 
         dets = np.hstack((bboxes, landmarks, scores))
         return dets
-
-if __name__ == '__main__':
-    from priorbox import PriorBox
-    pb = PriorBox()
-    print(pb.generate_priors().shape)
-
-    loc = np.random.rand(1, 4385, 14)
-    conf = np.random.rand(1, 4385, 2)
-    iou = np.random.rand(1, 4385, 1)
-
-    dets = pb.decode(np.squeeze(loc, axis=0), np.squeeze(conf, axis=0), np.squeeze(iou, axis=0))
-    print(dets.shape)

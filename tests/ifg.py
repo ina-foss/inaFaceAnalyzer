@@ -30,7 +30,7 @@ import numpy as np
 import cv2
 import tensorflow as tf
 from inaFaceGender.inaFaceGender import GenderVideo
-from inaFaceGender.face_preprocessing import _norm_bbox, _squarify_bbox
+from inaFaceGender.face_preprocessing import _squarify_bbox
 from inaFaceGender.face_detector import OcvCnnFacedetector
 from inaFaceGender.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
 
@@ -82,7 +82,7 @@ class TestIFG(unittest.TestCase):
         self.assertEqual(len(ret), 1)
         ret, conf = ret[0]
         ret = _squarify_bbox(ret)
-        ret = _norm_bbox(ret, img.shape[1], img.shape[0])
+        ret = tuple([int(e) for e in ret])
         self.assertEqual(ret, (457, 271, 963, 777))
         self.assertAlmostEqual(conf, 0.99964356)
 
