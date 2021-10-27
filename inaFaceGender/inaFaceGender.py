@@ -116,9 +116,9 @@ class GenderImage(AbstractGender):
     def detect_and_classify_faces_from_frame(self, frame):
         lret = []
         # iterate on "generic" detect_info ??
-        for bb, detect_conf in self.face_detector(frame):
-            if self.verbose:
-                print('bbox: %s, conf: %f' % (bb, detect_conf))
+        for bb, detect_conf in self.face_detector(frame, self.verbose):
+#            if self.verbose:
+#                print('bbox: %s, conf: %f' % (bb, detect_conf))
             df = self.classif_from_frame_and_bbox(frame, bb, self.squarify_bbox, self.bbox_scaling, True)
             df.insert(2, 'face_detect_conf', [detect_conf])
             lret.append(df)

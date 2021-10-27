@@ -25,12 +25,12 @@
 
 import cv2
 import numpy as np
-# from retinaface import RetinaFace
 
 from .remote_utils import get_remote
-from .opencv_utils import disp_frame_bblist
+from .opencv_utils import disp_frame_bblist, disp_frame
 from .face_preprocessing import _squarify_bbox
 from .face_utils import intersection_over_union
+from .libfacedetection_priorbox import PriorBox
 
 
 def _get_opencvcnn_bbox(detections, face_idx):
@@ -217,42 +217,64 @@ class IdentityFaceDetector:
     def __call__(self, frame):
         return [((0, 0, frame.shape[1], frame.shape[0]), np.NAN)]
 
+class LibFaceDetection:
+    """
+    This class wraps the detection model provided in libfacedetection
+    See: https://github.com/ShiqiYu/libfacedetection
+    """
+    def __init__(self, minconf=.98):
+        self.model = cv2.dnn.readNet(get_remote('libfacedetection-yunet.onnx'))
+        self.conf_thresh = minconf # Threshold for filtering out faces with conf < conf_thresh
+        self.nms_thresh = 0.3 # Threshold for non-max suppression
+        self.keep_top_k = 750 # Keep keep_top_k for results outputing
+        self.dprior = {}
 
-# class RetinaFaceDetector:
-#     def __init__(self, minconf=0.65):
-#         """
-#         Parameters
-#         ----------
-#         minconf : float, optional
-#            minimal face detection confidence. The default is 0.65.
-#         """
-#         self.minconf = minconf
+    def __call__(self, frame, verbose = False):
+        # TODO this model seems to use BGR INPUT
+        bgr_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        h, w, _ = frame.shape
 
-#     def __call__(self, frame, verbose=False):
-#         """
-#         Detect faces from an image
+        blob = cv2.dnn.blobFromImage(bgr_frame)
+        output_names = ['loc', 'conf', 'iou']
+        self.model.setInput(blob)
+        loc, conf, iou = self.model.forward(output_names)
 
-#         Parameters:
-#             frame (array): Image to detect faces from.
+        # Decode bboxes and landmarks
+        if (w, h) not in self.dprior:
+            self.dprior[(w, h)] = PriorBox(input_shape=(w, h), output_shape=(w, h))
+        pb = self.dprior[(w, h)]
 
-#         Returns:
-#             faces_data (list) : List containing :
-#                                 - the bounding box
-#                                 - face detection confidence score
-#         """
+        dets = pb.decode(loc, conf, iou, self.conf_thresh)
 
-#         if not frame.any():
-#             return []
 
-#         faces_data = []
-#         ret = RetinaFace.detect_faces(frame, threshold=self.minconf)
-#         print(ret)
+        # NMS
+        if dets.shape[0] > 0:
+             # NMS from OpenCV
+             keep_idx = cv2.dnn.NMSBoxes(
+                  bboxes=dets[:, 0:4].tolist(),
+                  scores=dets[:, -1].tolist(),
+                  score_threshold=self.conf_thresh,
+                  nms_threshold=self.nms_thresh,
+                  eta=1,
+                  top_k=self.keep_top_k) # returns [box_num, class_num]
+             # print('keep_idx', keep_idx)
+             #keep_idx = np.squeeze(keep_idx, axis=1) # [box_num, class_num] -> [box_num]
+             dets = dets[keep_idx]
+        else:
+            return []
 
-#         if not isinstance(ret, dict):
-#             return []
+        lret = []
+        for i in range(len(dets)):
+            score = dets[i,-1]
+            bbox = dets[i,:4]
+            lret.append(((bbox[0], bbox[1], bbox[0] + bbox[2], bbox[1] + bbox[3]), score))
+            # landmarks=np.reshape(dets[:, 4:14], (-1, 5, 2)),
 
-#         for k in ret:
-#             e = ret[k]
-#             faces_data.append((e['facial_area'], e['score']))
+        if verbose:
+            disp_frame_bblist(frame, [e[0] for e in lret])
+            for bbox, conf in lret:
+                x1, y1, x2, y2 = [int(e) for e in bbox]
+                print(bbox, conf)
+                disp_frame(frame[y1:y2, x1:x2, :])
 
-#         return faces_data
+        return lret
