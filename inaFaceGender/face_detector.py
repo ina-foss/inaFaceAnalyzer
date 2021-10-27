@@ -27,6 +27,8 @@ import cv2
 import numpy as np
 # from retinaface import RetinaFace
 
+import mediapipe as mp
+
 from .remote_utils import get_remote
 from .opencv_utils import disp_frame_bblist, disp_frame
 from .face_preprocessing import _squarify_bbox
@@ -322,6 +324,26 @@ class SlidingWinFaceDetector:
         return ldetect
 
 
+class MediaPipeFaceDetector:
+    def __init__(self, minconf=0.65, mpipe_modelid = 1):
+        fd = mp.solutions.face_detection
+        self.model = fd.FaceDetection(model_selection=mpipe_modelid, min_detection_confidence = minconf)
+        print(self.model)
+    def __call__(self, frame, verbose = False):
+        lret = []
+        h, w, _ = frame.shape
+        results = self.model.process(frame).detections
+        #print(self.model.process(frame).detections)
+        if results is None:
+            return []
+        for detection in results:
+            score = detection.score[0]
+            bb = detection.location_data.relative_bounding_box
+            bb = [bb.xmin * w, bb.ymin * h, (bb.xmin + bb.width) * w, (bb.ymin + bb.height) * h]
+            lret.append((bb, score))
+        return lret
+    def __del__(self):
+        self.model.close()
 
 # class RetinaFaceDetector:
 #     def __init__(self, minconf=0.65):
