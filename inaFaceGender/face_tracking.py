@@ -25,7 +25,7 @@
 
 import dlib
 import numpy as np
-from .opencv_utils import disp_frame_bblist
+from .opencv_utils import disp_frame_shapes
 from .face_utils import _rect_to_tuple, intersection_over_union, tuple2drect
 
 def _matrix_argmax(m):
@@ -52,7 +52,7 @@ class Tracker:
 
         if verbose:
             print('update', pos, update_val)
-            disp_frame_bblist(frame, [pos])
+            disp_frame_shapes(frame, [pos])
 
         if not ((x2 > 0) and (x1 < fw) and (y2 > 0) and (y1 < fh)):
             update_val = -1
@@ -66,7 +66,7 @@ class Tracker:
         if verbose:
             e = self.t.get_position()
             print('dest', bb, 'new position', e)
-            disp_frame_bblist(frame, [_rect_to_tuple(e), bb])
+            disp_frame_shapes(frame, [_rect_to_tuple(e), bb])
         self.t.start_track(frame, tuple2drect(bb))
         self.track_conf = update_val
         self.detect_conf = detect_conf

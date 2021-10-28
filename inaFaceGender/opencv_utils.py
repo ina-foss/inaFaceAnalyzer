@@ -95,14 +95,19 @@ def get_video_properties(src):
 def disp_frame(frame):
     plt.imshow(frame)
     plt.show()
+    return frame
 
-def disp_frame_bblist(frame, bblist):
+def disp_frame_shapes(frame, lrect = [], lpoint = []):
     tmpframe = frame.copy()
-    for bbox in bblist:
-        print(bbox)
+    for bbox in lrect:
+        print('bbox', bbox)
         bbox = [int(e) for e in bbox]
         cv2.rectangle(tmpframe, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 8)
-    disp_frame(tmpframe)
+    for point in lpoint:
+        print('point', point)
+        point = [int(e) for e in point]
+        cv2.circle(tmpframe, point, radius=4, color=(0, 0, 255), thickness=-1)
+    return disp_frame(tmpframe)
 
 def imwrite_rgb(dst, img):
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)

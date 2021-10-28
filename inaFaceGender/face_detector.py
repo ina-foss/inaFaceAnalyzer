@@ -27,7 +27,7 @@ import cv2
 import numpy as np
 
 from .remote_utils import get_remote
-from .opencv_utils import disp_frame_bblist, disp_frame
+from .opencv_utils import disp_frame_shapes, disp_frame
 from .face_preprocessing import _squarify_bbox
 from .face_utils import intersection_over_union
 from .libfacedetection_priorbox import PriorBox
@@ -143,7 +143,7 @@ class OcvCnnFacedetector:
             #bbox = [e - offset for e in bbox]
             if verbose:
                 print('detected face at %s with confidence %s' % (bbox, confidence))
-                disp_frame_bblist(frame, [bbox])
+                disp_frame_shapes(frame, [bbox])
 
 
             bbox = [bbox[0] - xoffset, bbox[1] - yoffset, bbox[2] - xoffset, bbox[3] - yoffset]
@@ -185,7 +185,7 @@ class OcvCnnFacedetector:
             return None
         if verbose:
             print('most closest face with bounding box %s and confidence %f' % (bbox, conf))
-            disp_frame_bblist(frame, [bbox])
+            disp_frame_shapes(frame, [bbox])
         return (bbox, conf)
 
     def get_closest_face(self, frame, ref_bbox, min_iou=.7, squarify=True, verbose=False):
@@ -222,10 +222,10 @@ class LibFaceDetection:
     This class wraps the detection model provided in libfacedetection
     See: https://github.com/ShiqiYu/libfacedetection
     """
-    
+
     # TODO - ADD OPTION TO FILTER SMALL FACES
     # TODO - RETURN EYE POSITION
-    
+
     def __init__(self, minconf=.98):
         self.model = cv2.dnn.readNet(get_remote('libfacedetection-yunet.onnx'))
         self.conf_thresh = minconf # Threshold for filtering out faces with conf < conf_thresh
@@ -268,17 +268,21 @@ class LibFaceDetection:
             return []
 
         lret = []
+        leyes = []
         for i in range(len(dets)):
             score = dets[i,-1]
             bbox = dets[i,:4]
             lret.append(((bbox[0], bbox[1], bbox[0] + bbox[2], bbox[1] + bbox[3]), score))
+            left_eye = tuple(dets[i, 4:6])
+            right_eye = tuple(dets[i, 6:8])
+            leyes += [left_eye, right_eye]
             # landmarks=np.reshape(dets[:, 4:14], (-1, 5, 2)),
 
         if verbose:
-            disp_frame_bblist(frame, [e[0] for e in lret])
+            verb_frame = disp_frame_shapes(frame, [e[0] for e in lret], leyes)
             for bbox, conf in lret:
                 x1, y1, x2, y2 = [int(e) for e in bbox]
                 print(bbox, conf)
-                disp_frame(frame[y1:y2, x1:x2, :])
+                disp_frame(verb_frame[y1:y2, x1:x2, :])
 
         return lret
