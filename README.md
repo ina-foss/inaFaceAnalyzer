@@ -18,7 +18,7 @@ Should you need further details regarding this work, please refer to the followi
 ## Installation
 
 ```
-apt-get install cmake
+apt-get install cmake ffmpeg libgl1-mesa-glx
 git clone https://github.com/ina-foss/inaFaceGender.git
 cd inaFaceGender
 pip install .

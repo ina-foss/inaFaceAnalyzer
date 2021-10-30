@@ -3,7 +3,7 @@
 
 # The MIT License
 
-# Copyright (c) 2019 Ina (David Doukhan - http://www.ina.fr/)
+# Copyright (c) 2019-2021 Ina (David Doukhan - http://www.ina.fr/)
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -28,10 +28,16 @@ import unittest
 
 # here are tests related to face_classifiers.py
 from tests.classifiers import TestClassifiers
-# here are remaining framework tests
-from tests.ifg import TestIFG
 # tests related to opencv_utils.py
 from tests.ocvutils import TestOpenCvUtils
+# single image related tests
+from tests.singleimage import TestSingleImage
+# tracking pipeline tests
+from tests.tracking import TestTracking
+# face detection tests
+from tests.detector import TestDetector
+# here are remaining framework tests
+from tests.ifg import TestIFG
 
 
 if __name__ == '__main__':

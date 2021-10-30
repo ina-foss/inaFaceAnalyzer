@@ -23,25 +23,63 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from abc import ABC, abstractmethod
 import cv2
 import numpy as np
+import onnxruntime
+
 from .remote_utils import get_remote
-from .opencv_utils import disp_frame_bblist
+from .opencv_utils import disp_frame_shapes, disp_frame
 from .face_preprocessing import _squarify_bbox
 from .face_utils import intersection_over_union
+from .libfacedetection_priorbox import PriorBox
+
+def max_dim_len(bbox):
+    x1, y1, x2, y2 = bbox
+    return max(x2 - x1, y2 - y1)
+
+class FaceDetector(ABC):
+    def __init__(self, minconf, min_size_px, min_size_prct, padd_prct):
+        self.minconf = minconf
+        self.min_size_px = min_size_px
+        self.min_size_prct = min_size_prct
+        self.padd_prct = padd_prct
+
+    def __call__(self, frame, verbose=False):
+
+        tmpframe = frame
+
+        if self.padd_prct:
+            tmpframe, yoffset, xoffset = _blackpadd(frame, self.padd_prct)
+
+        lret = self._call_imp(tmpframe)
 
 
-def _get_opencvcnn_bbox(detections, face_idx):
-    """
-    Extract bounding boxes from opencv CNN detection output
-    Results are in relative coordinates 0...1
-    """
+        # filter detected faces to return only faces with a dimension length
+        # (absolute or relative)
+        # face classification algorithms may be affected by small face sizes
+        min_frame_dim = min(frame.shape[:2])
+        min_face_size = max(self.min_size_px, self.min_size_prct * min_frame_dim)
+        if min_face_size > 0:
+            lret = [e for e in lret if max_dim_len(e[0]) >= min_face_size]
 
-    x1 = detections[0, 0, face_idx, 3]
-    y1 = detections[0, 0, face_idx, 4]
-    x2 = detections[0, 0, face_idx, 5]
-    y2 = detections[0, 0, face_idx, 6]
-    return x1, y1, x2, y2
+        if self.padd_prct:
+            lret = [((x1 - xoffset, y1 - yoffset, x2 - xoffset, y2 - yoffset), conf)
+                    for ((x1, y1, x2, y2), conf) in lret]
+
+        if verbose:
+            disp_frame_shapes(frame, [e[0] for e in lret], [])
+            for bbox, conf in lret:
+                x1, y1, x2, y2 = [int(e) for e in bbox]
+                print(bbox, conf)
+                disp_frame(frame[y1:y2, x1:x2, :])
+
+
+        return lret
+
+    @abstractmethod
+    def _call_imp(self, frame): pass
+
 
 def _rel_to_abs(bbox, frame_width, frame_height):
     """
@@ -76,12 +114,11 @@ def _blackpadd(frame, paddpercent):
 
 
 
-class OcvCnnFacedetector:
+class OcvCnnFacedetector(FaceDetector):
     """
     opencv default CNN face detector
-    Future : define an abstract class allowing to implement several detection methods
     """
-    def __init__(self, minconf=0.65, paddpercent=0.15):
+    def __init__(self, minconf=0.65, min_size_px=30, min_size_prct=0, padd_prct=0.15):
         """
         Parameters
         ----------
@@ -92,15 +129,14 @@ class OcvCnnFacedetector:
             padding. the resulting dimensions is width * (1+2*paddpercent)
 
         """
-        self.minconf = minconf
-        self.paddpercent = paddpercent
+        super().__init__(minconf, min_size_px, min_size_prct, padd_prct)
 
         fpb = get_remote('opencv_face_detector_uint8.pb')
         fpbtxt = get_remote('opencv_face_detector.pbtxt')
         self.model = cv2.dnn.readNetFromTensorflow(fpb, fpbtxt)
 
 
-    def __call__(self, frame, verbose=False):
+    def _call_imp(self, frame):
         """
         Detect faces from an image
 
@@ -114,18 +150,12 @@ class OcvCnnFacedetector:
         """
 
         faces_data = []
-
-#        frame_height = frame.shape[0]
-#        frame_width = frame.shape[1]
-
-        #print(frame.shape)
-        frame, yoffset, xoffset = _blackpadd(frame, self.paddpercent)
+#        frame, yoffset, xoffset = _blackpadd(frame, self.paddpercent)
         h, w, z = frame.shape
-        #print(frame.shape, xoffset, yoffset)
-        # minhw = min(h,w)
 
         # The CNN is intended to work images resized to 300*300
-        #blob = cv2.dnn.blobFromImage(frame, 1.0, (int(w*300./minhw), int(h*300./minhw)), [104, 117, 123], True, False)
+        # tests were carried on using different input size and were associated
+        # to usatisfactory results
         blob = cv2.dnn.blobFromImage(frame, 1.0, (300, 300), [104, 117, 123], True, False)
         self.model.setInput(blob)
         detections = self.model.forward()
@@ -134,10 +164,12 @@ class OcvCnnFacedetector:
 
         for i in range(detections.shape[2]):
             confidence = detections[0, 0, i, 2]
+
             if confidence < self.minconf:
                 break
 
-            bbox = _get_opencvcnn_bbox(detections, i)
+            bbox = detections[0, 0, i, 3:7]
+            #bbox = _get_opencvcnn_bbox(detections, i)
             # remove noisy detections coordinates
             if bbox[0] >= 1 or bbox[1] >= 1 or bbox[2] <= 0 or bbox[3] <= 0:
                 continue
@@ -145,13 +177,8 @@ class OcvCnnFacedetector:
                 continue
 
             bbox = _rel_to_abs(bbox, w, h)
-            #bbox = [e - offset for e in bbox]
-            if verbose:
-                print('detected face at %s with confidence %s' % (bbox, confidence))
-                disp_frame_bblist(frame, [bbox])
 
-
-            bbox = [bbox[0] - xoffset, bbox[1] - yoffset, bbox[2] - xoffset, bbox[3] - yoffset]
+#            bbox = [bbox[0] - xoffset, bbox[1] - yoffset, bbox[2] - xoffset, bbox[3] - yoffset]
             faces_data.append((bbox, confidence))
 
 
@@ -190,7 +217,7 @@ class OcvCnnFacedetector:
             return None
         if verbose:
             print('most closest face with bounding box %s and confidence %f' % (bbox, conf))
-            disp_frame_bblist(frame, [bbox])
+            disp_frame_shapes(frame, [bbox])
         return (bbox, conf)
 
     def get_closest_face(self, frame, ref_bbox, min_iou=.7, squarify=True, verbose=False):
@@ -216,8 +243,77 @@ class OcvCnnFacedetector:
         return lfaces[am]
 
 
-class IdentityFaceDetector:
+class IdentityFaceDetector(FaceDetector):
     def __init__(self):
         pass
-    def __call__(self, frame):
+    def _call_imp(self, frame):
         return [((0, 0, frame.shape[1], frame.shape[0]), np.NAN)]
+
+class LibFaceDetection(FaceDetector):
+    """
+    This class wraps the detection model provided in libfacedetection
+    See: https://github.com/ShiqiYu/libfacedetection
+    """
+
+    # TODO - ADD OPTION TO FILTER SMALL FACES
+    # TODO - RETURN EYE POSITION
+
+    def __init__(self, minconf=.98, min_size_px=30, min_size_prct=0, padd_prct=0):
+        super().__init__(minconf, min_size_px, min_size_prct, padd_prct)
+        model_src = get_remote('libfacedetection-yunet.onnx')
+        self.model = onnxruntime.InferenceSession(model_src, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+ #       self.conf_thresh = minconf # Threshold for filtering out faces with conf < conf_thresh
+        self.nms_thresh = 0.3 # Threshold for non-max suppression
+        self.keep_top_k = 750 # Keep keep_top_k for results outputing
+        self.dprior = {}
+
+    def _call_imp(self, frame):
+        # TODO this model seems to use BGR INPUT
+        bgr_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        h, w, _ = frame.shape
+
+        # convert to NN input
+        blob = np.expand_dims(np.transpose(bgr_frame, (2, 0, 1)), axis = 0).astype(np.float32)
+        # NN inference
+        loc, conf, iou = self.model.run([], {'input': blob})
+
+        # Decode bboxes and landmarks
+        if (w, h) not in self.dprior:
+            self.dprior[(w, h)] = PriorBox(input_shape=(w, h), output_shape=(w, h))
+        pb = self.dprior[(w, h)]
+
+        dets = pb.decode(loc, conf, iou, self.minconf)
+
+
+        # NMS
+        if dets.shape[0] > 0:
+             # NMS from OpenCV
+             keep_idx = cv2.dnn.NMSBoxes(
+                  bboxes=dets[:, 0:4].tolist(),
+                  scores=dets[:, -1].tolist(),
+                  score_threshold=self.minconf,
+                  nms_threshold=self.nms_thresh,
+                  eta=1,
+                  top_k=self.keep_top_k)
+             dets = dets[keep_idx]
+        else:
+            return []
+
+        lret = []
+        leyes = []
+        for i in range(len(dets)):
+            score = dets[i,-1]
+            bbox = dets[i,:4]
+            lret.append(((bbox[0], bbox[1], bbox[0] + bbox[2], bbox[1] + bbox[3]), score))
+            left_eye = tuple(dets[i, 4:6])
+            right_eye = tuple(dets[i, 6:8])
+            leyes += [left_eye, right_eye]
+
+        # if verbose:
+        #     verb_frame = disp_frame_shapes(frame, [e[0] for e in lret], leyes)
+        #     for bbox, conf in lret:
+        #         x1, y1, x2, y2 = [int(e) for e in bbox]
+        #         print(bbox, conf)
+        #         disp_frame(verb_frame[y1:y2, x1:x2, :])
+
+        return lret

@@ -25,6 +25,7 @@
 
 
 import cv2
+import numpy as np
 import pylab as plt
 
 def video_iterator(src, time_unit='frame', start=None, stop=None, subsamp_coeff=1, verbose=False):
@@ -62,7 +63,7 @@ def video_iterator(src, time_unit='frame', start=None, stop=None, subsamp_coeff=
             break
 
         # skip frames for subsampling reasons
-        iframe = cap.get(cv2.CAP_PROP_POS_FRAMES) - 1        
+        iframe = cap.get(cv2.CAP_PROP_POS_FRAMES) - 1
         if iframe % subsamp_coeff != 0:
             continue
 
@@ -78,27 +79,40 @@ def video_iterator(src, time_unit='frame', start=None, stop=None, subsamp_coeff=
 
     cap.release()
 
-def get_fps(src):
+def get_video_properties(src):
     cap = cv2.VideoCapture(src)
 
     if not cap.isOpened():
         raise Exception("Video file %s does not exist or is invalid" % src)
 
-    fps = cap.get(cv2.CAP_PROP_FPS)
+    dret = {}
+    dret['fps'] = int(cap.get(cv2.CAP_PROP_FPS))
+    dret['width'] = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    dret ['height'] = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     cap.release()
-    return fps
+    return dret
+
+def analysisFPS2subsamp_coeff(vid_src, analysisFPS):
+    props = get_video_properties(vid_src)
+    return int(np.round(props['fps'] / analysisFPS))
+
 
 def disp_frame(frame):
     plt.imshow(frame)
     plt.show()
+    return frame
 
-def disp_frame_bblist(frame, bblist):
+def disp_frame_shapes(frame, lrect = [], lpoint = []):
     tmpframe = frame.copy()
-    for bbox in bblist:
-        print(bbox)
+    for bbox in lrect:
+        print('bbox', bbox)
         bbox = [int(e) for e in bbox]
         cv2.rectangle(tmpframe, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 8)
-    disp_frame(tmpframe)
+    for point in lpoint:
+        print('point', point)
+        point = [int(e) for e in point]
+        cv2.circle(tmpframe, point, radius=4, color=(0, 0, 255), thickness=-1)
+    return disp_frame(tmpframe)
 
 def imwrite_rgb(dst, img):
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)

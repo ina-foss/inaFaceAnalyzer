@@ -45,7 +45,10 @@ dmodels = {
     # linear SVM trained on Youtube Faces VGG16 face embeddings
     'svm_ytf_zrezgui.hdf5' : r1_url,
     # linear SVM trained on FairFace VGG 16 embeddings
-    'svm_vgg16_fairface.hdf5' : r1_url}
+    'svm_vgg16_fairface.hdf5' : r1_url,
+    # face detection and landmark estimation proovided in libfacedetection
+    # https://github.com/ShiqiYu/libfacedetection
+    'libfacedetection-yunet.onnx' : r1_url}
 
 def get_remote(model_fname):
     url = dmodels[model_fname]

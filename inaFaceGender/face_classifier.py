@@ -24,7 +24,9 @@
 # THE SOFTWARE.
 
 import numpy as np
+import pandas as pd
 import numbers
+from abc import ABC, abstractmethod
 from keras_vggface.vggface import VGGFace
 from keras_vggface import utils
 import tensorflow
@@ -35,42 +37,66 @@ from .opencv_utils import imread_rgb
 from .remote_utils import get_remote
 
 
-# TODO : return dictionary with label & decision function name
-# this may require additional refactoring
+class FaceClassifier(ABC):
+    """
+    Abstract class to be implemented by face classifiers
+    """
+    @classmethod
+    @abstractmethod
+    def input_shape():
+        """
+        input image dimensions required by the classifier (width, height, depth)
+        """
+        pass
 
-class AbstractFaceClassifier:
+    @abstractmethod
+    def list2batch(self, limg): pass
+
+    @abstractmethod
+    def inference(self, bfeats): pass
+
+    @abstractmethod
+    def decisionfunction2labels(self, df): pass
+
+    @property
+    def output_cols(self):
+        if not hasattr(self, '_output_cols'):
+            fake_input = [np.zeros(self.input_shape)]
+            self._output_cols = list(self(fake_input, False).columns)
+        return self._output_cols
+
+    def average_results(self, df):
+        if len(df) == 0:
+            for c in self.output_cols:
+                df[c] = []
+
+        cols = [e for e in df.columns if e.endswith('_decfunc')]
+        gbm = df.groupby('face_id')[cols].mean()
+        gbm = self.decisionfunction2labels(gbm)
+
+        return df.join(gbm, on='face_id', rsuffix='_avg')
 
     # Keras trick for async READ ?
     # bench execution time : time spent in read/exce . CPU vs GPU
-    def imgpaths_batch(self, lfiles, batch_len=32):
+    def imgpaths_batch(self, lfiles, return_features, batch_len=32):
         """
         images are assumed to be faces already detected, scaled, aligned, croped
         """
         assert len(lfiles) > 0
 
+        if return_features:
+            raise NotImplementedError()
+
         lbatchret = []
 
         for i in range(0, len(lfiles), batch_len):
             xbatch = [imread_rgb(e) for e in lfiles[i:(i+batch_len)]]
-            lbatchret.append(self(xbatch))
 
-        lenb = len(lbatchret[0])
-        assert all(len(e) == lenb for e in lbatchret)
+            lbatchret.append(self(xbatch, False)) # to change when return features will be managed
 
-        lret = []
-        for i in range(lenb):
-            li = [e[i] for e in lbatchret]
-            ti = type(li[0])
-            assert all(type(e) == ti for e in li)
-            if ti == np.ndarray:
-                lret.append(np.concatenate(li))
-            elif ti == list:
-                lret.append([e for lis in li for e in lis])
-            else:
-                raise NotImplementedError(ti)
-        return tuple(lret)
+        return pd.concat(lbatchret).reset_index(drop=True)
 
-    def __call__(self, limg):
+    def __call__(self, limg, return_features):
         """
         Classify a list of images
         images are supposed to be preprocessed faces: aligned, cropped
@@ -95,22 +121,21 @@ class AbstractFaceClassifier:
             limg = [limg]
 
         assert np.all([e.shape == self.input_shape for e in limg])
-        batch_ret = self.inference(self.list2batch(limg))
+        batch_ret_feats, batch_ret_preds = self.inference(self.list2batch(limg))
+        batch_ret_preds = self.decisionfunction2labels(batch_ret_preds)
 
         if islist:
-            return batch_ret
-        return [e[0] for e in batch_ret]
+            if return_features:
+                return batch_ret_feats, batch_ret_preds
+            return batch_ret_preds
 
-    def list2batch(self, limg):
-        raise NotImplementedError()
+        ret = next(batch_ret_preds.itertuples(index=False, name='FaceClassifierResult'))
+        if return_features:
+            return  batch_ret_feats[0, :], ret
+        return ret
 
-    def inference(self, bfeats):
-       raise NotImplementedError()
-
-
-class Resnet50FairFace(AbstractFaceClassifier):
+class Resnet50FairFace(FaceClassifier):
     input_shape = (224, 224, 3)
-    outnames = ['bottleneck_face_feats', 'sex_label', 'sex_decision_function']
 
     def __init__(self):
         m = keras.models.load_model(get_remote('keras_resnet50_fairface.h5'), compile=False)
@@ -122,10 +147,12 @@ class Resnet50FairFace(AbstractFaceClassifier):
 
     def inference(self, x):
         decisions, feats = self.model.predict(x)
-        decisions = decisions.ravel()
-        assert len(decisions) == len(x)
-        labels = ['m' if e > 0 else 'f' for e in decisions]
-        return feats, labels, decisions
+        df = pd.DataFrame(decisions.ravel(), columns=['sex_decfunc'])
+        return feats, df
+
+    def decisionfunction2labels(self, df):
+        df['sex_label'] = df.sex_decfunc.map(lambda x: 'm' if x > 0 else 'f' )
+        return df
 
 
 def _fairface_agedec2age(age_dec):
@@ -142,32 +169,28 @@ def _fairface_agedec2age(age_dec):
     idec = np.round(age_dec).astype(np.int32)
 
     age_label = ages_mean[idec] + (age_dec - idec) * ages_range[idec]
-    return age_label.astype(np.float32)
+    return age_label
+
+
+
 
 class Resnet50FairFaceGRA(Resnet50FairFace):
-    outnames = ['bottleneck_face_feats', 'sex_label', 'age_label', 'sex_decision_function', 'age_decision_function']
     def __init__(self):
         m = keras.models.load_model(get_remote('keras_resnet50_fairface_GRA.h5'), compile=False)
         self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs + [m.layers[-5].output])
 
     def inference(self, x):
         gender, _, age, feats = self.model.predict(x)
+        df = pd.DataFrame(zip(gender.ravel(), age.ravel()), columns=['sex_decfunc', 'age_decfunc'])
+        return feats, df
 
-        # TODO gender stuffs - similar to mother class => factorize
-        gender_dec = gender.ravel()
-        assert(len(gender_dec) == len(x))
-        gender_labels = ['m' if e > 0 else 'f' for e in gender_dec]
+    def decisionfunction2labels(self, df):
+        df = super().decisionfunction2labels(df)
+        df['age_label'] = _fairface_agedec2age(df.age_decfunc)
+        return df
 
-        age_dec = age.ravel()
-        age_labels = _fairface_agedec2age(age_dec)
-
-        return feats, gender_labels, age_labels, gender_dec, age_dec
-
-
-class OxfordVggFace(AbstractFaceClassifier):
+class OxfordVggFace(FaceClassifier):
     input_shape = (224, 224, 3)
-    outnames = ['face_embeddings', 'sex_label', 'sex_decision_function']
-
     def __init__(self, hdf5_svm=None):
         # Face feature extractor from aligned and detected faces
         self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = self.input_shape, pooling ='avg')
@@ -175,9 +198,12 @@ class OxfordVggFace(AbstractFaceClassifier):
         if hdf5_svm is not None:
             self.gender_svm = svm_load(hdf5_svm)
 
+    def decisionfunction2labels(self, df):
+        df['sex_label'] = [self.gender_svm.classes_[1 if x > 0 else 0] for x in df.sex_decfunc]
+        return df
+
     def list2batch(self, limg):
         """
-
         returns VGG16 Features
         limg is a list of preprocessed images supposed to be aligned and cropped and resized to 224*224
         """
@@ -186,10 +212,7 @@ class OxfordVggFace(AbstractFaceClassifier):
         return self.vgg_feature_extractor(x)
 
     def inference(self, x):
-        decisions = self.gender_svm.decision_function(x)
-        labels = [self.gender_svm.classes_[1 if x > 0 else 0] for x in decisions]
-        return np.array(x), labels, decisions
-
+        return np.array(x), pd.DataFrame(self.gender_svm.decision_function(x), columns=['sex_decfunc'])
 
 class Vggface_LSVM_YTF(OxfordVggFace):
     def __init__(self):
