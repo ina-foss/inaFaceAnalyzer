@@ -27,11 +27,8 @@ import unittest
 import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
 import numpy as np
-import cv2
 import tensorflow as tf
 from inaFaceGender.inaFaceGender import GenderVideo
-from inaFaceGender.face_preprocessing import _squarify_bbox
-from inaFaceGender.face_detector import OcvCnnFacedetector
 from inaFaceGender.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
 
 _vid = './media/pexels-artem-podrez-5725953.mp4'
@@ -72,36 +69,6 @@ class TestIFG(unittest.TestCase):
         refdf.bbox = refdf.bbox.map(eval)
         assert_frame_equal(refdf, preddf, rtol=.01, check_dtype=False)
 
-    # DETECTOR
-
-    def test_opencv_cnn_detection(self):
-        detector = OcvCnnFacedetector(paddpercent=0.)
-        img = cv2.imread('./media/Europa21_-_2.jpg')
-        frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        ret = detector(frame)
-        self.assertEqual(len(ret), 1)
-        ret, conf = ret[0]
-        ret = _squarify_bbox(ret)
-        ret = tuple([int(e) for e in ret])
-        self.assertEqual(ret, (457, 271, 963, 777))
-        self.assertAlmostEqual(conf, 0.99964356)
-
-
-    def test_opencv_cnn_detection_2(self):
-        detector = OcvCnnFacedetector()
-        img = cv2.imread('./media/800px-India_(236650352).jpg')
-        frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        ret = detector(frame)
-        self.assertEqual(len(ret), 5)
-
-        bb, _ = detector.get_closest_face(frame, (200, 200, 500, 450))
-        self.assertAlmostEqual(bb, [246.0497784614563, 198.21387606859207, 439.4639492034912, 485.5670797228813])
-        bb, _ = detector.get_closest_face(frame, (500, 100, 700, 300), min_iou=.6)
-        self.assertAlmostEqual(bb, [501.6525077819824, 128.37764537334442, 656.5784645080566, 328.3189299106598])
-        ret = detector.get_closest_face(frame, (700, 0, 800, 200), min_iou=.1)
-        self.assertIsNone(ret)
-
-    # VIDEO
 
     def test_pred_from_vid_and_bblist(self):
         gv = GenderVideo(bbox_scaling=1, squarify_bbox=False, face_classifier = Vggface_LSVM_YTF())

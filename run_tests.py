@@ -3,7 +3,7 @@
 
 # The MIT License
 
-# Copyright (c) 2019 Ina (David Doukhan - http://www.ina.fr/)
+# Copyright (c) 2019-2021 Ina (David Doukhan - http://www.ina.fr/)
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,8 @@ from tests.ocvutils import TestOpenCvUtils
 from tests.singleimage import TestSingleImage
 # tracking pipeline tests
 from tests.tracking import TestTracking
+# face detection tests
+from tests.detector import TestDetector
 # here are remaining framework tests
 from tests.ifg import TestIFG
 
