@@ -59,7 +59,7 @@ class AbstractGender:
         """
         # face detection system
         if face_detector is None:
-            self.face_detector = OcvCnnFacedetector(paddpercent=0.)
+            self.face_detector = OcvCnnFacedetector(padd_prct=0.)
         else:
             self.face_detector = face_detector
 

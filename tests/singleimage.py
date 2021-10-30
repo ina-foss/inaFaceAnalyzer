@@ -37,7 +37,7 @@ class TestSingleImage(unittest.TestCase):
    # IMAGE
 
     def test_image_all_diallo(self):
-        gi = GenderImage(face_detector = OcvCnnFacedetector(paddpercent=0.),
+        gi = GenderImage(face_detector = OcvCnnFacedetector(padd_prct=0.),
                          face_classifier = Vggface_LSVM_YTF())
         df = gi('./media/Europa21_-_2.jpg')
         self.assertEqual(len(df), 1)
@@ -60,7 +60,7 @@ class TestSingleImage(unittest.TestCase):
 
 
     def test_image_knuth(self):
-        gi = GenderImage(face_detector = OcvCnnFacedetector(paddpercent=0.),
+        gi = GenderImage(face_detector = OcvCnnFacedetector(padd_prct=0.),
                          face_classifier = Vggface_LSVM_YTF())
         df = gi('./media/20091020222328!KnuthAtOpenContentAlliance.jpg')
         self.assertEqual(len(df), 1)

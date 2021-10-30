@@ -85,7 +85,7 @@ class TestTracking(unittest.TestCase):
 
     # compare with and without tracking using non smooth columns only
     def test_trackingVSvideo(self):
-        detector = OcvCnnFacedetector(paddpercent=0.)
+        detector = OcvCnnFacedetector(padd_prct=0.)
         for c in [Vggface_LSVM_YTF, Resnet50FairFace, Resnet50FairFaceGRA]:
             classif = c()
             gv = GenderVideo(face_detector = detector, face_classifier = classif)
