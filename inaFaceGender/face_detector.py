@@ -25,6 +25,7 @@
 
 import cv2
 import numpy as np
+import onnxruntime
 
 from .remote_utils import get_remote
 from .opencv_utils import disp_frame_shapes, disp_frame
@@ -227,7 +228,8 @@ class LibFaceDetection:
     # TODO - RETURN EYE POSITION
 
     def __init__(self, minconf=.98):
-        self.model = cv2.dnn.readNet(get_remote('libfacedetection-yunet.onnx'))
+        model_src = get_remote('libfacedetection-yunet.onnx')
+        self.model = onnxruntime.InferenceSession(model_src, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         self.conf_thresh = minconf # Threshold for filtering out faces with conf < conf_thresh
         self.nms_thresh = 0.3 # Threshold for non-max suppression
         self.keep_top_k = 750 # Keep keep_top_k for results outputing
@@ -238,10 +240,10 @@ class LibFaceDetection:
         bgr_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         h, w, _ = frame.shape
 
-        blob = cv2.dnn.blobFromImage(bgr_frame)
-        output_names = ['loc', 'conf', 'iou']
-        self.model.setInput(blob)
-        loc, conf, iou = self.model.forward(output_names)
+        # convert to NN input
+        blob = np.expand_dims(np.transpose(bgr_frame, (2, 0, 1)), axis = 0).astype(np.float32)
+        # NN inference
+        loc, conf, iou = self.model.run([], {'input': blob})
 
         # Decode bboxes and landmarks
         if (w, h) not in self.dprior:
@@ -260,9 +262,7 @@ class LibFaceDetection:
                   score_threshold=self.conf_thresh,
                   nms_threshold=self.nms_thresh,
                   eta=1,
-                  top_k=self.keep_top_k) # returns [box_num, class_num]
-             # print('keep_idx', keep_idx)
-             #keep_idx = np.squeeze(keep_idx, axis=1) # [box_num, class_num] -> [box_num]
+                  top_k=self.keep_top_k)
              dets = dets[keep_idx]
         else:
             return []
