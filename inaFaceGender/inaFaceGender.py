@@ -25,7 +25,7 @@
 
 import numpy as np
 import pandas as pd
-from .opencv_utils import video_iterator, imread_rgb
+from .opencv_utils import video_iterator, imread_rgb, analysisFPS2subsamp_coeff
 from .face_tracking import TrackerDetector
 from .face_detector import OcvCnnFacedetector
 from .face_classifier import Resnet50FairFaceGRA
@@ -147,7 +147,7 @@ class GenderVideo(AbstractGender):
     def __init__(self, **kwargs):
         AbstractGender.__init__(self, **kwargs)
 
-    def __call__(self, video_path, subsamp_coeff = 1 ,  offset = -1):
+    def __call__(self, video_path, fps = None,  offset = -1):
 
         """
         Pipeline function for gender classification from videos without tracking.
@@ -168,6 +168,8 @@ class GenderVideo(AbstractGender):
         lbatch_img = []
         linfo = []
         ldf = []
+
+        subsamp_coeff = 1 if fps is None else analysisFPS2subsamp_coeff(video_path, fps)
 
         for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
 
@@ -198,8 +200,10 @@ class GenderVideo(AbstractGender):
         return pd.concat([dfL, dfR], axis = 1)
 
 
-    def pred_from_vid_and_bblist(self, vidsrc, lbox, subsamp_coeff=1, start_frame=0):
+    def pred_from_vid_and_bblist(self, vidsrc, lbox, fps=None, start_frame=0):
         ldf = []
+
+        subsamp_coeff = 1 if fps is None else analysisFPS2subsamp_coeff(vidsrc, fps)
 
         for (iframe, frame), bbox in zip(video_iterator(vidsrc, subsamp_coeff=subsamp_coeff, start=start_frame, verbose=self.verbose),lbox):
 
@@ -223,7 +227,7 @@ class GenderTracking(AbstractGender):
         AbstractGender.__init__(self, **kwargs)
         self.detection_period = detection_period
 
-    def __call__(self, video_path, subsamp_coeff = 1 ,  offset = -1):
+    def __call__(self, video_path, fps = None,  offset = -1):
 
         """
         Pipeline function for gender classification from videos without tracking.
@@ -244,6 +248,8 @@ class GenderTracking(AbstractGender):
         lbatch_img = []
         linfo = []
         ldf = []
+
+        subsamp_coeff = 1 if fps is None else analysisFPS2subsamp_coeff(video_path, fps)
 
         for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
 

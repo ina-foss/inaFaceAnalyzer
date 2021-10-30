@@ -61,7 +61,7 @@ class TestTracking(unittest.TestCase):
 
     def test_tracking_singleoutput(self):
         gv = GenderTracking(5, face_classifier=Vggface_LSVM_YTF())
-        dfpred = gv(_vid, subsamp_coeff=10)
+        dfpred = gv(_vid, fps=3)
         dfpred.bbox = dfpred.bbox.map(str)
         dfref = pd.read_csv('./media/pexels-artem-podrez-tracking5-subsamp10-VggFace_LSVM_YTF.csv')
         assert_frame_equal(dfref, dfpred, atol=.01, check_dtype=False)
@@ -69,7 +69,7 @@ class TestTracking(unittest.TestCase):
 
     def test_tracking_nofail_multioutput(self):
         gv = GenderTracking(5, face_classifier=Resnet50FairFaceGRA())
-        dfpred = gv(_vid, subsamp_coeff=10)
+        dfpred = gv(_vid, fps=3)
         dfpred.bbox = dfpred.bbox.map(str)
         dfref = pd.read_csv('./media/pexels-artem-podrez-tracking5-subsamp10-Resnet50FFGRA.csv')
         assert_frame_equal(dfref, dfpred, atol=.01, check_dtype=False)
@@ -77,7 +77,7 @@ class TestTracking(unittest.TestCase):
 
     def test_tracking_nofaces(self):
         gv = GenderTracking(5, face_classifier=Resnet50FairFaceGRA(), face_detector=lambda x, y: [])
-        df = gv(_vid, subsamp_coeff=10)
+        df = gv(_vid, fps=3)
         self.assertEqual(len(df), 0)
         self.assertEqual(len(df.columns), 13)
 
@@ -89,10 +89,10 @@ class TestTracking(unittest.TestCase):
         for c in [Vggface_LSVM_YTF, Resnet50FairFace, Resnet50FairFaceGRA]:
             classif = c()
             gv = GenderVideo(face_detector = detector, face_classifier = classif)
-            gvdf = gv(_vid, subsamp_coeff=30)
+            gvdf = gv(_vid, fps=1)
             gvdf = gvdf.sort_values(by = ['frame', 'bbox']).reset_index(drop=True)
             gt = GenderTracking(1, face_detector = detector, face_classifier = classif)
-            gtdf = gt(_vid, subsamp_coeff = 30)
+            gtdf = gt(_vid, fps = 1)
             gtdf = gtdf.sort_values(by = ['frame', 'bbox']).reset_index(drop=True)
             for col in gvdf.columns:
                 with self.subTest(i=str(c) + col):

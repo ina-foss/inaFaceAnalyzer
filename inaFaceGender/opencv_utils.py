@@ -25,6 +25,7 @@
 
 
 import cv2
+import numpy as np
 import pylab as plt
 
 def video_iterator(src, time_unit='frame', start=None, stop=None, subsamp_coeff=1, verbose=False):
@@ -88,9 +89,13 @@ def get_video_properties(src):
     dret['fps'] = int(cap.get(cv2.CAP_PROP_FPS))
     dret['width'] = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     dret ['height'] = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    print(dret)
     cap.release()
     return dret
+
+def analysisFPS2subsamp_coeff(vid_src, analysisFPS):
+    props = get_video_properties(vid_src)
+    return int(np.round(props['fps'] / analysisFPS))
+
 
 def disp_frame(frame):
     plt.imshow(frame)
