@@ -25,6 +25,7 @@
 
 import numpy as np
 import pandas as pd
+from abc import ABC, abstractmethod
 from .opencv_utils import video_iterator, imread_rgb, analysisFPS2subsamp_coeff
 from .face_tracking import TrackerDetector
 from .face_detector import OcvCnnFacedetector
@@ -34,12 +35,16 @@ from .face_preprocessing import preprocess_face
 
 
 
-class AbstractGender:
+class FaceAnalyzer(ABC):
     """
     This is an abstract class containg the common code to be used to process
     images, videos, with/without tracking
     """
     batch_len = 32
+
+    @classmethod
+    @abstractmethod
+    def analyzer_cols() : pass
 
     def __init__(self, face_detector = None, face_classifier = None, bbox_scaling = 1.1, squarify_bbox = True, verbose = False):
         """
@@ -100,13 +105,13 @@ class AbstractGender:
         return df
 
 
-class GenderImage(AbstractGender):
+class GenderImage(FaceAnalyzer):
     analyzer_cols = ['frame', 'bbox', 'face_detect_conf']
 
     def __init__(self, **kwargs):
         if 'face_detector' not in kwargs:
             kwargs['face_detector'] = OcvCnnFacedetector()
-        AbstractGender.__init__(self, **kwargs)
+        super().__init__(**kwargs)
 
     def __call__(self, img_path):
         frame = imread_rgb(img_path, self.verbose)
@@ -130,7 +135,7 @@ class GenderImage(AbstractGender):
             return pd.concat(lret).reset_index(drop=True)
         return pd.DataFrame(columns = self.analyzer_cols + self.classifier.output_cols)
 
-class GenderVideo(AbstractGender):
+class GenderVideo(FaceAnalyzer):
     """
     This is a class regrouping all phases of a pipeline designed for gender classification from video.
 
@@ -145,7 +150,7 @@ class GenderVideo(AbstractGender):
     analyzer_cols = ['frame', 'bbox', 'face_detect_conf']
 
     def __init__(self, **kwargs):
-        AbstractGender.__init__(self, **kwargs)
+        super().__init__(**kwargs)
 
     def __call__(self, video_path, fps = None,  offset = -1):
 
@@ -219,12 +224,11 @@ class GenderVideo(AbstractGender):
         df = pd.concat(ldf).reset_index(drop=True)
         return np.concatenate(df.feats), df.drop('feats', axis=1)
 
-# TODO : kwarfs for providing arguments to super class ??
-# use super name also !
-class GenderTracking(AbstractGender):
+
+class GenderTracking(FaceAnalyzer):
     analyzer_cols = ['frame', 'bbox', 'face_id', 'face_detect_conf', 'face_track_conf']
     def __init__(self, detection_period, **kwargs):
-        AbstractGender.__init__(self, **kwargs)
+        super().__init__(**kwargs)
         self.detection_period = detection_period
 
     def __call__(self, video_path, fps = None,  offset = -1):
