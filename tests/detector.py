@@ -25,7 +25,6 @@
 
 import unittest
 from numpy.testing import assert_almost_equal
-import cv2
 from inaFaceGender.face_preprocessing import _squarify_bbox
 from inaFaceGender.face_detector import OcvCnnFacedetector, LibFaceDetection
 from inaFaceGender.opencv_utils import imread_rgb
