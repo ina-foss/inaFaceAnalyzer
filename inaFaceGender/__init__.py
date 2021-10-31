@@ -24,4 +24,7 @@
 # THE SOFTWARE.
 
 from .inaFaceGender import GenderVideo, GenderImage, GenderTracking
-from .display_utils import incrust_faces_in_video
+#from .display_utils import incrust_faces_in_video
+
+from . import _version
+__version__ = _version.get_versions()['version']

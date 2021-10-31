@@ -26,7 +26,7 @@
 
 import os
 from setuptools import setup, find_packages
-
+import versioneer
 
 KEYWORDS = '''
 gender-equality
@@ -71,7 +71,8 @@ LONGDESCRIPTION='''Detect faces in video streams and does gender classification.
 
 setup(
     name = "inaFaceGender",
-    version = "0.0.3",
+    version = versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     author = "David Doukhan, Zohra Rezgui",
     author_email = "david.doukhan@gmail.com, zohra.rzg@gmail.com",
     test_suite="run_tests.py",
