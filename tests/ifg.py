@@ -30,6 +30,7 @@ import numpy as np
 import tensorflow as tf
 from inaFaceGender.inaFaceGender import GenderVideo
 from inaFaceGender.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
+from inaFaceGender.face_detector import LibFaceDetection
 
 _vid = './media/pexels-artem-podrez-5725953.mp4'
 
@@ -40,12 +41,13 @@ class TestIFG(unittest.TestCase):
 
     # VIDEO
 
-    def test_video_simple(self):
-        gv = GenderVideo(face_classifier = Vggface_LSVM_YTF())
-        ret = gv(_vid)
-        ret.bbox = ret.bbox.map(str)
-        df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
-        assert_frame_equal(ret, df, atol=.01, check_dtype=False)
+    # this test execution time is too long
+    # def test_video_simple(self):
+    #     gv = GenderVideo(face_classifier = Vggface_LSVM_YTF())
+    #     ret = gv(_vid)
+    #     ret.bbox = ret.bbox.map(str)
+    #     df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
+    #     assert_frame_equal(ret, df, atol=.01, check_dtype=False)
 
 
     def test_video_subsamp(self):
@@ -59,8 +61,14 @@ class TestIFG(unittest.TestCase):
     # TODO: update with serialized ouput!
     def test_video_res50(self):
         gv = GenderVideo(face_classifier=Resnet50FairFace())
-        ret = gv('./media/pexels-artem-podrez-5725953.mp4', fps=30./25.)
+        ret = gv('./media/pexels-artem-podrez-5725953.mp4', fps=1)
         raise NotImplementedError('test should be improved')
+
+    def test_video_libfacedetection(self):
+         gv = GenderVideo(face_detector=LibFaceDetection())
+         ret = gv('./media/pexels-artem-podrez-5725953.mp4', fps=1)
+         raise NotImplementedError('test should be improved')
+
 
     def test_videocall_multioutput(self):
         gv = GenderVideo(face_classifier=Resnet50FairFaceGRA())

@@ -67,9 +67,9 @@ class TestDetector(unittest.TestCase):
             ((48.75, 34.92, 99.80, 97.77), 0.99),
             ((394.65, 57.10, 446.97, 124.00), 0.99),
             ((229.35, 71.04, 289.13, 147.18), 0.99)]
-        for (rbb, rconf), (pbb, pconf) in zip(ref, pred):
-            self.assertAlmostEqual(rconf, pconf, places=1)
-            assert_almost_equal(list(rbb), list(pbb), decimal=1)
+        for (rbb, rconf), dtc in zip(ref, pred):
+            self.assertAlmostEqual(rconf, dtc.conf, places=1)
+            assert_almost_equal(list(rbb), list(dtc.bbox), decimal=1)
 
     def test_minpx(self):
         detector = LibFaceDetection(min_size_px = 80)
@@ -78,6 +78,6 @@ class TestDetector(unittest.TestCase):
         self.assertEqual(len(pred), 2)
         ref = [((230.91, 207.73, 455.90, 481.51), 1.0),
             ((496.83, 123.28, 669.31, 325.69), 0.99)]
-        for (rbb, rconf), (pbb, pconf) in zip(ref, pred):
-            self.assertAlmostEqual(rconf, pconf, places=1)
-            assert_almost_equal(list(rbb), list(pbb), decimal=1)
+        for (rbb, rconf), dtc in zip(ref, pred):
+            self.assertAlmostEqual(rconf, dtc.conf, places=1)
+            assert_almost_equal(list(rbb), list(dtc.bbox), decimal=1)

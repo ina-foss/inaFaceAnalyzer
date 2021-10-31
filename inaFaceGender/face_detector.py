@@ -24,6 +24,7 @@
 # THE SOFTWARE.
 
 from abc import ABC, abstractmethod
+from collections import namedtuple
 import cv2
 import numpy as np
 import onnxruntime
@@ -37,6 +38,10 @@ from .libfacedetection_priorbox import PriorBox
 def max_dim_len(bbox):
     x1, y1, x2, y2 = bbox
     return max(x2 - x1, y2 - y1)
+
+Detection = namedtuple('Detection', 'bbox conf')
+DetectionE = namedtuple('DetectionEyes', 'bbox conf leye reye')
+
 
 class FaceDetector(ABC):
     def __init__(self, minconf, min_size_px, min_size_prct, padd_prct):
@@ -61,10 +66,11 @@ class FaceDetector(ABC):
         min_frame_dim = min(frame.shape[:2])
         min_face_size = max(self.min_size_px, self.min_size_prct * min_frame_dim)
         if min_face_size > 0:
-            lret = [e for e in lret if max_dim_len(e[0]) >= min_face_size]
+            lret = [e for e in lret if max_dim_len(e.bbox) >= min_face_size]
 
         if self.padd_prct:
-            lret = [((x1 - xoffset, y1 - yoffset, x2 - xoffset, y2 - yoffset), conf)
+            # TODO: eye data not taken into account here
+            lret = [Detection((x1 - xoffset, y1 - yoffset, x2 - xoffset, y2 - yoffset), conf)
                     for ((x1, y1, x2, y2), conf) in lret]
 
         if verbose:
@@ -177,10 +183,7 @@ class OcvCnnFacedetector(FaceDetector):
                 continue
 
             bbox = _rel_to_abs(bbox, w, h)
-
-#            bbox = [bbox[0] - xoffset, bbox[1] - yoffset, bbox[2] - xoffset, bbox[3] - yoffset]
-            faces_data.append((bbox, confidence))
-
+            faces_data.append(Detection(bbox, confidence))
 
         return faces_data
 
@@ -255,20 +258,18 @@ class LibFaceDetection(FaceDetector):
     See: https://github.com/ShiqiYu/libfacedetection
     """
 
-    # TODO - ADD OPTION TO FILTER SMALL FACES
-    # TODO - RETURN EYE POSITION
 
     def __init__(self, minconf=.98, min_size_px=30, min_size_prct=0, padd_prct=0):
         super().__init__(minconf, min_size_px, min_size_prct, padd_prct)
         model_src = get_remote('libfacedetection-yunet.onnx')
         self.model = onnxruntime.InferenceSession(model_src, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
- #       self.conf_thresh = minconf # Threshold for filtering out faces with conf < conf_thresh
         self.nms_thresh = 0.3 # Threshold for non-max suppression
         self.keep_top_k = 750 # Keep keep_top_k for results outputing
         self.dprior = {}
+        if padd_prct != 0:
+            raise NotImplementedError('to be taken into account in FaceDetector.__call__')
 
     def _call_imp(self, frame):
-        # TODO this model seems to use BGR INPUT
         bgr_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         h, w, _ = frame.shape
 
@@ -300,20 +301,12 @@ class LibFaceDetection(FaceDetector):
             return []
 
         lret = []
-        leyes = []
         for i in range(len(dets)):
             score = dets[i,-1]
-            bbox = dets[i,:4]
-            lret.append(((bbox[0], bbox[1], bbox[0] + bbox[2], bbox[1] + bbox[3]), score))
+            x1, y1, w, h = dets[i,:4]
+            bbox = (x1, y1, x1 + w, y1 + h)
             left_eye = tuple(dets[i, 4:6])
             right_eye = tuple(dets[i, 6:8])
-            leyes += [left_eye, right_eye]
-
-        # if verbose:
-        #     verb_frame = disp_frame_shapes(frame, [e[0] for e in lret], leyes)
-        #     for bbox, conf in lret:
-        #         x1, y1, x2, y2 = [int(e) for e in bbox]
-        #         print(bbox, conf)
-        #         disp_frame(verb_frame[y1:y2, x1:x2, :])
+            lret.append(DetectionE(bbox, score, left_eye, right_eye))
 
         return lret

@@ -178,14 +178,14 @@ class GenderVideo(FaceAnalyzer):
 
         for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
 
-            for bb, detect_conf in self.face_detector(frame):
+            for detection in self.face_detector(frame):
                 if self.verbose:
-                    print('bbox: %s, conf: %f' % (bb, detect_conf))
+                    print(detection)
 
 
-                face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, self.face_alignment, oshape, self.verbose)
+                face_img, bbox = preprocess_face(frame, detection.bbox, self.squarify_bbox, self.bbox_scaling, self.face_alignment, oshape, self.verbose)
 
-                linfo.append([iframe, bbox, detect_conf])
+                linfo.append([iframe, bbox, detection.conf])
                 lbatch_img.append(face_img)
 
             while len(lbatch_img) > self.batch_len:

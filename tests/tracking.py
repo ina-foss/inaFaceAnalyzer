@@ -24,13 +24,14 @@
 # THE SOFTWARE.
 
 import unittest
+from collections import namedtuple
 import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
 import tensorflow as tf
 import numpy as np
 from inaFaceGender.inaFaceGender import GenderTracking, GenderVideo
 from inaFaceGender.face_classifier import Resnet50FairFaceGRA, Vggface_LSVM_YTF, Resnet50FairFace
-from inaFaceGender.face_detector import OcvCnnFacedetector
+from inaFaceGender.face_detector import OcvCnnFacedetector, LibFaceDetection
 from inaFaceGender.face_tracking import Tracker
 from inaFaceGender.opencv_utils import imread_rgb
 from inaFaceGender.face_utils import _rect_to_tuple
@@ -53,10 +54,11 @@ class TestTracking(unittest.TestCase):
     def test_tracker_updatebb(self):
         frame = imread_rgb('./media/800px-India_(236650352).jpg')
         t = Tracker(frame, [100, 100, 200, 200],  None)
-        bb = [12.2, 70, 166.6666, 200]
-        conf = t.update_from_bb(frame, bb, None)
+        nt = namedtuple('useless', 'bbox conf')
+        dtc = nt([12.2, 70, 166.6666, 200], None)
+        conf = t.update_from_detection(frame, dtc)
         trackbb = _rect_to_tuple(t.t.get_position())
-        np.testing.assert_almost_equal(bb, trackbb)
+        np.testing.assert_almost_equal(dtc.bbox, trackbb)
         np.testing.assert_almost_equal(2.7552027282149045, conf)
 
     def test_tracking_singleoutput(self):
@@ -82,18 +84,18 @@ class TestTracking(unittest.TestCase):
         self.assertEqual(len(df.columns), 13)
 
 
-
     # compare with and without tracking using non smooth columns only
     def test_trackingVSvideo(self):
-        detector = OcvCnnFacedetector(padd_prct=0.)
         for c in [Vggface_LSVM_YTF, Resnet50FairFace, Resnet50FairFaceGRA]:
+            tf.keras.backend.clear_session()
             classif = c()
-            gv = GenderVideo(face_detector = detector, face_classifier = classif)
-            gvdf = gv(_vid, fps=1)
-            gvdf = gvdf.sort_values(by = ['frame', 'bbox']).reset_index(drop=True)
-            gt = GenderTracking(1, face_detector = detector, face_classifier = classif)
-            gtdf = gt(_vid, fps = 1)
-            gtdf = gtdf.sort_values(by = ['frame', 'bbox']).reset_index(drop=True)
-            for col in gvdf.columns:
-                with self.subTest(i=str(c) + col):
-                    assert_series_equal(gvdf[col], gtdf[col], check_dtype=False, rtol=0.01)
+            for detector in [LibFaceDetection(), OcvCnnFacedetector(padd_prct=0.)]:
+                gv = GenderVideo(face_detector = detector, face_classifier = classif)
+                gvdf = gv(_vid, fps=1)
+                gvdf = gvdf.sort_values(by = ['frame', 'bbox']).reset_index(drop=True)
+                gt = GenderTracking(1, face_detector = detector, face_classifier = classif)
+                gtdf = gt(_vid, fps = 1)
+                gtdf = gtdf.sort_values(by = ['frame', 'bbox']).reset_index(drop=True)
+                for col in gvdf.columns:
+                    with self.subTest(i=str(c) + col):
+                        assert_series_equal(gvdf[col], gtdf[col], check_dtype=False, rtol=0.01)
