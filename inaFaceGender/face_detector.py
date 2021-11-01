@@ -32,7 +32,6 @@ import onnxruntime
 from .rect import Rect
 from .remote_utils import get_remote
 from .opencv_utils import disp_frame_shapes, disp_frame
-from .face_utils import intersection_over_union
 from .libfacedetection_priorbox import PriorBox
 
 
@@ -233,11 +232,13 @@ class OcvCnnFacedetector(FaceDetector):
 
         ref_bbox = f(ref_bbox)
 
-        lfaces = self.__call__(frame, verbose)
+        lfaces = self(frame, verbose)
         if len(lfaces) == 0:
             return None
 
-        liou = [intersection_over_union(f(ref_bbox), f(bbox)) for bbox, _ in lfaces]
+        liou = [f(ref_bbox).iou(f(detection.bbox)) for detection in lfaces]
+
+
         if verbose:
             print([f(bb) for bb, _, in lfaces])
             print('liou', liou)

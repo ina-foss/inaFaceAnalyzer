@@ -45,16 +45,16 @@ class TestTracking(unittest.TestCase):
 
     def test_tracker_init(self):
         frame = imread_rgb('./media/800px-India_(236650352).jpg')
-        bb = [12.2, 70, 666.6666, 200]
+        bb = (12.2, 70, 666.6666, 200)
         t = Tracker(frame, bb,  None)
         trackbb = Rect.from_dlib(t.t.get_position())
         np.testing.assert_almost_equal(bb, trackbb)
 
     def test_tracker_updatebb(self):
         frame = imread_rgb('./media/800px-India_(236650352).jpg')
-        t = Tracker(frame, [100, 100, 200, 200],  None)
+        t = Tracker(frame, Rect(100, 100, 200, 200),  None)
         nt = namedtuple('useless', 'bbox detect_conf')
-        dtc = nt([12.2, 70, 166.6666, 200], None)
+        dtc = nt(Rect(12.2, 70, 166.6666, 200), None)
         conf = t.update_from_detection(frame, dtc)
         trackbb = Rect.from_dlib(t.t.get_position())
         np.testing.assert_almost_equal(dtc.bbox, trackbb)

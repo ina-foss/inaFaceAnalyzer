@@ -28,10 +28,8 @@ import dlib
 import numpy as np
 from .rect import Rect
 from .opencv_utils import disp_frame_shapes
-from .face_utils import intersection_over_union, tuple2drect
 
 
-#out_names = ['bb', 'face_id', 'face_detect_conf', 'tracking_conf']
 class TrackDetection(NamedTuple):
     bbox : Rect
     face_id : int
@@ -46,7 +44,9 @@ def _matrix_argmax(m):
 class Tracker:
     def __init__(self, frame, bb, detect_conf):
         self.t = dlib.correlation_tracker()
-        self.t.start_track(frame, tuple2drect(bb))
+        if not isinstance(bb, dlib.drectangle):
+            bb = dlib.drectangle(*bb)
+        self.t.start_track(frame, bb)
         self.fshape = frame.shape
         self.detect_conf = detect_conf
         self.track_conf = None
@@ -72,12 +72,12 @@ class Tracker:
         return update_val
 
     def update_from_detection(self, frame, dtc, verbose=False):
-        update_val = self.t.update(frame, tuple2drect(dtc.bbox))
+        update_val = self.t.update(frame, dtc.bbox.to_dlibFloat())
         if verbose:
             e = self.t.get_position()
             print('dest', dtc.bbox, 'new position', e)
             disp_frame_shapes(frame, [Rect.from_dlib(e), dtc.bbox])
-        self.t.start_track(frame, tuple2drect(dtc.bbox))
+        self.t.start_track(frame, dtc.bbox.to_dlibFloat())
         self.track_conf = update_val
         self.detect_conf = dtc.detect_conf
         return update_val
@@ -134,8 +134,9 @@ class TrackerDetector:
         # between tracker positions and detected bounding boxes
         ioumat = np.ones((len(lkeys), len(ldetections))) * -1
         for i, k in enumerate(lkeys):
+            trackpos = Rect.from_dlib(self.d[k].t.get_position())
             for j, detection in enumerate(ldetections):
-                ioumat[i, j] = intersection_over_union(self.d[k].t.get_position(), tuple2drect(detection.bbox))
+                ioumat[i, j] = detection.bbox.iou(trackpos)
 
         # while matrix not empty and IOU > 70%
         while np.prod(ioumat.shape):

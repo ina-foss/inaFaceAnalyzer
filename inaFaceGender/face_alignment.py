@@ -3,7 +3,7 @@
 
 # The MIT License
 
-# Copyright (c) 2021 Ina (David Doukhan & Zohra Rezgui- http://www.ina.fr/)
+# Copyright (c) 2021 Ina (David Doukhan & Thomas Petit - http://www.ina.fr/)
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,9 +23,34 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+# This code is a modification of nlhkh's project face-alignment-dlib
+# See github.com/nlhkh/face-alignment-dlib/blob/master/utils.py
+# It has been adapted by Thomas PETIT (github.com/w2ex) & David Doukhan
+
 import dlib
+from .rect import Rect
 from .remote_utils import get_remote
-from .face_utils import extract_right_eye_center, extract_left_eye_center, tuple2rect
+
+def _extract_eye(shape, eye_indices):
+    points = map(lambda i: shape.part(i), eye_indices)
+    return list(points)
+
+
+def _extract_eye_center(shape, eye_indices):
+    points = _extract_eye(shape, eye_indices)
+    xs = map(lambda p: p.x, points)
+    ys = map(lambda p: p.y, points)
+    return sum(xs) // 6, sum(ys) // 6
+
+
+def extract_left_eye_center(shape):
+    LEFT_EYE_INDICES = [36, 37, 38, 39, 40, 41]
+    return _extract_eye_center(shape, LEFT_EYE_INDICES)
+
+
+def extract_right_eye_center(shape):
+    RIGHT_EYE_INDICES = [42, 43, 44, 45, 46, 47]
+    return _extract_eye_center(shape, RIGHT_EYE_INDICES)
 
 class Dlib68FaceAlignment:
     """
@@ -68,8 +93,8 @@ class Dlib68FaceAlignment:
 
         """
         if bb is None:
-            bb = (0, 0, frame.shape[1], frame.shape[0])
-        shape = self.model(frame, tuple2rect(bb))
+            bb = Rect(0, 0, frame.shape[1], frame.shape[0])
+        shape = self.model(frame, bb.to_dlibInt())
         left_eye = extract_left_eye_center(shape)
         right_eye = extract_right_eye_center(shape)
         return left_eye, right_eye

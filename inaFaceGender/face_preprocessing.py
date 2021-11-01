@@ -26,8 +26,20 @@
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-from .face_utils import _angle_between_2_points
 from .rect import Rect
+
+
+def _angle_between_2_points(p1, p2):
+    x1, y1 = p1
+    x2, y2 = p2
+    if x1 != x2:
+        tan = (y2 - y1) / (x2 - x1)
+        return np.degrees(np.arctan(tan))
+    elif y2 > y1:
+        return np.degrees(np.pi / 2)
+
+    else:
+        return np.degrees(-np.pi / 2)
 
 
 def alignCrop(frame, bb, left_eye, right_eye, verbose=False):
