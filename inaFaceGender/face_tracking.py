@@ -26,8 +26,9 @@
 #from collections import namedtuple
 import dlib
 import numpy as np
+from .rect import Rect
 from .opencv_utils import disp_frame_shapes
-from .face_utils import _rect_to_tuple, intersection_over_union, tuple2drect
+from .face_utils import intersection_over_union, tuple2drect
 
 #Detection = namedtuple('TrackDetection')
 
@@ -50,7 +51,7 @@ class Tracker:
         fh, fw, _ = self.fshape
 
         e = self.t.get_position()
-        x1, y1, x2, y2 = pos = _rect_to_tuple(e)
+        x1, y1, x2, y2 = pos = Rect.from_dlib(e)
 
 
         if verbose:
@@ -69,7 +70,7 @@ class Tracker:
         if verbose:
             e = self.t.get_position()
             print('dest', dtc.bbox, 'new position', e)
-            disp_frame_shapes(frame, [_rect_to_tuple(e), dtc.bbox])
+            disp_frame_shapes(frame, [Rect.from_dlib(e), dtc.bbox])
         self.t.start_track(frame, tuple2drect(dtc.bbox))
         self.track_conf = update_val
         self.detect_conf = dtc.conf
@@ -172,7 +173,7 @@ class TrackerDetector:
         for faceid in self.d:
             t = self.d[faceid]
             bb = t.t.get_position()
-            lret.append((_rect_to_tuple(bb), faceid, t.detect_conf, t.track_conf))
+            lret.append((Rect.from_dlib(bb), faceid, t.detect_conf, t.track_conf))
 
         self.iframe += 1
 

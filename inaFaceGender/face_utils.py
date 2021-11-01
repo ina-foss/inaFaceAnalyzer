@@ -32,13 +32,7 @@ import numpy as np
 import dlib
 from collections.abc import Iterable
 
-
-def _rect_to_tuple(rect):
-    left = rect.left()
-    right = rect.right()
-    top = rect.top()
-    bottom = rect.bottom()
-    return left, top, right, bottom
+# TODO - this file will be splitted into rect & face_align
 
 def tuple2rect(t):
     return dlib.rectangle(*[int(x) for x in np.round(t)])

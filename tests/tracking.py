@@ -34,8 +34,7 @@ from inaFaceGender.face_classifier import Resnet50FairFaceGRA, Vggface_LSVM_YTF,
 from inaFaceGender.face_detector import OcvCnnFacedetector, LibFaceDetection
 from inaFaceGender.face_tracking import Tracker
 from inaFaceGender.opencv_utils import imread_rgb
-from inaFaceGender.face_utils import _rect_to_tuple
-
+from inaFaceGender.rect import Rect
 
 _vid = './media/pexels-artem-podrez-5725953.mp4'
 
@@ -48,7 +47,7 @@ class TestTracking(unittest.TestCase):
         frame = imread_rgb('./media/800px-India_(236650352).jpg')
         bb = [12.2, 70, 666.6666, 200]
         t = Tracker(frame, bb,  None)
-        trackbb = _rect_to_tuple(t.t.get_position())
+        trackbb = Rect.from_dlib(t.t.get_position())
         np.testing.assert_almost_equal(bb, trackbb)
 
     def test_tracker_updatebb(self):
@@ -57,7 +56,7 @@ class TestTracking(unittest.TestCase):
         nt = namedtuple('useless', 'bbox conf')
         dtc = nt([12.2, 70, 166.6666, 200], None)
         conf = t.update_from_detection(frame, dtc)
-        trackbb = _rect_to_tuple(t.t.get_position())
+        trackbb = Rect.from_dlib(t.t.get_position())
         np.testing.assert_almost_equal(dtc.bbox, trackbb)
         np.testing.assert_almost_equal(2.7552027282149045, conf)
 

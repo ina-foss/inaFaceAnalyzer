@@ -71,6 +71,20 @@ class TestDetector(unittest.TestCase):
             self.assertAlmostEqual(rconf, dtc.conf, places=1)
             assert_almost_equal(list(rbb), list(dtc.bbox), decimal=1)
 
+    def test_libfacedetection_blackpadd(self):
+        detector = LibFaceDetection(padd_prct=.1)
+        frame = imread_rgb('./media/800px-India_(236650352).jpg')
+        pred = detector(frame)
+        self.assertEqual(len(pred), 5)
+        ref = [(229.77, 207.00, 456.69, 480.40),
+             (495.26, 129.41, 667.30, 326.08),
+             (391.68, 56.72, 452.18, 126.88),
+             (228.46, 72.70, 289.66, 147.95),
+             (49.14, 33.57, 100.55, 98.27)]
+        for rbb, dtc in zip(ref, pred):
+            assert_almost_equal(list(rbb), list(dtc.bbox), decimal=1)
+
+
     def test_minpx(self):
         detector = LibFaceDetection(min_size_px = 80)
         frame = imread_rgb('./media/800px-India_(236650352).jpg')
