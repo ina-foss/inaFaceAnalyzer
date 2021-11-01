@@ -23,17 +23,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import numpy as np
 import pandas as pd
 from abc import ABC, abstractmethod
-from .opencv_utils import video_iterator, imread_rgb, analysisFPS2subsamp_coeff
+from .opencv_utils import video_iterator, image_iterator, analysisFPS2subsamp_coeff
 from .face_tracking import TrackerDetector
 from .face_detector import OcvCnnFacedetector, PrecomputedDetector
 from .face_classifier import Resnet50FairFaceGRA
 from .face_alignment import Dlib68FaceAlignment
 from .face_preprocessing import preprocess_face
-from .rect import Rect
-
 
 
 class FaceAnalyzer(ABC):
@@ -42,10 +39,6 @@ class FaceAnalyzer(ABC):
     images, videos, with/without tracking
     """
     batch_len = 32
-
-    #@classmethod
-    #@abstractmethod
-    #def analyzer_cols() : pass
 
     def __init__(self, face_detector = None, face_classifier = None, bbox_scaling = 1.1, squarify_bbox = True, verbose = False):
         """
@@ -99,9 +92,7 @@ class FaceAnalyzer(ABC):
         linfo = []
         ldf = []
 
-#        subsamp_coeff = 1 if fps is None else analysisFPS2subsamp_coeff(vid_src, fps)
-
-        for iframe, frame in stream_iterator: #(vid_src, subsamp_coeff=subsamp_coeff, time_unit=time_unit, start=min(offset, 0), verbose=self.verbose):
+        for iframe, frame in stream_iterator:
 
             for detection in detector(frame):
                 if self.verbose:
@@ -131,20 +122,6 @@ class FaceAnalyzer(ABC):
         df3 = pd.concat(ldf).reset_index(drop=True)
         return pd.concat([df1, df2, df3], axis = 1)
 
-    #TODO : test in multi output
-    # may be deprecated in a near future since it does not takes advantage of batches
-    def classif_from_frame_and_bbox(self, frame, bbox, bbox_square, bbox_scale):
-
-        oshape = self.classifier.input_shape[:-1]
-        fa, vrb = (self.face_alignment, self.verbose)
-        face_img, bbox = preprocess_face(frame, bbox, bbox_square, bbox_scale, fa, oshape, vrb)
-
-        feats, df = self.classifier([face_img], True)
-        df.insert(0, 'feats', [feats])
-        df.insert(1, 'bbox', [bbox])
-
-        return df
-
 
 class GenderImage(FaceAnalyzer):
 
@@ -153,27 +130,12 @@ class GenderImage(FaceAnalyzer):
             kwargs['face_detector'] = OcvCnnFacedetector()
         super().__init__(**kwargs)
 
-    def __call__(self, img_path):
-        frame = imread_rgb(img_path, self.verbose)
-        return self.detect_and_classify_faces_from_frame(frame)
-
-
-    def detect_and_classify_faces_from_frame(self, frame):
-        lret = []
-        # iterate on "generic" detect_info ??
-        for bb, detect_conf in self.face_detector(frame, self.verbose):
-            df = self.classif_from_frame_and_bbox(frame, bb, self.squarify_bbox, self.bbox_scaling)
-            df.insert(2, 'face_detect_conf', [detect_conf])
-            lret.append(df)
-
-            if self.verbose:
-                print(','.join(df.columns))
-                print(df)
-                print()
-
-        if len(lret) > 0:
-            return pd.concat(lret).reset_index(drop=True)
-        return pd.DataFrame(columns = self.face_detector.output_type._fields + self.classifier.output_cols)
+    def __call__(self, img_paths):
+        if isinstance(img_paths, str):
+            stream = image_iterator([img_paths])
+        else:
+            stream = image_iterator(img_paths)
+        return self._process_stream(stream, self.face_detector)
 
 class GenderVideo(FaceAnalyzer):
     """

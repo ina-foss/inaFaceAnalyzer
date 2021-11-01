@@ -44,7 +44,7 @@ class TestSingleImage(unittest.TestCase):
         self.assertEqual(df.bbox[0], (432, 246, 988, 802))
         self.assertEqual(df.sex_label[0], 'f')
         self.assertAlmostEqual(df.sex_decfunc[0], -3.323815, places=5)
-        self.assertAlmostEqual(df.face_detect_conf[0], 0.99964356, places=4)
+        self.assertAlmostEqual(df.detect_conf[0], 0.99964356, places=4)
 
     def test_image_all_diallo_multioutput(self):
         gi = GenderImage(face_classifier = Resnet50FairFaceGRA())
@@ -56,7 +56,7 @@ class TestSingleImage(unittest.TestCase):
         self.assertAlmostEqual(e.age_label, 25.239, places=2)
         self.assertAlmostEqual(e.sex_decfunc, -5.258, places=2)
         self.assertAlmostEqual(e.age_decfunc, 3.023, places=2)
-        self.assertAlmostEqual(e.face_detect_conf, 0.987, places=2)
+        self.assertAlmostEqual(e.detect_conf, 0.987, places=2)
 
 
     def test_image_knuth(self):
@@ -68,7 +68,7 @@ class TestSingleImage(unittest.TestCase):
         self.assertEqual(e.bbox, (78, 46, 321, 289))
         self.assertEqual(e.sex_label, 'm')
         self.assertAlmostEqual(e.sex_decfunc, 6.615791, places=5)
-        self.assertAlmostEqual(e.face_detect_conf, 0.99995565, places=4)
+        self.assertAlmostEqual(e.detect_conf, 0.99995565, places=4)
 
     def test_multifaceimage(self):
         gi = GenderImage()
