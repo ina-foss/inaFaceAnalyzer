@@ -34,7 +34,7 @@ from inaFaceGender.face_detector import LibFaceDetection
 
 _vid = './media/pexels-artem-podrez-5725953.mp4'
 
-class TestIFG(unittest.TestCase):
+class TestVideo(unittest.TestCase):
 
     def tearDown(self):
         tf.keras.backend.clear_session()

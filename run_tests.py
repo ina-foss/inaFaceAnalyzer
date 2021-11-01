@@ -37,8 +37,7 @@ from tests.tracking import TestTracking
 # face detection tests
 from tests.detector import TestDetector
 # here are remaining framework tests
-from tests.ifg import TestIFG
-
+from tests.video import TestVideo
 
 if __name__ == '__main__':
     unittest.main()
