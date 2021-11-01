@@ -80,9 +80,9 @@ class FaceDetector(ABC):
 
         if verbose:
             disp_frame_shapes(frame, [e.bbox for e in lret], [])
-            for bbox, conf in lret:
-                x1, y1, x2, y2 = [int(e) for e in bbox]
-                print(bbox, conf)
+            for detection in lret:
+                x1, y1, x2, y2 = [int(e) for e in detection.bbox]
+                print(detection)
                 disp_frame(frame[y1:y2, x1:x2, :])
 
 

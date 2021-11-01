@@ -94,7 +94,7 @@ class FaceAnalyzer(ABC):
 
         for iframe, frame in stream_iterator:
 
-            for detection in detector(frame):
+            for detection in detector(frame, self.verbose):
                 if self.verbose:
                     print(detection)
 
@@ -132,9 +132,9 @@ class GenderImage(FaceAnalyzer):
 
     def __call__(self, img_paths):
         if isinstance(img_paths, str):
-            stream = image_iterator([img_paths])
+            stream = image_iterator([img_paths], verbose = self.verbose)
         else:
-            stream = image_iterator(img_paths)
+            stream = image_iterator(img_paths, verbose = self.verbose)
         return self._process_stream(stream, self.face_detector)
 
 class GenderVideo(FaceAnalyzer):
