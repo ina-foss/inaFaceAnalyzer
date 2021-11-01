@@ -180,7 +180,15 @@ class GenderVideo(FaceAnalyzer):
             df = self.classifier(lbatch_img, False)
             ldf.append(df)
 
-        return ldf, linfo
+        if len(ldf) == 0:
+            return pd.DataFrame(None, columns=(['frame'] + list(detector.output_type._fields) + self.classifier.output_cols))
+
+        df1 = pd.DataFrame({'frame' : [e[0] for e in linfo]})
+        df2 = pd.DataFrame.from_records([e[1] for e in linfo], columns=detector.output_type._fields)
+        if 'eyes' in df2.columns:
+            df2 = df2.drop('eyes', axis=1)
+        df3 = pd.concat(ldf).reset_index(drop=True)
+        return pd.concat([df1, df2, df3], axis = 1)
 
     def __call__(self, video_path, fps = None,  offset = -1):
 
@@ -197,19 +205,9 @@ class GenderVideo(FaceAnalyzer):
             info: A Dataframe with frame and face information (coordinates, decision function,labels..)
         """
 
-        detector = self.face_detector
+        return self._process_vid(video_path, self.face_detector, fps, offset)
 
-        ldf, linfo = self._process_vid(video_path, detector, fps, offset)
 
-        if len(ldf) == 0:
-            return pd.DataFrame(None, columns=(['frame'] + list(detector.output_type._fields) + self.classifier.output_cols))
-
-        df1 = pd.DataFrame({'frame' : [e[0] for e in linfo]})
-        df2 = pd.DataFrame.from_records([e[1] for e in linfo], columns=detector.output_type._fields)
-        if 'eyes' in df2.columns:
-            df2 = df2.drop('eyes', axis=1)
-        df3 = pd.concat(ldf).reset_index(drop=True)
-        return pd.concat([df1, df2, df3], axis = 1)
 
 
     # def pred_from_vid_and_bblist(self, vidsrc, lbox, fps=None, start_frame=0):
@@ -244,20 +242,11 @@ class VideoPrecomputedDetection(GenderVideo):
     def __call__(self, video_src, lbbox, fps=None, start_frame = 0):
         detector = PrecomputedDetector(lbbox)
 
-        ldf, linfo = self._process_vid(video_src, detector, fps, start_frame, time_unit='frame')
+        df = self._process_vid(video_src, detector, fps, start_frame, time_unit='frame')
         #print('linfo', linfo)
         #print('ldf', ldf)
         assert len(detector.lbbox) == 0, 'the detection list is longer than the number of processed frames'
-
-        if len(ldf) == 0:
-            return pd.DataFrame(None, columns=(['frame'] + list(detector.output_type._fields) + self.classifier.output_cols))
-
-        df1 = pd.DataFrame({'frame' : [e[0] for e in linfo]})
-        df2 = pd.DataFrame.from_records([e[1] for e in linfo], columns=detector.output_type._fields)
-        if 'eyes' in df2.columns:
-            df2 = df2.drop('eyes', axis=1)
-        df3 = pd.concat(ldf).reset_index(drop=True)
-        return pd.concat([df1, df2, df3], axis = 1)
+        return df
 
 class GenderTracking(GenderVideo):
     def __init__(self, detection_period, **kwargs):
@@ -281,18 +270,18 @@ class GenderTracking(GenderVideo):
 
         detector = TrackerDetector(self.face_detector, self.detection_period)
 
-        ldf, linfo = self._process_vid(video_path, detector, fps, offset)
+        df = self._process_vid(video_path, detector, fps, offset)
 
-        if len(ldf) == 0:
-            df = pd.DataFrame(None, columns=(['frame'] + list(detector.output_type._fields) + self.classifier.output_cols))
-        else:
-            df1 = pd.DataFrame({'frame' : [e[0] for e in linfo]})
-            df2 = pd.DataFrame.from_records([e[1] for e in linfo], columns=detector.output_type._fields)
-            if 'eyes' in df2.columns:
-                df2 = df2.drop('eyes', axis=1)
-            df3 = pd.concat(ldf).reset_index(drop=True)
-            #dfL = pd.DataFrame.from_records(linfo, columns = self.analyzer_cols)
-            #dfR = pd.concat(ldf).reset_index(drop=True)
-            df = pd.concat([df1, df2, df3], axis = 1)
+        # if len(ldf) == 0:
+        #     df = pd.DataFrame(None, columns=(['frame'] + list(detector.output_type._fields) + self.classifier.output_cols))
+        # else:
+        #     df1 = pd.DataFrame({'frame' : [e[0] for e in linfo]})
+        #     df2 = pd.DataFrame.from_records([e[1] for e in linfo], columns=detector.output_type._fields)
+        #     if 'eyes' in df2.columns:
+        #         df2 = df2.drop('eyes', axis=1)
+        #     df3 = pd.concat(ldf).reset_index(drop=True)
+        #     #dfL = pd.DataFrame.from_records(linfo, columns = self.analyzer_cols)
+        #     #dfR = pd.concat(ldf).reset_index(drop=True)
+        #     df = pd.concat([df1, df2, df3], axis = 1)
 
         return self.classifier.average_results(df)
