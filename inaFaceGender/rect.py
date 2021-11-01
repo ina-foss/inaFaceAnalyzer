@@ -57,3 +57,17 @@ class Rect(NamedTuple):
     @staticmethod
     def from_dlib(x):
         return Rect(x.left(), x.top(), x.right(), x.bottom())
+    @property
+    def square(self):
+        """ returns the smallest square containing the rectangle"""
+        offset = self.max_dim_len / 2
+        xc, yc = self.center
+        return Rect(xc - offset, yc - offset, xc + offset, yc + offset)
+    def scale(self, scale_prct):
+        """ scale Rectangle according to scale percentage scale_prct"""
+        w, h = (self.w, self.h)
+        x1, y1, x2, y2 = self
+        xdiff = (w * scale_prct - w) / 2
+        ydiff = (h * scale_prct -h) / 2
+        return Rect(x1 - xdiff, y1 - ydiff, x2 + xdiff, y2 + ydiff)
+

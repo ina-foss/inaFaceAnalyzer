@@ -32,6 +32,7 @@ from .face_detector import OcvCnnFacedetector
 from .face_classifier import Resnet50FairFaceGRA
 from .face_alignment import Dlib68FaceAlignment
 from .face_preprocessing import preprocess_face
+from .rect import Rect
 
 
 
@@ -167,7 +168,7 @@ class GenderVideo(FaceAnalyzer):
             info: A Dataframe with frame and face information (coordinates, decision function,labels..)
         """
 
-
+        detector = self.face_detector
         oshape = self.classifier.input_shape[:-1]
 
         lbatch_img = []
@@ -178,14 +179,14 @@ class GenderVideo(FaceAnalyzer):
 
         for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
 
-            for detection in self.face_detector(frame):
+            for detection in detector(frame):
                 if self.verbose:
                     print(detection)
 
 
-                face_img, bbox = preprocess_face(frame, detection.bbox, self.squarify_bbox, self.bbox_scaling, self.face_alignment, oshape, self.verbose)
+                face_img, bbox = preprocess_face(frame, detection, self.squarify_bbox, self.bbox_scaling, self.face_alignment, oshape, self.verbose)
 
-                linfo.append([iframe, bbox, detection.conf])
+                linfo.append([iframe, tuple(bbox), detection.conf])
                 lbatch_img.append(face_img)
 
             while len(lbatch_img) > self.batch_len:
@@ -211,6 +212,9 @@ class GenderVideo(FaceAnalyzer):
         subsamp_coeff = 1 if fps is None else analysisFPS2subsamp_coeff(vidsrc, fps)
 
         for (iframe, frame), bbox in zip(video_iterator(vidsrc, subsamp_coeff=subsamp_coeff, start=start_frame, verbose=self.verbose),lbox):
+
+            if not isinstance(bbox, Rect):
+                bbox = Rect(*bbox)
 
             df = self.classif_from_frame_and_bbox(frame, bbox, self.squarify_bbox, self.bbox_scaling)
 
@@ -246,8 +250,9 @@ class GenderTracking(FaceAnalyzer):
             info: A Dataframe with frame and face information (coordinates, decision function,labels..)
         """
 
-        oshape = self.classifier.input_shape[:-1]
         detector = TrackerDetector(self.face_detector, self.detection_period)
+
+        oshape = self.classifier.input_shape[:-1]
 
         lbatch_img = []
         linfo = []
@@ -257,13 +262,13 @@ class GenderTracking(FaceAnalyzer):
 
         for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
 
-            for bb, faceid, detect_conf, track_conf in detector(frame):
+            for detection in detector(frame):
                 if self.verbose:
-                    print(detector.out_names, bb, faceid, detect_conf, track_conf)
+                    print(detection)
 
-                face_img, bbox = preprocess_face(frame, bb, self.squarify_bbox, self.bbox_scaling, self.face_alignment, oshape, self.verbose)
+                face_img, bbox = preprocess_face(frame, detection, self.squarify_bbox, self.bbox_scaling, self.face_alignment, oshape, self.verbose)
 
-                linfo.append([iframe, bbox, faceid, detect_conf, track_conf])
+                linfo.append([iframe, tuple(bbox), detection.face_id, detection.detect_conf, detection.track_conf])
                 lbatch_img.append(face_img)
 
             while len(lbatch_img) > self.batch_len:

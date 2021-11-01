@@ -25,7 +25,6 @@
 
 import unittest
 from numpy.testing import assert_almost_equal
-from inaFaceGender.face_preprocessing import _squarify_bbox
 from inaFaceGender.face_detector import OcvCnnFacedetector, LibFaceDetection
 from inaFaceGender.opencv_utils import imread_rgb
 
@@ -38,7 +37,7 @@ class TestDetector(unittest.TestCase):
         ret = detector(frame)
         self.assertEqual(len(ret), 1)
         ret, conf = ret[0]
-        ret = _squarify_bbox(ret)
+        ret = ret.square
         ret = tuple([int(e) for e in ret])
         self.assertEqual(ret, (457, 271, 963, 777))
         self.assertAlmostEqual(conf, 0.99964356)

@@ -27,30 +27,7 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 from .face_utils import _angle_between_2_points
-
-def _scale_bbox(x1, y1, x2, y2, scale):
-    w = x2 - x1
-    h = y2 - y1
-
-    x1 = x1 - (w*scale - w)/2
-    y1 = y1 - (h*scale -h)/2
-    x2 = x2 + (w*scale - w)/2
-    y2 = y2 + (h*scale -h)/2
-
-    return x1, y1, x2, y2
-
-def _squarify_bbox(bbox):
-    """
-    Convert a rectangle bounding box to a square
-    width sides equal to the maximum between width and height
-    """
-    x1, y1, x2, y2 = bbox
-    w = x2 - x1
-    h = y2 - y1
-    offset = max(w, h) / 2
-    x_center = (x1+x2) / 2
-    y_center = (y1+y2) / 2
-    return x_center - offset, y_center - offset, x_center + offset, y_center + offset
+from .rect import Rect
 
 
 def alignCrop(frame, bb, left_eye, right_eye, verbose=False):
@@ -90,7 +67,7 @@ def alignCrop(frame, bb, left_eye, right_eye, verbose=False):
 
 
 
-def preprocess_face(frame, bbox, squarify, bbox_scale, face_alignment, output_shape, verbose=False):
+def preprocess_face(frame, detection, squarify, bbox_scale, face_alignment, output_shape, verbose=False):
     """
     Apply preprocessing pipeline to a detected face and returns the
     corresponding image with the following optional processings
@@ -98,7 +75,8 @@ def preprocess_face(frame, bbox, squarify, bbox_scale, face_alignment, output_sh
     ----------
     frame : numpy nd.array
         RGB image data
-    bbox : tuple (x1, y1, x2, y2) or None
+    detection : a Detection instance containing a field 'bbox' of type Rect
+        corresponding to the detected face bounding box
         if not None, the provided bounding box will be used, else the
         whole image will be used
     squarify: boolean
@@ -126,22 +104,25 @@ def preprocess_face(frame, bbox, squarify, bbox_scale, face_alignment, output_sh
     (frame_h, frame_w, _) = frame.shape
 
     # if no bounding box is provided, use the whole image
-    if bbox is None:
-        bbox = (0, 0, frame_w, frame_h)
+    if detection is None:
+        bbox = Rect(0, 0, frame_w, frame_h)
+    elif isinstance(detection, Rect):
+        bbox = detection
+    else:
+        bbox = detection.bbox
 
 
     # if True, extend the bounding box to the smallest square containing
     # the orignal bounding box
     if squarify:
-        bbox = _squarify_bbox(bbox)
+        bbox = bbox.square
 
     # perform bounding box scaling to march larger/smaller areas around
     # the detected face
-    bbox = _scale_bbox(*bbox, bbox_scale)
-
+    bbox = bbox.scale(bbox_scale)
 
     # in future - use rounded values
-    bbox = tuple([int(e) for e in bbox])
+    bbox = Rect(*[int(e) for e in bbox])
 
     # performs face alignment based on facial landmark detection
     if face_alignment is not None:
@@ -150,7 +131,7 @@ def preprocess_face(frame, bbox, squarify, bbox_scale, face_alignment, output_sh
     else:
         # crop image to the bounding box
 	# TODO: replace by a wrap affine => management of out of frame
-        frame = frame[bbox[1]:bbox[3], bbox[0]:bbox[2]]
+        frame = frame[bbox.y1:bbox.y2, bbox.x1:bbox.x2]
 
     # resize image to the required output shape
     if output_shape is not None:

@@ -23,14 +23,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-#from collections import namedtuple
+from typing import NamedTuple
 import dlib
 import numpy as np
 from .rect import Rect
 from .opencv_utils import disp_frame_shapes
 from .face_utils import intersection_over_union, tuple2drect
 
-#Detection = namedtuple('TrackDetection')
+
+#out_names = ['bb', 'face_id', 'face_detect_conf', 'tracking_conf']
+class TrackDetection(NamedTuple):
+    bbox : Rect
+    face_id : int
+    detect_conf : float
+    track_conf : float
 
 def _matrix_argmax(m):
     x = np.argmax(m)
@@ -83,7 +89,7 @@ class TrackerDetector:
     min_confidence = 7
 
     # output labels
-    out_names = ['bb', 'face_id', 'face_detect_conf', 'tracking_conf']
+    #out_names = ['bb', 'face_id', 'face_detect_conf', 'tracking_conf']
 
     def __init__(self, detector, detection_period):
         # dictionnary of tracked objects
@@ -173,7 +179,7 @@ class TrackerDetector:
         for faceid in self.d:
             t = self.d[faceid]
             bb = t.t.get_position()
-            lret.append((Rect.from_dlib(bb), faceid, t.detect_conf, t.track_conf))
+            lret.append(TrackDetection(Rect.from_dlib(bb), faceid, t.detect_conf, t.track_conf))
 
         self.iframe += 1
 

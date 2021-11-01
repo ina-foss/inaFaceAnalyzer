@@ -32,7 +32,6 @@ import onnxruntime
 from .rect import Rect
 from .remote_utils import get_remote
 from .opencv_utils import disp_frame_shapes, disp_frame
-from .face_preprocessing import _squarify_bbox
 from .face_utils import intersection_over_union
 from .libfacedetection_priorbox import PriorBox
 
@@ -218,9 +217,12 @@ class OcvCnnFacedetector(FaceDetector):
         return (bbox, conf)
 
     def get_closest_face(self, frame, ref_bbox, min_iou=.7, squarify=True, verbose=False):
+        if not isinstance(ref_bbox, Rect):
+            ref_bbox = Rect(*ref_bbox)
+
         # get closest detected faces from ref_bbox
         if squarify:
-            f = _squarify_bbox
+            f = lambda x: x.square
         else:
             f = lambda x: x
 
