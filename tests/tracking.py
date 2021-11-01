@@ -53,7 +53,7 @@ class TestTracking(unittest.TestCase):
     def test_tracker_updatebb(self):
         frame = imread_rgb('./media/800px-India_(236650352).jpg')
         t = Tracker(frame, [100, 100, 200, 200],  None)
-        nt = namedtuple('useless', 'bbox conf')
+        nt = namedtuple('useless', 'bbox detect_conf')
         dtc = nt([12.2, 70, 166.6666, 200], None)
         conf = t.update_from_detection(frame, dtc)
         trackbb = Rect.from_dlib(t.t.get_position())

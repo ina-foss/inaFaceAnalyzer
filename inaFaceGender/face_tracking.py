@@ -79,7 +79,7 @@ class Tracker:
             disp_frame_shapes(frame, [Rect.from_dlib(e), dtc.bbox])
         self.t.start_track(frame, tuple2drect(dtc.bbox))
         self.track_conf = update_val
-        self.detect_conf = dtc.conf
+        self.detect_conf = dtc.detect_conf
         return update_val
 
 
@@ -89,6 +89,7 @@ class TrackerDetector:
     min_confidence = 7
 
     # output labels
+    output_type = TrackDetection
     #out_names = ['bb', 'face_id', 'face_detect_conf', 'tracking_conf']
 
     def __init__(self, detector, detection_period):
@@ -164,7 +165,7 @@ class TrackerDetector:
         # add new trackers corresponding to detected faces that did not match
         # any existing tracker
         for dtc in ldetections:
-            self.d[self.nb_tracker] = Tracker(frame, dtc.bbox, dtc.conf)
+            self.d[self.nb_tracker] = Tracker(frame, dtc.bbox, dtc.detect_conf)
             self.nb_tracker += 1
 
 

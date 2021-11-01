@@ -28,7 +28,7 @@ import pandas as pd
 from abc import ABC, abstractmethod
 from .opencv_utils import video_iterator, imread_rgb, analysisFPS2subsamp_coeff
 from .face_tracking import TrackerDetector
-from .face_detector import OcvCnnFacedetector
+from .face_detector import OcvCnnFacedetector, PrecomputedDetector
 from .face_classifier import Resnet50FairFaceGRA
 from .face_alignment import Dlib68FaceAlignment
 from .face_preprocessing import preprocess_face
@@ -43,9 +43,9 @@ class FaceAnalyzer(ABC):
     """
     batch_len = 32
 
-    @classmethod
-    @abstractmethod
-    def analyzer_cols() : pass
+    #@classmethod
+    #@abstractmethod
+    #def analyzer_cols() : pass
 
     def __init__(self, face_detector = None, face_classifier = None, bbox_scaling = 1.1, squarify_bbox = True, verbose = False):
         """
@@ -89,7 +89,8 @@ class FaceAnalyzer(ABC):
         self.verbose = verbose
 
 
-
+    @abstractmethod
+    def __call__(self, src) : pass
 
     #TODO : test in multi output
     # may be deprecated in a near future since it does not takes advantage of batches
@@ -107,7 +108,6 @@ class FaceAnalyzer(ABC):
 
 
 class GenderImage(FaceAnalyzer):
-    analyzer_cols = ['frame', 'bbox', 'face_detect_conf']
 
     def __init__(self, **kwargs):
         if 'face_detector' not in kwargs:
@@ -134,7 +134,7 @@ class GenderImage(FaceAnalyzer):
 
         if len(lret) > 0:
             return pd.concat(lret).reset_index(drop=True)
-        return pd.DataFrame(columns = self.analyzer_cols + self.classifier.output_cols)
+        return pd.DataFrame(columns = self.face_detector.output_type._fields + self.classifier.output_cols)
 
 class GenderVideo(FaceAnalyzer):
     """
@@ -148,10 +148,39 @@ class GenderVideo(FaceAnalyzer):
         threshold: quality of face detection considered acceptable, value between 0 and 1.
     """
 
-    analyzer_cols = ['frame', 'bbox', 'face_detect_conf']
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+    def _process_vid(self, vid_src, detector, fps=None, offset=-1, time_unit='ms'):
+        oshape = self.classifier.input_shape[:-1]
+
+        lbatch_img = []
+        linfo = []
+        ldf = []
+
+        subsamp_coeff = 1 if fps is None else analysisFPS2subsamp_coeff(vid_src, fps)
+
+        for iframe, frame in video_iterator(vid_src, subsamp_coeff=subsamp_coeff, time_unit=time_unit, start=min(offset, 0), verbose=self.verbose):
+
+            for detection in detector(frame):
+                if self.verbose:
+                    print(detection)
+
+                face_img, bbox = preprocess_face(frame, detection, self.squarify_bbox, self.bbox_scaling, self.face_alignment, oshape, self.verbose)
+
+                linfo.append([iframe, detection._replace(bbox=tuple(bbox))])
+                lbatch_img.append(face_img)
+
+            while len(lbatch_img) > self.batch_len:
+                df = self.classifier(lbatch_img[:self.batch_len], False)
+                ldf.append(df)
+                lbatch_img = lbatch_img[self.batch_len:]
+
+        if len(lbatch_img) > 0:
+            df = self.classifier(lbatch_img, False)
+            ldf.append(df)
+
+        return ldf, linfo
 
     def __call__(self, video_path, fps = None,  offset = -1):
 
@@ -169,68 +198,68 @@ class GenderVideo(FaceAnalyzer):
         """
 
         detector = self.face_detector
-        oshape = self.classifier.input_shape[:-1]
 
-        lbatch_img = []
-        linfo = []
-        ldf = []
-
-        subsamp_coeff = 1 if fps is None else analysisFPS2subsamp_coeff(video_path, fps)
-
-        for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
-
-            for detection in detector(frame):
-                if self.verbose:
-                    print(detection)
-
-
-                face_img, bbox = preprocess_face(frame, detection, self.squarify_bbox, self.bbox_scaling, self.face_alignment, oshape, self.verbose)
-
-                linfo.append([iframe, tuple(bbox), detection.conf])
-                lbatch_img.append(face_img)
-
-            while len(lbatch_img) > self.batch_len:
-                df = self.classifier(lbatch_img[:self.batch_len], False)
-                ldf.append(df)
-                lbatch_img = lbatch_img[self.batch_len:]
-
-        if len(lbatch_img) > 0:
-            df = self.classifier(lbatch_img, False)
-            ldf.append(df)
+        ldf, linfo = self._process_vid(video_path, detector, fps, offset)
 
         if len(ldf) == 0:
-            return pd.DataFrame(None, columns=(self.analyzer_cols + self.classifier.output_cols))
+            return pd.DataFrame(None, columns=(['frame'] + list(detector.output_type._fields) + self.classifier.output_cols))
 
-        dfL = pd.DataFrame.from_records(linfo, columns = self.analyzer_cols)
-        dfR = pd.concat(ldf).reset_index(drop=True)
-        return pd.concat([dfL, dfR], axis = 1)
-
-
-    def pred_from_vid_and_bblist(self, vidsrc, lbox, fps=None, start_frame=0):
-        ldf = []
-
-        subsamp_coeff = 1 if fps is None else analysisFPS2subsamp_coeff(vidsrc, fps)
-
-        for (iframe, frame), bbox in zip(video_iterator(vidsrc, subsamp_coeff=subsamp_coeff, start=start_frame, verbose=self.verbose),lbox):
-
-            if not isinstance(bbox, Rect):
-                bbox = Rect(*bbox)
-
-            df = self.classif_from_frame_and_bbox(frame, bbox, self.squarify_bbox, self.bbox_scaling)
-
-            ldf.append(df)
-
-            if self.verbose:
-                print(df.drop('feats', axis=1))
-                print()
-        assert len(ldf) == len(lbox), '%d bounding box provided, and only %d frames processed' % (len(lbox), len(ldf))
-
-        df = pd.concat(ldf).reset_index(drop=True)
-        return np.concatenate(df.feats), df.drop('feats', axis=1)
+        df1 = pd.DataFrame({'frame' : [e[0] for e in linfo]})
+        df2 = pd.DataFrame.from_records([e[1] for e in linfo], columns=detector.output_type._fields)
+        if 'eyes' in df2.columns:
+            df2 = df2.drop('eyes', axis=1)
+        df3 = pd.concat(ldf).reset_index(drop=True)
+        return pd.concat([df1, df2, df3], axis = 1)
 
 
-class GenderTracking(FaceAnalyzer):
-    analyzer_cols = ['frame', 'bbox', 'face_id', 'face_detect_conf', 'face_track_conf']
+    # def pred_from_vid_and_bblist(self, vidsrc, lbox, fps=None, start_frame=0):
+    #     ldf = []
+
+    #     subsamp_coeff = 1 if fps is None else analysisFPS2subsamp_coeff(vidsrc, fps)
+
+    #     for (iframe, frame), bbox in zip(video_iterator(vidsrc, subsamp_coeff=subsamp_coeff, start=start_frame, verbose=self.verbose),lbox):
+
+    #         if not isinstance(bbox, Rect):
+    #             bbox = Rect(*bbox)
+
+    #         df = self.classif_from_frame_and_bbox(frame, bbox, self.squarify_bbox, self.bbox_scaling)
+
+    #         ldf.append(df)
+
+    #         if self.verbose:
+    #             print(df.drop('feats', axis=1))
+    #             print()
+    #     assert len(ldf) == len(lbox), '%d bounding box provided, and only %d frames processed' % (len(lbox), len(ldf))
+
+    #     df = pd.concat(ldf).reset_index(drop=True)
+    #     return np.concatenate(df.feats), df.drop('feats', axis=1)
+
+
+class VideoPrecomputedDetection(GenderVideo):
+    def __init__(self, **kwargs):
+        if 'face_detector' in kwargs:
+            raise NotImplementedError('VideoPrecomputedDetection should NOT be constructed with a face detector')
+        kwargs['face_detector'] = PrecomputedDetector()
+        super().__init__(**kwargs)
+    def __call__(self, video_src, lbbox, fps=None, start_frame = 0):
+        detector = PrecomputedDetector(lbbox)
+
+        ldf, linfo = self._process_vid(video_src, detector, fps, start_frame, time_unit='frame')
+        #print('linfo', linfo)
+        #print('ldf', ldf)
+        assert len(detector.lbbox) == 0, 'the detection list is longer than the number of processed frames'
+
+        if len(ldf) == 0:
+            return pd.DataFrame(None, columns=(['frame'] + list(detector.output_type._fields) + self.classifier.output_cols))
+
+        df1 = pd.DataFrame({'frame' : [e[0] for e in linfo]})
+        df2 = pd.DataFrame.from_records([e[1] for e in linfo], columns=detector.output_type._fields)
+        if 'eyes' in df2.columns:
+            df2 = df2.drop('eyes', axis=1)
+        df3 = pd.concat(ldf).reset_index(drop=True)
+        return pd.concat([df1, df2, df3], axis = 1)
+
+class GenderTracking(GenderVideo):
     def __init__(self, detection_period, **kwargs):
         super().__init__(**kwargs)
         self.detection_period = detection_period
@@ -252,39 +281,18 @@ class GenderTracking(FaceAnalyzer):
 
         detector = TrackerDetector(self.face_detector, self.detection_period)
 
-        oshape = self.classifier.input_shape[:-1]
-
-        lbatch_img = []
-        linfo = []
-        ldf = []
-
-        subsamp_coeff = 1 if fps is None else analysisFPS2subsamp_coeff(video_path, fps)
-
-        for iframe, frame in video_iterator(video_path, subsamp_coeff=subsamp_coeff, time_unit='ms', start=min(offset, 0), verbose=self.verbose):
-
-            for detection in detector(frame):
-                if self.verbose:
-                    print(detection)
-
-                face_img, bbox = preprocess_face(frame, detection, self.squarify_bbox, self.bbox_scaling, self.face_alignment, oshape, self.verbose)
-
-                linfo.append([iframe, tuple(bbox), detection.face_id, detection.detect_conf, detection.track_conf])
-                lbatch_img.append(face_img)
-
-            while len(lbatch_img) > self.batch_len:
-                df = self.classifier(lbatch_img[:self.batch_len], False)
-                ldf.append(df)
-                lbatch_img = lbatch_img[self.batch_len:]
-
-        if len(lbatch_img) > 0:
-            df = self.classifier(lbatch_img, False)
-            ldf.append(df)
+        ldf, linfo = self._process_vid(video_path, detector, fps, offset)
 
         if len(ldf) == 0:
-            df = pd.DataFrame(None, columns=(self.analyzer_cols + self.classifier.output_cols))
+            df = pd.DataFrame(None, columns=(['frame'] + list(detector.output_type._fields) + self.classifier.output_cols))
         else:
-            dfL = pd.DataFrame.from_records(linfo, columns = self.analyzer_cols)
-            dfR = pd.concat(ldf).reset_index(drop=True)
-            df = pd.concat([dfL, dfR], axis = 1)
+            df1 = pd.DataFrame({'frame' : [e[0] for e in linfo]})
+            df2 = pd.DataFrame.from_records([e[1] for e in linfo], columns=detector.output_type._fields)
+            if 'eyes' in df2.columns:
+                df2 = df2.drop('eyes', axis=1)
+            df3 = pd.concat(ldf).reset_index(drop=True)
+            #dfL = pd.DataFrame.from_records(linfo, columns = self.analyzer_cols)
+            #dfR = pd.concat(ldf).reset_index(drop=True)
+            df = pd.concat([df1, df2, df3], axis = 1)
 
         return self.classifier.average_results(df)

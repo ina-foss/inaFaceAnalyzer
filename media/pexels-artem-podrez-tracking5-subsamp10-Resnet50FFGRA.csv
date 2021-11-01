@@ -1,4 +1,4 @@
-frame,bbox,face_id,face_detect_conf,face_track_conf,sex_decfunc,age_decfunc,sex_label,age_label,sex_decfunc_avg,age_decfunc_avg,sex_label_avg,age_label_avg
+frame,bbox,face_id,detect_conf,track_conf,sex_decfunc,age_decfunc,sex_label,age_label,sex_decfunc_avg,age_decfunc_avg,sex_label_avg,age_label_avg
 0,"(61, 100, 274, 313)",0,0.998,,-12.125,3.164,f,26.637,-13.488,3.298,f,27.982
 0,"(951, -6, 1130, 172)",1,0.988,,8.21,3.815,m,33.151,8.146,3.753,m,32.527
 0,"(744, 17, 932, 206)",2,0.987,,-8.046,2.439,f,19.393,-7.882,2.371,f,18.712

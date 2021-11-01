@@ -36,10 +36,9 @@ from .face_utils import intersection_over_union
 from .libfacedetection_priorbox import PriorBox
 
 
-
 class Detection(NamedTuple):
     bbox : Rect
-    conf : float
+    detect_conf : float
 
 class DetectionEyes(NamedTuple):
     """
@@ -47,7 +46,7 @@ class DetectionEyes(NamedTuple):
     + eyes coordinates (x1, y1, x2, y2) for left eye and right eye
     """
     bbox : Rect
-    conf : float
+    detect_conf : float
     eyes : Rect
 
 
@@ -89,6 +88,10 @@ class FaceDetector(ABC):
 
         return lret
 
+    @classmethod
+    @abstractmethod
+    def output_type() : pass
+
     @abstractmethod
     def _call_imp(self, frame): pass
 
@@ -116,6 +119,8 @@ class OcvCnnFacedetector(FaceDetector):
     """
     opencv default CNN face detector
     """
+    output_type = Detection
+
     def __init__(self, minconf=0.65, min_size_px=30, min_size_prct=0, padd_prct=0.15):
         """
         Parameters
@@ -254,6 +259,7 @@ class LibFaceDetection(FaceDetector):
     See: https://github.com/ShiqiYu/libfacedetection
     """
 
+    output_type = DetectionEyes
 
     def __init__(self, minconf=.98, min_size_px=30, min_size_prct=0, padd_prct=0):
         super().__init__(minconf, min_size_px, min_size_prct, padd_prct)
@@ -303,3 +309,16 @@ class LibFaceDetection(FaceDetector):
             lret.append(DetectionEyes(bbox, score, eyes))
 
         return lret
+
+class PrecomputedDetector(FaceDetector):
+    output_type = Detection
+    def __init__(self, lbbox = []):
+        super().__init__(0, 0, 0, 0)
+        self.lbbox = lbbox.copy()
+    def _call_imp(self, frame):
+        if len(self.lbbox) == 0:
+            return []
+        ret = self.lbbox.pop(0)
+        if isinstance(ret, tuple):
+            ret = [ret]
+        return [Detection(Rect(*e), None) for e in ret]

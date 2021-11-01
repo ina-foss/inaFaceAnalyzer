@@ -67,7 +67,7 @@ class TestDetector(unittest.TestCase):
             ((394.65, 57.10, 446.97, 124.00), 0.99),
             ((229.35, 71.04, 289.13, 147.18), 0.99)]
         for (rbb, rconf), dtc in zip(ref, pred):
-            self.assertAlmostEqual(rconf, dtc.conf, places=1)
+            self.assertAlmostEqual(rconf, dtc.detect_conf, places=1)
             assert_almost_equal(list(rbb), list(dtc.bbox), decimal=1)
 
     def test_libfacedetection_blackpadd(self):
@@ -92,5 +92,5 @@ class TestDetector(unittest.TestCase):
         ref = [((230.91, 207.73, 455.90, 481.51), 1.0),
             ((496.83, 123.28, 669.31, 325.69), 0.99)]
         for (rbb, rconf), dtc in zip(ref, pred):
-            self.assertAlmostEqual(rconf, dtc.conf, places=1)
+            self.assertAlmostEqual(rconf, dtc.detect_conf, places=1)
             assert_almost_equal(list(rbb), list(dtc.bbox), decimal=1)

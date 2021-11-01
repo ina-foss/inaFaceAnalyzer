@@ -1,4 +1,4 @@
-frame,bbox,face_detect_conf,sex_decfunc,age_decfunc,sex_label,age_label
+frame,bbox,detect_conf,sex_decfunc,age_decfunc,sex_label,age_label
 0,"(61, 100, 274, 313)",0.998,-12.125,3.164,f,26.637
 0,"(951, -6, 1130, 172)",0.988,8.21,3.815,m,33.151
 0,"(744, 17, 932, 206)",0.987,-8.046,2.439,f,19.393
