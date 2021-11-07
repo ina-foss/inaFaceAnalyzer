@@ -26,7 +26,7 @@
 
 import unittest
 import numpy as np
-from inaFaceGender.opencv_utils import video_iterator
+from inaFaceAnalyzer.opencv_utils import video_iterator
 
 class TestOpenCvUtils(unittest.TestCase):
     

@@ -24,8 +24,8 @@
 # THE SOFTWARE.
 
 import cv2
-from inaFaceGender import GenderImage
-from inaFaceGender.face_classifier import Resnet50FairFaceGRA
+from inaFaceAnalyzer import GenderImage
+from inaFaceAnalyzer.face_classifier import Resnet50FairFaceGRA
 
 
 

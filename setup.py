@@ -26,7 +26,7 @@
 
 import os
 from setuptools import setup, find_packages
-
+import versioneer
 
 KEYWORDS = '''
 gender-equality
@@ -70,16 +70,17 @@ LONGDESCRIPTION='''Detect faces in video streams and does gender classification.
 '''
 
 setup(
-    name = "inaFaceGender",
-    version = "0.0.3",
+    name = "inaFaceAnalyzer",
+    version = versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     author = "David Doukhan, Zohra Rezgui",
     author_email = "david.doukhan@gmail.com, zohra.rzg@gmail.com",
     test_suite="run_tests.py",
     description = DESCRIPTION,
     license = "MIT",
     install_requires=['opencv-contrib-python', 'dlib', 'pandas', 'sklearn', 'h5py', 'matplotlib', 'onnxruntime-gpu', 'cheetah3', 'keras-vggface @ https://github.com/DavidDoukhan/keras-vggface/archive/refs/tags/vddk-0.1.tar.gz'],
-    url = "https://github.com/ina-foss/inaFaceGender",
-    packages=['inaFaceGender'],
+    url = "https://github.com/ina-foss/inaFaceAnalyzer",
+    packages=['inaFaceAnalyzer'],
     keywords = KEYWORDS,
     #packages = find_packages(),
     include_package_data = True,

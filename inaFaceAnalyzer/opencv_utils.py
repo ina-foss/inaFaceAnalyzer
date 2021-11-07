@@ -79,6 +79,10 @@ def video_iterator(src, time_unit='frame', start=None, stop=None, subsamp_coeff=
 
     cap.release()
 
+def image_iterator(lfiles, verbose = False):
+    for f in lfiles:
+        yield f, imread_rgb(f, verbose)
+
 def get_video_properties(src):
     cap = cv2.VideoCapture(src)
 

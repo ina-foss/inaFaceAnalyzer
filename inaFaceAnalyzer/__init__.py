@@ -23,5 +23,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from .inaFaceGender import GenderVideo, GenderImage, GenderTracking
-from .display_utils import incrust_faces_in_video
+from .inaFaceAnalyzer import GenderVideo, GenderImage, GenderTracking
+#from .display_utils import incrust_faces_in_video
+
+from . import _version
+__version__ = _version.get_versions()['version']

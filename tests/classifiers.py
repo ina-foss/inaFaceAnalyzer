@@ -26,8 +26,8 @@
 import unittest
 import tensorflow as tf
 import numpy as np
-from inaFaceGender.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
-from inaFaceGender.opencv_utils import imread_rgb
+from inaFaceAnalyzer.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
+from inaFaceAnalyzer.opencv_utils import imread_rgb
 
 
 class TestClassifiers(unittest.TestCase):
@@ -77,7 +77,7 @@ class TestClassifiers(unittest.TestCase):
 
 
     def test_fairface_age_mapping(self):
-        from inaFaceGender.face_classifier import _fairface_agedec2age
+        from inaFaceAnalyzer.face_classifier import _fairface_agedec2age
         # [(0,2), (3,9), (10,19), (20,29), (30,39), (40,49), (50,59), (60,69), (70+)]
         # simple
         x = [0, 1, 2, 3, 9]

@@ -2,3 +2,5 @@ include *.py LICENSE *.md *.ipynb *.txt
 #include scripts *.py
 
 
+include versioneer.py
+include inaFaceAnalyzer/_version.py

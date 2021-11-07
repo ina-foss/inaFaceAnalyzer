@@ -23,10 +23,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from typing import NamedTuple
 import dlib
 import numpy as np
+from .rect import Rect
 from .opencv_utils import disp_frame_shapes
-from .face_utils import _rect_to_tuple, intersection_over_union, tuple2drect
+
+
+class TrackDetection(NamedTuple):
+    bbox : Rect
+    face_id : int
+    detect_conf : float
+    track_conf : float
 
 def _matrix_argmax(m):
     x = np.argmax(m)
@@ -36,7 +44,9 @@ def _matrix_argmax(m):
 class Tracker:
     def __init__(self, frame, bb, detect_conf):
         self.t = dlib.correlation_tracker()
-        self.t.start_track(frame, tuple2drect(bb))
+        if not isinstance(bb, dlib.drectangle):
+            bb = dlib.drectangle(*bb)
+        self.t.start_track(frame, bb)
         self.fshape = frame.shape
         self.detect_conf = detect_conf
         self.track_conf = None
@@ -47,7 +57,7 @@ class Tracker:
         fh, fw, _ = self.fshape
 
         e = self.t.get_position()
-        x1, y1, x2, y2 = pos = _rect_to_tuple(e)
+        x1, y1, x2, y2 = pos = Rect.from_dlib(e)
 
 
         if verbose:
@@ -61,15 +71,15 @@ class Tracker:
         self.track_conf = update_val
         return update_val
 
-    def update_from_bb(self, frame, bb, detect_conf, verbose=False):
-        update_val = self.t.update(frame, tuple2drect(bb))
+    def update_from_detection(self, frame, dtc, verbose=False):
+        update_val = self.t.update(frame, dtc.bbox.to_dlibFloat())
         if verbose:
             e = self.t.get_position()
-            print('dest', bb, 'new position', e)
-            disp_frame_shapes(frame, [_rect_to_tuple(e), bb])
-        self.t.start_track(frame, tuple2drect(bb))
+            print('dest', dtc.bbox, 'new position', e)
+            disp_frame_shapes(frame, [Rect.from_dlib(e), dtc.bbox])
+        self.t.start_track(frame, dtc.bbox.to_dlibFloat())
         self.track_conf = update_val
-        self.detect_conf = detect_conf
+        self.detect_conf = dtc.detect_conf
         return update_val
 
 
@@ -79,7 +89,8 @@ class TrackerDetector:
     min_confidence = 7
 
     # output labels
-    out_names = ['bb', 'face_id', 'face_detect_conf', 'tracking_conf']
+    output_type = TrackDetection
+    #out_names = ['bb', 'face_id', 'face_detect_conf', 'tracking_conf']
 
     def __init__(self, detector, detection_period):
         # dictionnary of tracked objects
@@ -112,7 +123,7 @@ class TrackerDetector:
                 if verbose:
                     print('deleting tracker', fid)
 
-    def update_from_detection(self, frame, lbox, verbose):
+    def update_from_detection(self, frame, ldetections, verbose):
 
         if verbose:
             print('update from detection')
@@ -121,10 +132,11 @@ class TrackerDetector:
 
         # compute intersection over union matrix[#tracker, #detected bounding box]
         # between tracker positions and detected bounding boxes
-        ioumat = np.ones((len(lkeys), len(lbox))) * -1
+        ioumat = np.ones((len(lkeys), len(ldetections))) * -1
         for i, k in enumerate(lkeys):
-            for j, (bb, detect_conf) in enumerate(lbox):
-                ioumat[i, j] = intersection_over_union(self.d[k].t.get_position(), tuple2drect(bb))
+            trackpos = Rect.from_dlib(self.d[k].t.get_position())
+            for j, detection in enumerate(ldetections):
+                ioumat[i, j] = detection.bbox.iou(trackpos)
 
         # while matrix not empty and IOU > 70%
         while np.prod(ioumat.shape):
@@ -133,7 +145,7 @@ class TrackerDetector:
             if ioumat[am] <= 0.7:
                 break
             # update closest bounding box and trackers and remove them from matrix
-            track_score = self.d[lkeys[itracker]].update_from_bb(frame, *lbox[idetection], verbose)
+            track_score = self.d[lkeys[itracker]].update_from_detection(frame, ldetections[idetection], verbose)
             ioumat = np.delete(ioumat, itracker, axis = 0)
             k = lkeys.pop(itracker)
 
@@ -143,7 +155,7 @@ class TrackerDetector:
             else:
                 # if bounding box and detected face match, remove
                 # the detection from the set
-                lbox.pop(idetection)
+                ldetections.pop(idetection)
                 ioumat = np.delete(ioumat, idetection, axis = 1)
 
 
@@ -153,8 +165,8 @@ class TrackerDetector:
 
         # add new trackers corresponding to detected faces that did not match
         # any existing tracker
-        for bb, detect_conf in lbox:
-            self.d[self.nb_tracker] = Tracker(frame, bb, detect_conf)
+        for dtc in ldetections:
+            self.d[self.nb_tracker] = Tracker(frame, dtc.bbox, dtc.detect_conf)
             self.nb_tracker += 1
 
 
@@ -169,7 +181,7 @@ class TrackerDetector:
         for faceid in self.d:
             t = self.d[faceid]
             bb = t.t.get_position()
-            lret.append((_rect_to_tuple(bb), faceid, t.detect_conf, t.track_conf))
+            lret.append(TrackDetection(Rect.from_dlib(bb), faceid, t.detect_conf, t.track_conf))
 
         self.iframe += 1
 

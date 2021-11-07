@@ -67,7 +67,7 @@ if offset:
 track_mode = args.mode
 track_frames = int(args.ktracking)
 
-from inaFaceGender import GenderVideo, info2csv
+from inaFaceAnalyzer import GenderVideo, info2csv
 
 gen = GenderVideo()
 

@@ -24,19 +24,30 @@
 # THE SOFTWARE.
 
 from abc import ABC, abstractmethod
+from typing import NamedTuple
 import cv2
 import numpy as np
 import onnxruntime
 
+from .rect import Rect
 from .remote_utils import get_remote
 from .opencv_utils import disp_frame_shapes, disp_frame
-from .face_preprocessing import _squarify_bbox
-from .face_utils import intersection_over_union
 from .libfacedetection_priorbox import PriorBox
 
-def max_dim_len(bbox):
-    x1, y1, x2, y2 = bbox
-    return max(x2 - x1, y2 - y1)
+
+class Detection(NamedTuple):
+    bbox : Rect
+    detect_conf : float
+
+class DetectionEyes(NamedTuple):
+    """
+    Contains a detection (Rect bounding box & detection confidence)
+    + eyes coordinates (x1, y1, x2, y2) for left eye and right eye
+    """
+    bbox : Rect
+    detect_conf : float
+    eyes : Rect
+
 
 class FaceDetector(ABC):
     def __init__(self, minconf, min_size_px, min_size_prct, padd_prct):
@@ -61,40 +72,61 @@ class FaceDetector(ABC):
         min_frame_dim = min(frame.shape[:2])
         min_face_size = max(self.min_size_px, self.min_size_prct * min_frame_dim)
         if min_face_size > 0:
-            lret = [e for e in lret if max_dim_len(e[0]) >= min_face_size]
+            lret = [e for e in lret if e.bbox.max_dim_len >= min_face_size]
 
         if self.padd_prct:
-            lret = [((x1 - xoffset, y1 - yoffset, x2 - xoffset, y2 - yoffset), conf)
-                    for ((x1, y1, x2, y2), conf) in lret]
+            lret = [e._replace(bbox=e.bbox.transpose(-xoffset, -yoffset)) for e in lret]
 
         if verbose:
-            disp_frame_shapes(frame, [e[0] for e in lret], [])
-            for bbox, conf in lret:
-                x1, y1, x2, y2 = [int(e) for e in bbox]
-                print(bbox, conf)
+            disp_frame_shapes(frame, [e.bbox for e in lret], [])
+            for detection in lret:
+                x1, y1, x2, y2 = [int(e) for e in detection.bbox]
+                print(detection)
+                x1 = max(x1, 0)
+                y1 = max(y1, 0)
+                x2 = min(x2, frame.shape[1])
+                y2 = min(y2, frame.shape[0])
                 disp_frame(frame[y1:y2, x1:x2, :])
 
 
         return lret
 
+    @classmethod
+    @abstractmethod
+    def output_type() : pass
+
     @abstractmethod
     def _call_imp(self, frame): pass
 
+    def most_central_face(self, frame, verbose=False):
+        """
+        This method returns the detected face which is closest from the center
+        The returned face must include image center
+        Usefull for preprocessign face datasets containing several faces per image
+        Parameters
+        ----------
+        frame : nd.array (height, width, 3)
+            RGB image data.
+        verbose : boolean, optional
+            Display detected faces. The default is False.
+        Returns
+        -------
+        A Detection named tuple if a face maching the conditions has been detected else None
+        """
 
-def _rel_to_abs(bbox, frame_width, frame_height):
-    """
-    Map relative coordinates 0...1 to absolute corresponding to
-    frame width (w) and frame height (h)
-    """
-    #print('rel', bbox)
-    x1, y1, x2, y2 = bbox
-    return x1*frame_width, y1*frame_height, x2*frame_width, y2*frame_height
+        frxc, fryc = (frame.shape[1] / 2, frame.shape[0] / 2)
 
-def _center(bbox):
-    """
-    returns center (x,y) of bounding box bbox(x1, y1, x2, y2)
-    """
-    return ((bbox[0] + bbox[2]) / 2), ((bbox[1] + bbox[3]) / 2)
+        # keep faces containing image center
+        faces = [f for f in self(frame, verbose) if f.bbox.x1 < frxc
+                 and f.bbox.x2 > frxc and f.bbox.y1 < fryc and f.bbox.y2 > fryc]
+
+        if len(faces) == 0:
+            return None
+
+        ldists = [_sqdist(f.bbox.center, (frxc, fryc)) for f in faces]
+        am = np.argmin(ldists)
+
+        return faces[am]
 
 def _sqdist(p1, p2):
     '''
@@ -118,6 +150,8 @@ class OcvCnnFacedetector(FaceDetector):
     """
     opencv default CNN face detector
     """
+    output_type = Detection
+
     def __init__(self, minconf=0.65, min_size_px=30, min_size_prct=0, padd_prct=0.15):
         """
         Parameters
@@ -168,72 +202,40 @@ class OcvCnnFacedetector(FaceDetector):
             if confidence < self.minconf:
                 break
 
-            bbox = detections[0, 0, i, 3:7]
+            bbox = Rect(*detections[0, 0, i, 3:7])
             #bbox = _get_opencvcnn_bbox(detections, i)
             # remove noisy detections coordinates
-            if bbox[0] >= 1 or bbox[1] >= 1 or bbox[2] <= 0 or bbox[3] <= 0:
+            if bbox.x1 >= 1 or bbox.y1 >= 1 or bbox.x2 <= 0 or bbox.y2 <= 0:
                 continue
-            if bbox[0] >= bbox[2] or bbox[1] >= bbox[3]:
+            if bbox.x1 >= bbox.x2 or bbox.y1 >= bbox.y2:
                 continue
 
-            bbox = _rel_to_abs(bbox, w, h)
-
-#            bbox = [bbox[0] - xoffset, bbox[1] - yoffset, bbox[2] - xoffset, bbox[3] - yoffset]
-            faces_data.append((bbox, confidence))
-
+            # Map relative coordinates 0...1 to absolute  frame width and height
+            bbox = bbox.mult(w, h)
+            faces_data.append(Detection(bbox, confidence))
 
         return faces_data
 
-    def get_most_central_face(self, frame, verbose=False):
-        """
-        Several face annotated datasets may contain several faces per image
-        with annotated face at the center of the image
-        This method returns the detected face which is closest from the center
-
-        Parameters
-        ----------
-        frame : nd.array (height, width, 3)
-            RGB image data.
-        verbose : boolean, optional
-            Display detected faces. The default is False.
-
-        Returns
-        -------
-        The
-
-        """
-        faces_data = self.__call__(frame, verbose)
-        frame_center = (frame.shape[1] / 2, frame.shape[0] / 2)
-        ldists = [_sqdist(_center(bbox), frame_center) for (bbox, conf) in faces_data]
-        if len(ldists) == 0:
-            if verbose:
-                print('no face detected')
-            return None
-        am = np.argmin(ldists)
-        bbox, conf = faces_data[am]
-        if bbox[0] > frame_center[0] or bbox[2] < frame_center[0] or bbox[1] > frame_center[1] or bbox[3] < frame_center[1]:
-            if verbose:
-                print('detected faces do not include the center of the image')
-            return None
-        if verbose:
-            print('most closest face with bounding box %s and confidence %f' % (bbox, conf))
-            disp_frame_shapes(frame, [bbox])
-        return (bbox, conf)
 
     def get_closest_face(self, frame, ref_bbox, min_iou=.7, squarify=True, verbose=False):
+        if not isinstance(ref_bbox, Rect):
+            ref_bbox = Rect(*ref_bbox)
+
         # get closest detected faces from ref_bbox
         if squarify:
-            f = _squarify_bbox
+            f = lambda x: x.square
         else:
             f = lambda x: x
 
         ref_bbox = f(ref_bbox)
 
-        lfaces = self.__call__(frame, verbose)
+        lfaces = self(frame, verbose)
         if len(lfaces) == 0:
             return None
 
-        liou = [intersection_over_union(f(ref_bbox), f(bbox)) for bbox, _ in lfaces]
+        liou = [f(ref_bbox).iou(f(detection.bbox)) for detection in lfaces]
+
+
         if verbose:
             print([f(bb) for bb, _, in lfaces])
             print('liou', liou)
@@ -255,20 +257,17 @@ class LibFaceDetection(FaceDetector):
     See: https://github.com/ShiqiYu/libfacedetection
     """
 
-    # TODO - ADD OPTION TO FILTER SMALL FACES
-    # TODO - RETURN EYE POSITION
+    output_type = DetectionEyes
 
     def __init__(self, minconf=.98, min_size_px=30, min_size_prct=0, padd_prct=0):
         super().__init__(minconf, min_size_px, min_size_prct, padd_prct)
         model_src = get_remote('libfacedetection-yunet.onnx')
         self.model = onnxruntime.InferenceSession(model_src, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
- #       self.conf_thresh = minconf # Threshold for filtering out faces with conf < conf_thresh
         self.nms_thresh = 0.3 # Threshold for non-max suppression
         self.keep_top_k = 750 # Keep keep_top_k for results outputing
         self.dprior = {}
 
     def _call_imp(self, frame):
-        # TODO this model seems to use BGR INPUT
         bgr_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         h, w, _ = frame.shape
 
@@ -300,20 +299,24 @@ class LibFaceDetection(FaceDetector):
             return []
 
         lret = []
-        leyes = []
         for i in range(len(dets)):
             score = dets[i,-1]
-            bbox = dets[i,:4]
-            lret.append(((bbox[0], bbox[1], bbox[0] + bbox[2], bbox[1] + bbox[3]), score))
-            left_eye = tuple(dets[i, 4:6])
-            right_eye = tuple(dets[i, 6:8])
-            leyes += [left_eye, right_eye]
-
-        # if verbose:
-        #     verb_frame = disp_frame_shapes(frame, [e[0] for e in lret], leyes)
-        #     for bbox, conf in lret:
-        #         x1, y1, x2, y2 = [int(e) for e in bbox]
-        #         print(bbox, conf)
-        #         disp_frame(verb_frame[y1:y2, x1:x2, :])
+            x1, y1, w, h = dets[i,:4]
+            bbox = Rect(x1, y1, x1 + w, y1 + h)
+            eyes = Rect(*dets[i, 4:8])
+            lret.append(DetectionEyes(bbox, score, eyes))
 
         return lret
+
+class PrecomputedDetector(FaceDetector):
+    output_type = Detection
+    def __init__(self, lbbox = []):
+        super().__init__(0, 0, 0, 0)
+        self.lbbox = lbbox.copy()
+    def _call_imp(self, frame):
+        if len(self.lbbox) == 0:
+            return []
+        ret = self.lbbox.pop(0)
+        if isinstance(ret, tuple):
+            ret = [ret]
+        return [Detection(Rect(*e), None) for e in ret]

@@ -34,7 +34,7 @@ RUN apt-get update \
 
 WORKDIR /app
 COPY setup.py  LICENSE README.md run_tests.py ./
-COPY inaFaceGender /app/inaFaceGender
+COPY inaFaceAnalyzer /app/inaFaceAnalyzer
 COPY tests /app/tests
 COPY media /app/media
 
@@ -44,4 +44,4 @@ RUN pip install --upgrade pip && pip install . && pip cache purge
 # This line is non mandatory
 # it's usefull for docker containers without internet access (it may happen)
 # removing this line allows to save 500 Mo in the image
-RUN echo "from inaFaceGender.remote_utils import download_all; download_all()" | python
+RUN echo "from inaFaceAnalyzer.remote_utils import download_all; download_all()" | python
