@@ -123,7 +123,7 @@ class FaceAnalyzer(ABC):
         return pd.concat([df1, df2, df3], axis = 1)
 
 
-class GenderImage(FaceAnalyzer):
+class ImageAnalyzer(FaceAnalyzer):
 
     def __init__(self, **kwargs):
         if 'face_detector' not in kwargs:
@@ -137,7 +137,7 @@ class GenderImage(FaceAnalyzer):
             stream = image_iterator(img_paths, verbose = self.verbose)
         return self._process_stream(stream, self.face_detector)
 
-class GenderVideo(FaceAnalyzer):
+class VideoAnalyzer(FaceAnalyzer):
     """
     This is a class regrouping all phases of a pipeline designed for gender classification from video.
 
@@ -171,7 +171,7 @@ class GenderVideo(FaceAnalyzer):
         return self._process_stream(stream, self.face_detector)
 
 
-class VideoPrecomputedDetection(GenderVideo):
+class VideoPrecomputedDetection(VideoAnalyzer):
     def __init__(self, **kwargs):
         if 'face_detector' in kwargs:
             raise NotImplementedError('VideoPrecomputedDetection should NOT be constructed with a face detector')
@@ -187,7 +187,7 @@ class VideoPrecomputedDetection(GenderVideo):
         assert len(detector.lbbox) == 0, 'the detection list is longer than the number of processed frames'
         return df
 
-class GenderTracking(GenderVideo):
+class VideoTracking(VideoAnalyzer):
     def __init__(self, detection_period, **kwargs):
         super().__init__(**kwargs)
         self.detection_period = detection_period

@@ -28,7 +28,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
 import numpy as np
 import tensorflow as tf
-from inaFaceAnalyzer.inaFaceAnalyzer import GenderVideo, VideoPrecomputedDetection
+from inaFaceAnalyzer.inaFaceAnalyzer import VideoAnalyzer, VideoPrecomputedDetection
 from inaFaceAnalyzer.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
 from inaFaceAnalyzer.face_detector import LibFaceDetection, PrecomputedDetector
 
@@ -43,7 +43,7 @@ class TestVideo(unittest.TestCase):
 
     # this test execution time is too long
     # def test_video_simple(self):
-    #     gv = GenderVideo(face_classifier = Vggface_LSVM_YTF())
+    #     gv = VideoAnalyzer(face_classifier = Vggface_LSVM_YTF())
     #     ret = gv(_vid)
     #     ret.bbox = ret.bbox.map(str)
     #     df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
@@ -51,7 +51,7 @@ class TestVideo(unittest.TestCase):
 
 
     def test_video_subsamp(self):
-        gv = GenderVideo(face_classifier = Vggface_LSVM_YTF())
+        gv = VideoAnalyzer(face_classifier = Vggface_LSVM_YTF())
         ret = gv(_vid, fps=1)
         ret.bbox = ret.bbox.map(str)
         refdf = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
@@ -60,18 +60,18 @@ class TestVideo(unittest.TestCase):
 
     # TODO: update with serialized ouput!
     def test_video_res50(self):
-        gv = GenderVideo(face_classifier=Resnet50FairFace())
+        gv = VideoAnalyzer(face_classifier=Resnet50FairFace())
         ret = gv('./media/pexels-artem-podrez-5725953.mp4', fps=1)
         raise NotImplementedError('test should be improved')
 
     def test_video_libfacedetection(self):
-         gv = GenderVideo(face_detector=LibFaceDetection())
+         gv = VideoAnalyzer(face_detector=LibFaceDetection())
          ret = gv('./media/pexels-artem-podrez-5725953.mp4', fps=1)
          raise NotImplementedError('test should be improved')
 
 
     def test_videocall_multioutput(self):
-        gv = GenderVideo(face_classifier=Resnet50FairFaceGRA())
+        gv = VideoAnalyzer(face_classifier=Resnet50FairFaceGRA())
         preddf = gv('./media/pexels-artem-podrez-5725953.mp4', fps=1)
         refdf = pd.read_csv('./media/pexels-artem-podrez-subsamp30-Resnet50FFGRA.csv')
         refdf.bbox = refdf.bbox.map(eval)
@@ -136,7 +136,7 @@ class TestVideo(unittest.TestCase):
             gv('./media/pexels-artem-podrez-5725953.mp4', lbbox, fps=30./25)
 
     def test_vid_nofaces(self):
-        gv = GenderVideo(face_classifier=Resnet50FairFaceGRA(), face_detector=PrecomputedDetector([[]]))
+        gv = VideoAnalyzer(face_classifier=Resnet50FairFaceGRA(), face_detector=PrecomputedDetector([[]]))
         df = gv(_vid, fps=1)
         self.assertEqual(len(df), 0)
         self.assertEqual(len(df.columns), 7, df.columns)

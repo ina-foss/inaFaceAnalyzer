@@ -23,7 +23,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from .inaFaceAnalyzer import GenderVideo, GenderImage, GenderTracking
+from .inaFaceAnalyzer import VideoAnalyzer, ImageAnalyzer, VideoTracking
 #from .display_utils import incrust_faces_in_video
 
 from . import _version
