@@ -114,16 +114,15 @@ class FaceDetector(ABC):
         A Detection named tuple if a face maching the conditions has been detected else None
         """
 
-        frxc, fryc = (frame.shape[1] / 2, frame.shape[0] / 2)
+        frame_center = (frame.shape[1] / 2, frame.shape[0] / 2)
 
         # keep faces containing image center
-        faces = [f for f in self(frame, verbose) if f.bbox.x1 < frxc
-                 and f.bbox.x2 > frxc and f.bbox.y1 < fryc and f.bbox.y2 > fryc]
+        faces = [f for f in self(frame, verbose) if frame_center in f.bbox]
 
         if len(faces) == 0:
             return None
 
-        ldists = [_sqdist(f.bbox.center, (frxc, fryc)) for f in faces]
+        ldists = [_sqdist(f.bbox.center, frame_center) for f in faces]
         am = np.argmin(ldists)
 
         return faces[am]

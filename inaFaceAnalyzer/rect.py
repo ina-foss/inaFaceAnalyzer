@@ -72,6 +72,11 @@ class Rect(NamedTuple):
         union = self.area + r.area - inter
         return inter / union
 
+    def __contains__(self, point):
+        x1, y1, x2, y2 = self
+        x, y = point
+        return x >= x1 and x <= x2 and y >= y1 and y <= y2
+
     @staticmethod
     def from_dlib(x):
         return Rect(x.left(), x.top(), x.right(), x.bottom())
