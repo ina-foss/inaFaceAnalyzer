@@ -27,7 +27,54 @@ import cv2
 import tempfile
 import os
 import pandas as pd
-from .opencv_utils import video_iterator, get_video_properties
+from Cheetah.Template import Template
+import datetime
+from .opencv_utils import video_iterator, get_video_properties, analysisFPS2subsamp_coeff
+
+
+def _sec2hmsms(s):
+    td = datetime.timedelta(seconds=s)
+    h,m,s = str(td).split(':')
+    return '%d:%d:%.2f' % (int(h), int(m), float(s))
+
+
+def _analysis2displaydf(df, fps, subsamp_coeff):
+    ret = pd.DataFrame()
+    ret['frame'] = df.frame
+    ret['bbox'] = df.bbox
+    ret[['x1', 'y1', 'x2', 'y2']] = df.apply(lambda x: x.bbox, axis=1, result_type="expand")
+    ret['rgb_color'] = df.sex_label.map(lambda x: '0000FF' if x == 'm' else '00FF00')
+    ret['bgr_color'] = ret.rgb_color.map(lambda x: x[4:] + x[2:4] + x[:2])
+    ret['start'] = df.frame.map(lambda x: _sec2hmsms(x / fps))
+    ret['stop'] = df.frame.map(lambda x: _sec2hmsms((x + subsamp_coeff) / fps))
+    ret['text'] = df.apply(lambda x: 'sex: %s (%.1f) - age: %.1f' % (x.sex_label, x.sex_decfunc, x.age_label), axis=1)
+    return ret
+
+def ass_subtitle_export(vid_src, result_df, dst, analysis_fps=None):
+
+    if isinstance(result_df, str):
+        result_df = pd.read_csv(result_df)
+    assert isinstance(result_df, pd.DataFrame)
+
+    video_props = get_video_properties(vid_src)
+    fps, width, height = [video_props[e] for e in ['fps', 'width', 'height']]
+
+    if analysis_fps is None:
+        subsamp_coeff = 1
+    else:
+        subsamp_coeff = analysisFPS2subsamp_coeff(vid_src, analysis_fps)
+
+    displaydf = _analysis2displaydf(result_df, fps, subsamp_coeff)
+
+    p = os.path.dirname(__file__)
+    t = Template(file = p + '/template.ass')
+
+    t.height = height
+    t.width = width
+    t.display_df = displaydf
+
+    with open(dst, 'wt') as fid:
+        print(t, file=fid)
 
 
 # def frames2mp4v(frames_list, file_name, fps):

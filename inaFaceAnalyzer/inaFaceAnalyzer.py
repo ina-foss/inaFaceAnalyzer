@@ -46,7 +46,6 @@ class FaceAnalyzer(ABC):
         Parameters
         ----------
         face_detector : instance of face_detector.OcvCnnFacedetector or None
-            More face detections modules may be implemented
             if None, then manual bounding boxes should be provided
         bbox_scaling : float
             scaling factor to be applied to the face bounding box.
@@ -61,7 +60,6 @@ class FaceAnalyzer(ABC):
             self.face_detector = OcvCnnFacedetector(padd_prct=0.)
         else:
             self.face_detector = face_detector
-
 
         # set all bounding box shapes to square
         self.squarify_bbox = squarify_bbox
