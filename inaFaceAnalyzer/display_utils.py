@@ -3,7 +3,7 @@
 
 # The MIT License
 
-# Copyright (c) 2019 Ina (Zohra Rezgui & David Doukhan - http://www.ina.fr/)
+# Copyright (c) 2019-2021 Ina (David Doukhan & Zohra Rezgui - http://www.ina.fr/)
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,10 @@ import datetime
 from .opencv_utils import video_iterator, get_video_properties, analysisFPS2subsamp_coeff
 
 
+def _hex2rgb(hx):
+    return (int(hx[0:2],16), int(hx[2:4],16), int(hx[4:6],16))
+
+
 def _sec2hmsms(s):
     td = datetime.timedelta(seconds=s)
     h,m,s = str(td).split(':')
@@ -39,6 +43,14 @@ def _sec2hmsms(s):
 
 
 def _analysis2displaydf(df, fps, subsamp_coeff, text_pat = None, cols=None):
+    """
+    Convert analysis results to a pandas dataframe containing
+    formated information to be displayed
+    """
+    if isinstance(df, str):
+        df = pd.read_csv(df)
+        df.bbox = df.bbox.map(lambda x: eval(x))
+
     ret = pd.DataFrame()
     ret['frame'] = df.frame
     ret['bbox'] = df.bbox
@@ -68,11 +80,28 @@ def _analysis2displaydf(df, fps, subsamp_coeff, text_pat = None, cols=None):
     ret['text'] = df.apply(lambda x: text_pat % tuple([x[e] for e in cols]), axis=1)
     return ret
 
-def ass_subtitle_export(vid_src, result_df, dst, analysis_fps=None):
+def ass_subtitle_export(vid_src, result_df, subtitle_dst, analysis_fps=None):
+    """
+    Export inaFaceAnalyzer results to an ASS subtitle file allowing to display
+    faces bounding boxes and other analysis information
+    ASS subtitles can be displayed using VLC or Aegisub
 
-    if isinstance(result_df, str):
-        result_df = pd.read_csv(result_df)
-    assert isinstance(result_df, pd.DataFrame)
+    Parameters
+    ----------
+    vid_src : str
+        path to the input video.
+    result_df : str or pandas.DataFrame
+        path to the csv or pandas DataFrame corresponding to the analysis of the input video.
+    subtitle_dst : str
+        output path which will store the resulting subtitle file.
+        Must have ass extension
+    analysis_fps: numeric or None
+        The amount of frames per second which were analyzed
+        if set to None, then consider that all video frames were processed
+    """
+
+
+    assert subtitle_dst[-4:].lower() == '.ass', subtitle_dst
 
     video_props = get_video_properties(vid_src)
     fps, width, height = [video_props[e] for e in ['fps', 'width', 'height']]
@@ -91,90 +120,62 @@ def ass_subtitle_export(vid_src, result_df, dst, analysis_fps=None):
     t.width = width
     t.display_df = displaydf
 
-    with open(dst, 'wt') as fid:
+    with open(subtitle_dst, 'wt') as fid:
         print(t, file=fid)
 
 
-# def frames2mp4v(frames_list, file_name, fps):
-#     """
-#     Writes a list of frames into a video using MP4V encoding.
-
-#     Parameters:
-#     frames_list (list): List of the frames to write
-#     file_name (string): video output path
-#     fps (int) : Number of frames per second used in output video
-
-
-#     """
-#     frame_width = frames_list[0].shape[0]
-#     frame_height = frames_list[0].shape[1]
-#     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-#     out = cv2.VideoWriter(file_name,fourcc,
-#                       fps, (frame_height,frame_width))
-
-#     for frame in frames_list:
-
-#         out.write(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-#     out.release()
-
-
-def incrust_faces_in_video(invid, incsv, outvid, subsamp_coeff=1, collabel='label', coldecision='decision'):
+def video_export(vid_src, result_df, vid_dst, analysis_fps=None):
     """
-    Use a video and its face analysis in CSV to generate a video
-    with incrusted faces bounding boxes and predictions informations
+    Export inaFaceAnalyzer results to a video with incrusted faces bounding
+    boxes and other analysis information
+
     Parameters
     ----------
-    invid : str
+    vid_src : str
         path to the input video.
-    incsv : str
-        path to the csv corresponding to the analysis of the input video.
-    outvid : str
+    result_df : str or pandas.DataFrame
+        path to the csv or pandas DataFrame corresponding to the analysis of the input video.
+    vid_dst : str
         output path which will store the corresponding video.
-    collabel : str, optional
-        Column to be used for classification label between label and smoothed_label.
-        The default is 'label'.
-    coldecision : str, optional
-        Column corresponding to classification decision function.
-        Can be 'decision' or 'smoothed_decision'
-        The default is 'decision'.
+        Must have MP4 extension
+    analysis_fps: numeric or None
+        The amount of frames per second which were analyzed
+        if set to None, then consider that all video frames were processed
     """
-    assert outvid[-4:].lower() == '.mp4', outvid
+    assert vid_dst[-4:].lower() == '.mp4', vid_dst
 
-    df = pd.read_csv(incsv)
+
+    video_props = get_video_properties(vid_src)
+    fps, width, height = [video_props[e] for e in ['fps', 'width', 'height']]
+
+    if analysis_fps is None:
+        subsamp_coeff = 1
+    else:
+        subsamp_coeff = analysisFPS2subsamp_coeff(vid_src, analysis_fps)
+
+    displaydf = _analysis2displaydf(result_df, fps, subsamp_coeff)
 
     font = cv2.FONT_HERSHEY_SIMPLEX
 
-    invid_props = get_video_properties(invid)
-
     with tempfile.TemporaryDirectory() as p:
-        tmpout = '%s/%s.mp4' % (p, os.path.splitext(os.path.basename(invid))[0])
+        tmpout = '%s/%s.mp4' % (p, os.path.splitext(os.path.basename(vid_src))[0])
 
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(tmpout,fourcc,
-                      invid_props['fps'] / subsamp_coeff, (invid_props['width'],invid_props['height']))
+        out = cv2.VideoWriter(tmpout, fourcc, fps / subsamp_coeff, (width, height))
         #print('out', out)
 
+        for iframe, frame in video_iterator(vid_src, subsamp_coeff=subsamp_coeff):
 
-        for iframe, frame in video_iterator(invid, subsamp_coeff=subsamp_coeff):
+            sdf = displaydf[displaydf.frame == iframe]
 
-            sdf = df[df.frame == iframe]
+            for e in sdf.itertuples():
 
-            for _, e in sdf.T.iteritems():
-
-                x1, y1, x2, y2 = eval(e.bbox)
-                label = e[collabel]
-                text3 = label + ' Decision_func_value: '+ str(round(e[coldecision],3))
-
-
-                if label == 'm': # blue
-                    color = (0,0,255)
-                else: # red
-                    color = (255,0,0)
-                cv2.putText(frame,text3,(x1 - 100, y1 - 10 ), font, 0.7, color,2,cv2.LINE_AA)
+                x1, y1, x2, y2 = e.bbox
+                color = _hex2rgb(e.rgb_color)
+                cv2.putText(frame,e.text,(x1 - 100, y1 - 10 ), font, 0.7, color,2,cv2.LINE_AA)
                 cv2.rectangle(frame, (x1, y1), (x2, y2), color, 8)
 
             ret = out.write(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-            #print(ret)
 
         out.release()
-        os.system('ffmpeg -y -i %s -i %s -map 0:v:0 -map 1:a? -vcodec libx264 -acodec copy %s' % (tmpout, invid, outvid))
+        os.system('ffmpeg -y -i %s -i %s -map 0:v:0 -map 1:a? -vcodec libx264 -acodec copy %s' % (tmpout, vid_src, vid_dst))
