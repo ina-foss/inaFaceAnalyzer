@@ -183,7 +183,6 @@ class OcvCnnFacedetector(FaceDetector):
         """
 
         faces_data = []
-#        frame, yoffset, xoffset = _blackpadd(frame, self.paddpercent)
         h, w, z = frame.shape
 
         # The CNN is intended to work images resized to 300*300
@@ -202,7 +201,6 @@ class OcvCnnFacedetector(FaceDetector):
                 break
 
             bbox = Rect(*detections[0, 0, i, 3:7])
-            #bbox = _get_opencvcnn_bbox(detections, i)
             # remove noisy detections coordinates
             if bbox.x1 >= 1 or bbox.y1 >= 1 or bbox.x2 <= 0 or bbox.y2 <= 0:
                 continue
@@ -276,6 +274,8 @@ class LibFaceDetection(FaceDetector):
         loc, conf, iou = self.model.run([], {'input': blob})
 
         # Decode bboxes and landmarks
+        # TODO: set a limit of dict length ? There may be RAM issues when
+        # considering a large image collection with heterogenous sizes
         if (w, h) not in self.dprior:
             self.dprior[(w, h)] = PriorBox(input_shape=(w, h), output_shape=(w, h))
         pb = self.dprior[(w, h)]
