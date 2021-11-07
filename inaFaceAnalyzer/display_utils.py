@@ -38,16 +38,34 @@ def _sec2hmsms(s):
     return '%d:%d:%.2f' % (int(h), int(m), float(s))
 
 
-def _analysis2displaydf(df, fps, subsamp_coeff):
+def _analysis2displaydf(df, fps, subsamp_coeff, text_pat = None, cols=None):
     ret = pd.DataFrame()
     ret['frame'] = df.frame
     ret['bbox'] = df.bbox
     ret[['x1', 'y1', 'x2', 'y2']] = df.apply(lambda x: x.bbox, axis=1, result_type="expand")
-    ret['rgb_color'] = df.sex_label.map(lambda x: '0000FF' if x == 'm' else '00FF00')
-    ret['bgr_color'] = ret.rgb_color.map(lambda x: x[4:] + x[2:4] + x[:2])
     ret['start'] = df.frame.map(lambda x: _sec2hmsms(x / fps))
     ret['stop'] = df.frame.map(lambda x: _sec2hmsms((x + subsamp_coeff) / fps))
-    ret['text'] = df.apply(lambda x: 'sex: %s (%.1f) - age: %.1f' % (x.sex_label, x.sex_decfunc, x.age_label), axis=1)
+    if text_pat is None:
+        if 'face_id' in df.columns:
+            ret['rgb_color'] = df.sex_label_avg.map(lambda x: '0000FF' if x == 'm' else '00FF00')
+            text_pat = 'id: %s'
+            cols = ['face_id']
+            if 'sex_label_avg' in df.columns:
+                text_pat += ' - sex: %s (%.1f)'
+                cols += ['sex_label_avg', 'sex_decfunc_avg']
+            if 'age_label_avg' in df.columns:
+                text_pat += ' - age: %.1f'
+                cols += ['age_label_avg']
+        else:
+            text_pat = 'sex: %s (%.1f)'
+            cols = ['sex_label', 'sex_decfunc']
+            ret['rgb_color'] = df.sex_label.map(lambda x: '0000FF' if x == 'm' else '00FF00')
+            if 'age_label' in df.columns:
+                text_pat += '- age: %.1f'
+                cols += ['age_label']
+
+    ret['bgr_color'] = ret.rgb_color.map(lambda x: x[4:] + x[2:4] + x[:2])
+    ret['text'] = df.apply(lambda x: text_pat % tuple([x[e] for e in cols]), axis=1)
     return ret
 
 def ass_subtitle_export(vid_src, result_df, dst, analysis_fps=None):
