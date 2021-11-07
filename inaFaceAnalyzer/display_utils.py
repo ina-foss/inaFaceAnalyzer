@@ -44,8 +44,8 @@ def _sec2hmsms(s):
 
 def _analysis2displaydf(df, fps, subsamp_coeff, text_pat = None, cols=None):
     """
-    Convert analysis results to a pandas dataframe containing
-    formated information to be displayed
+    Convert analysis results to a generic pandas dataframe containing
+    formated information to be displayed using export functions defined bellow
     """
     if isinstance(df, str):
         df = pd.read_csv(df)
