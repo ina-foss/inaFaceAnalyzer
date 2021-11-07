@@ -82,6 +82,10 @@ class FaceDetector(ABC):
             for detection in lret:
                 x1, y1, x2, y2 = [int(e) for e in detection.bbox]
                 print(detection)
+                x1 = max(x1, 0)
+                y1 = max(y1, 0)
+                x2 = min(x2, frame.shape[1])
+                y2 = min(y2, frame.shape[0])
                 disp_frame(frame[y1:y2, x1:x2, :])
 
 
@@ -94,7 +98,35 @@ class FaceDetector(ABC):
     @abstractmethod
     def _call_imp(self, frame): pass
 
+    def most_central_face(self, frame, verbose=False):
+        """
+        This method returns the detected face which is closest from the center
+        The returned face must include image center
+        Usefull for preprocessign face datasets containing several faces per image
+        Parameters
+        ----------
+        frame : nd.array (height, width, 3)
+            RGB image data.
+        verbose : boolean, optional
+            Display detected faces. The default is False.
+        Returns
+        -------
+        A Detection named tuple if a face maching the conditions has been detected else None
+        """
 
+        frxc, fryc = (frame.shape[1] / 2, frame.shape[0] / 2)
+
+        # keep faces containing image center
+        faces = [f for f in self(frame, verbose) if f.bbox.x1 < frxc
+                 and f.bbox.x2 > frxc and f.bbox.y1 < fryc and f.bbox.y2 > fryc]
+
+        if len(faces) == 0:
+            return None
+
+        ldists = [_sqdist(f.bbox.center, (frxc, fryc)) for f in faces]
+        am = np.argmin(ldists)
+
+        return faces[am]
 
 def _sqdist(p1, p2):
     '''
@@ -184,41 +216,6 @@ class OcvCnnFacedetector(FaceDetector):
 
         return faces_data
 
-    def get_most_central_face(self, frame, verbose=False):
-        """
-        Several face annotated datasets may contain several faces per image
-        with annotated face at the center of the image
-        This method returns the detected face which is closest from the center
-
-        Parameters
-        ----------
-        frame : nd.array (height, width, 3)
-            RGB image data.
-        verbose : boolean, optional
-            Display detected faces. The default is False.
-
-        Returns
-        -------
-        The
-
-        """
-        faces_data = self.__call__(frame, verbose)
-        frame_center = (frame.shape[1] / 2, frame.shape[0] / 2)
-        ldists = [_sqdist(bbox.center, frame_center) for (bbox, conf) in faces_data]
-        if len(ldists) == 0:
-            if verbose:
-                print('no face detected')
-            return None
-        am = np.argmin(ldists)
-        bbox, conf = faces_data[am]
-        if bbox[0] > frame_center[0] or bbox[2] < frame_center[0] or bbox[1] > frame_center[1] or bbox[3] < frame_center[1]:
-            if verbose:
-                print('detected faces do not include the center of the image')
-            return None
-        if verbose:
-            print('most closest face with bounding box %s and confidence %f' % (bbox, conf))
-            disp_frame_shapes(frame, [bbox])
-        return (bbox, conf)
 
     def get_closest_face(self, frame, ref_bbox, min_iou=.7, squarify=True, verbose=False):
         if not isinstance(ref_bbox, Rect):
