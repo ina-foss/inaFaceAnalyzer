@@ -29,7 +29,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
 import tensorflow as tf
 import numpy as np
-from inaFaceAnalyzer.inaFaceAnalyzer import GenderTracking, GenderVideo
+from inaFaceAnalyzer.inaFaceAnalyzer import VideoTracking, VideoAnalyzer
 from inaFaceAnalyzer.face_classifier import Resnet50FairFaceGRA, Vggface_LSVM_YTF, Resnet50FairFace
 from inaFaceAnalyzer.face_detector import OcvCnnFacedetector, LibFaceDetection
 from inaFaceAnalyzer.face_tracking import Tracker
@@ -61,7 +61,7 @@ class TestTracking(unittest.TestCase):
         np.testing.assert_almost_equal(2.7552027282149045, conf)
 
     def test_tracking_singleoutput(self):
-        gv = GenderTracking(5, face_classifier=Vggface_LSVM_YTF())
+        gv = VideoTracking(5, face_classifier=Vggface_LSVM_YTF())
         dfpred = gv(_vid, fps=3)
         dfpred.bbox = dfpred.bbox.map(str)
         dfref = pd.read_csv('./media/pexels-artem-podrez-tracking5-subsamp10-VggFace_LSVM_YTF.csv')
@@ -69,7 +69,7 @@ class TestTracking(unittest.TestCase):
 
 
     def test_tracking_nofail_multioutput(self):
-        gv = GenderTracking(5, face_classifier=Resnet50FairFaceGRA())
+        gv = VideoTracking(5, face_classifier=Resnet50FairFaceGRA())
         dfpred = gv(_vid, fps=3)
         dfpred.bbox = dfpred.bbox.map(str)
         dfref = pd.read_csv('./media/pexels-artem-podrez-tracking5-subsamp10-Resnet50FFGRA.csv')
@@ -77,7 +77,7 @@ class TestTracking(unittest.TestCase):
 
 
     def test_tracking_nofaces(self):
-        gv = GenderTracking(5, face_classifier=Resnet50FairFaceGRA(), face_detector=lambda x, y: [])
+        gv = VideoTracking(5, face_classifier=Resnet50FairFaceGRA(), face_detector=lambda x, y: [])
         df = gv(_vid, fps=3)
         self.assertEqual(len(df), 0)
         self.assertEqual(len(df.columns), 13)
@@ -89,10 +89,10 @@ class TestTracking(unittest.TestCase):
             tf.keras.backend.clear_session()
             classif = c()
             for detector in [LibFaceDetection(), OcvCnnFacedetector(padd_prct=0.)]:
-                gv = GenderVideo(face_detector = detector, face_classifier = classif)
+                gv = VideoAnalyzer(face_detector = detector, face_classifier = classif)
                 gvdf = gv(_vid, fps=1)
                 gvdf = gvdf.sort_values(by = ['frame', 'bbox']).reset_index(drop=True)
-                gt = GenderTracking(1, face_detector = detector, face_classifier = classif)
+                gt = VideoTracking(1, face_detector = detector, face_classifier = classif)
                 gtdf = gt(_vid, fps = 1)
                 gtdf = gtdf.sort_values(by = ['frame', 'bbox']).reset_index(drop=True)
                 for col in gvdf.columns:
