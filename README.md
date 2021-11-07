@@ -1,4 +1,4 @@
-# inaFaceGender
+# inaFaceAnalyzer
 
 Should you need further details regarding this work, please refer to the following report:
 
@@ -19,8 +19,8 @@ Should you need further details regarding this work, please refer to the followi
 
 ```
 apt-get install cmake ffmpeg libgl1-mesa-glx
-git clone https://github.com/ina-foss/inaFaceGender.git
-cd inaFaceGender
+git clone https://github.com/ina-foss/inaFaceAnalyzer.git
+cd inaFaceAnalyzer
 pip install .
 python run_tests.py # to check that the installation is ok
 ```

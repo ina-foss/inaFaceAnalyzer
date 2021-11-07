@@ -29,12 +29,12 @@ import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
 import tensorflow as tf
 import numpy as np
-from inaFaceGender.inaFaceGender import GenderTracking, GenderVideo
-from inaFaceGender.face_classifier import Resnet50FairFaceGRA, Vggface_LSVM_YTF, Resnet50FairFace
-from inaFaceGender.face_detector import OcvCnnFacedetector, LibFaceDetection
-from inaFaceGender.face_tracking import Tracker
-from inaFaceGender.opencv_utils import imread_rgb
-from inaFaceGender.rect import Rect
+from inaFaceAnalyzer.inaFaceAnalyzer import GenderTracking, GenderVideo
+from inaFaceAnalyzer.face_classifier import Resnet50FairFaceGRA, Vggface_LSVM_YTF, Resnet50FairFace
+from inaFaceAnalyzer.face_detector import OcvCnnFacedetector, LibFaceDetection
+from inaFaceAnalyzer.face_tracking import Tracker
+from inaFaceAnalyzer.opencv_utils import imread_rgb
+from inaFaceAnalyzer.rect import Rect
 
 _vid = './media/pexels-artem-podrez-5725953.mp4'
 

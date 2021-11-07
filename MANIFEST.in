@@ -3,4 +3,4 @@ include *.py LICENSE *.md *.ipynb *.txt
 
 
 include versioneer.py
-include inaFaceGender/_version.py
+include inaFaceAnalyzer/_version.py

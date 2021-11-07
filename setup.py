@@ -70,7 +70,7 @@ LONGDESCRIPTION='''Detect faces in video streams and does gender classification.
 '''
 
 setup(
-    name = "inaFaceGender",
+    name = "inaFaceAnalyzer",
     version = versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     author = "David Doukhan, Zohra Rezgui",
@@ -79,8 +79,8 @@ setup(
     description = DESCRIPTION,
     license = "MIT",
     install_requires=['opencv-contrib-python', 'dlib', 'pandas', 'sklearn', 'h5py', 'matplotlib', 'onnxruntime-gpu', 'keras-vggface @ https://github.com/DavidDoukhan/keras-vggface/archive/refs/tags/vddk-0.1.tar.gz'],
-    url = "https://github.com/ina-foss/inaFaceGender",
-    packages=['inaFaceGender'],
+    url = "https://github.com/ina-foss/inaFaceAnalyzer",
+    packages=['inaFaceAnalyzer'],
     keywords = KEYWORDS,
     #packages = find_packages(),
     include_package_data = True,

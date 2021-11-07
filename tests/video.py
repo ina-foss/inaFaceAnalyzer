@@ -28,9 +28,9 @@ import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
 import numpy as np
 import tensorflow as tf
-from inaFaceGender.inaFaceGender import GenderVideo, VideoPrecomputedDetection
-from inaFaceGender.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
-from inaFaceGender.face_detector import LibFaceDetection, PrecomputedDetector
+from inaFaceAnalyzer.inaFaceAnalyzer import GenderVideo, VideoPrecomputedDetection
+from inaFaceAnalyzer.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
+from inaFaceAnalyzer.face_detector import LibFaceDetection, PrecomputedDetector
 
 _vid = './media/pexels-artem-podrez-5725953.mp4'
 

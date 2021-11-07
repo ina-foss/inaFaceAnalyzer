@@ -25,9 +25,9 @@
 
 import tensorflow as tf
 import unittest
-from inaFaceGender.inaFaceGender import GenderImage
-from inaFaceGender.face_detector import OcvCnnFacedetector
-from inaFaceGender.face_classifier import Resnet50FairFaceGRA, Vggface_LSVM_YTF
+from inaFaceAnalyzer.inaFaceAnalyzer import GenderImage
+from inaFaceAnalyzer.face_detector import OcvCnnFacedetector
+from inaFaceAnalyzer.face_classifier import Resnet50FairFaceGRA, Vggface_LSVM_YTF
 
 class TestSingleImage(unittest.TestCase):
 

@@ -25,8 +25,8 @@
 
 import unittest
 from numpy.testing import assert_almost_equal
-from inaFaceGender.face_detector import OcvCnnFacedetector, LibFaceDetection
-from inaFaceGender.opencv_utils import imread_rgb
+from inaFaceAnalyzer.face_detector import OcvCnnFacedetector, LibFaceDetection
+from inaFaceAnalyzer.opencv_utils import imread_rgb
 
 
 class TestDetector(unittest.TestCase):

@@ -55,7 +55,7 @@ from .opencv_utils import video_iterator, get_video_properties
 
 def incrust_faces_in_video(invid, incsv, outvid, subsamp_coeff=1, collabel='label', coldecision='decision'):
     """
-    Use a video and its inafacegender analysis in CSV to generate a video
+    Use a video and its face analysis in CSV to generate a video
     with incrusted faces bounding boxes and predictions informations
     Parameters
     ----------

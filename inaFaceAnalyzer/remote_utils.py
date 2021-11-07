@@ -25,10 +25,10 @@
 
 from tensorflow.keras.utils import get_file
 
-# inaFaceGender models are stored remotely within github releases
+# inaFaceAnalyzer models are stored remotely within github releases
 # this code allows to download and use them on demand
 
-r1_url = 'https://github.com/ina-foss/inaFaceGender/releases/download/models/'
+r1_url = 'https://github.com/ina-foss/inaFaceAnalyzer/releases/download/models/'
 
 dmodels = {
     # These 2 models are provided for face detection in opencv
@@ -52,7 +52,7 @@ dmodels = {
 
 def get_remote(model_fname):
     url = dmodels[model_fname]
-    return get_file(model_fname, url + model_fname, cache_subdir='inaFaceGender')
+    return get_file(model_fname, url + model_fname, cache_subdir='inaFaceAnalyzer')
 
 #TODO - download RC MALLI MODEL ALSO HERE
 def download_all():
