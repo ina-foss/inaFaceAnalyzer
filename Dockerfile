@@ -24,7 +24,9 @@
 # This docker image have been tested using the following configuration
 # NVIDIA-SMI 460.73.01    Driver Version: 460.73.01    CUDA Version: 11.2
 
-FROM tensorflow/tensorflow:2.6.0-gpu-jupyter
+FROM tensorflow/tensorflow:2.7.0-gpu-jupyter
+
+MAINTAINER David Doukhan david.doukhan@gmail.com
 
 RUN apt-get update \
     && apt-get install -y cmake libgl1-mesa-glx ffmpeg \
@@ -33,7 +35,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY setup.py  LICENSE README.md run_tests.py ./
+COPY setup.py setup.cfg  LICENSE README.md run_tests.py versioneer.py ./
 COPY inaFaceAnalyzer /app/inaFaceAnalyzer
 COPY tests /app/tests
 COPY media /app/media
