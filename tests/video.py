@@ -30,9 +30,10 @@ import numpy as np
 import tensorflow as tf
 from inaFaceAnalyzer.inaFaceAnalyzer import VideoAnalyzer, VideoPrecomputedDetection, VideoKeyframes
 from inaFaceAnalyzer.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
-from inaFaceAnalyzer.face_detector import LibFaceDetection, PrecomputedDetector
+from inaFaceAnalyzer.face_detector import LibFaceDetection, PrecomputedDetector, OcvCnnFacedetector
 
 _vid = './media/pexels-artem-podrez-5725953.mp4'
+_ocvfd = OcvCnnFacedetector(padd_prct=0.)
 
 class TestVideo(unittest.TestCase):
 
@@ -51,7 +52,7 @@ class TestVideo(unittest.TestCase):
 
 
     def test_video_subsamp(self):
-        gv = VideoAnalyzer(face_classifier = Vggface_LSVM_YTF())
+        gv = VideoAnalyzer(face_classifier = Vggface_LSVM_YTF(), face_detector=_ocvfd)
         ret = gv(_vid, fps=1)
         ret.bbox = ret.bbox.map(str)
         refdf = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
@@ -59,7 +60,7 @@ class TestVideo(unittest.TestCase):
         assert_frame_equal(refdf, ret, rtol=.01, check_dtype=False)
 
     def test_video_keyframes(self):
-        gv = VideoKeyframes(face_classifier = Vggface_LSVM_YTF())
+        gv = VideoKeyframes(face_classifier = Vggface_LSVM_YTF(), face_detector=_ocvfd)
         ret = gv(_vid)
         ret.bbox = ret.bbox.map(str)
         refdf = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
@@ -69,7 +70,7 @@ class TestVideo(unittest.TestCase):
 
     # TODO: update with serialized ouput!
     def test_video_res50(self):
-        gv = VideoAnalyzer(face_classifier=Resnet50FairFace())
+        gv = VideoAnalyzer(face_classifier=Resnet50FairFace(), face_detector=_ocvfd)
         ret = gv('./media/pexels-artem-podrez-5725953.mp4', fps=1)
         raise NotImplementedError('test should be improved')
 
@@ -80,7 +81,7 @@ class TestVideo(unittest.TestCase):
 
 
     def test_videocall_multioutput(self):
-        gv = VideoAnalyzer(face_classifier=Resnet50FairFaceGRA())
+        gv = VideoAnalyzer(face_classifier=Resnet50FairFaceGRA(), face_detector=_ocvfd)
         preddf = gv('./media/pexels-artem-podrez-5725953.mp4', fps=1)
         refdf = pd.read_csv('./media/pexels-artem-podrez-subsamp30-Resnet50FFGRA.csv')
         refdf.bbox = refdf.bbox.map(eval)

@@ -28,7 +28,8 @@ from abc import ABC, abstractmethod
 from .opencv_utils import video_iterator, image_iterator, analysisFPS2subsamp_coeff
 from .pyav_utils import video_keyframes_iterator
 from .face_tracking import TrackerDetector
-from .face_detector import OcvCnnFacedetector, PrecomputedDetector
+#from .face_detector import OcvCnnFacedetector, PrecomputedDetector
+from .face_detector import LibFaceDetection, PrecomputedDetector
 from .face_classifier import Resnet50FairFaceGRA
 from .face_alignment import Dlib68FaceAlignment
 from .face_preprocessing import preprocess_face
@@ -46,21 +47,32 @@ class FaceAnalyzer(ABC):
         Constructor
         Parameters
         ----------
-        face_detector : instance of face_detector.OcvCnnFacedetector or None
-            if None, then manual bounding boxes should be provided
+        face_detector : instance of face_detector.FaceDetector or None
+            if None, LibFaceDetection is used by default
+        face_classifier: instance of face_classifier.FaceClassifier or None
+            if None, Resnet50FairFaceGRA is used by default (gender & age)
         bbox_scaling : float
-            scaling factor to be applied to the face bounding box.
+            scaling factor to be applied to the face bounding box after detection
             larger bounding box may help for sex classification from face
         squarify_bbox : boolean
-            if set to True, then the bounding box (manual or automatic) is set to a square
+            if set to True, then the bounding box (manual or automatic) is set
+            to the smallest square containing the bounding box
         verbose : boolean
             If True, will display several usefull intermediate images and results
         """
+
         # face detection system
         if face_detector is None:
-            self.face_detector = OcvCnnFacedetector(padd_prct=0.)
+            #self.face_detector = OcvCnnFacedetector(padd_prct=0.)
+            self.face_detector = LibFaceDetection()
         else:
             self.face_detector = face_detector
+
+        # Face feature extractor from aligned and detected faces
+        if face_classifier is None:
+            self.classifier = Resnet50FairFaceGRA()
+        else:
+            self.classifier = face_classifier
 
         # set all bounding box shapes to square
         self.squarify_bbox = squarify_bbox
@@ -71,11 +83,6 @@ class FaceAnalyzer(ABC):
         # face alignment module
         self.face_alignment = Dlib68FaceAlignment()
 
-        # Face feature extractor from aligned and detected faces
-        if face_classifier is None:
-            self.classifier = Resnet50FairFaceGRA()
-        else:
-            self.classifier = face_classifier
 
         # True if some verbose is required
         self.verbose = verbose
@@ -125,8 +132,8 @@ class FaceAnalyzer(ABC):
 class ImageAnalyzer(FaceAnalyzer):
 
     def __init__(self, **kwargs):
-        if 'face_detector' not in kwargs:
-            kwargs['face_detector'] = OcvCnnFacedetector()
+#        if 'face_detector' not in kwargs:
+#            kwargs['face_detector'] = OcvCnnFacedetector()
         super().__init__(**kwargs)
 
     def __call__(self, img_paths):
