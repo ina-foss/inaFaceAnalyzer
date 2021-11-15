@@ -259,7 +259,10 @@ class LibFaceDetection(FaceDetector):
     def __init__(self, minconf=.98, min_size_px=30, min_size_prct=0, padd_prct=0):
         super().__init__(minconf, min_size_px, min_size_prct, padd_prct)
         model_src = get_remote('libfacedetection-yunet.onnx')
-        self.model = onnxruntime.InferenceSession(model_src, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        try:
+            self.model = onnxruntime.InferenceSession(model_src, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        except:
+            self.model = onnxruntime.InferenceSession(model_src, providers=['CPUExecutionProvider'])
         self.nms_thresh = 0.3 # Threshold for non-max suppression
         self.keep_top_k = 750 # Keep keep_top_k for results outputing
         self.dprior = {}
