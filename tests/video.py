@@ -28,7 +28,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
 import numpy as np
 import tensorflow as tf
-from inaFaceAnalyzer.inaFaceAnalyzer import VideoAnalyzer, VideoPrecomputedDetection
+from inaFaceAnalyzer.inaFaceAnalyzer import VideoAnalyzer, VideoPrecomputedDetection, VideoKeyframes
 from inaFaceAnalyzer.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
 from inaFaceAnalyzer.face_detector import LibFaceDetection, PrecomputedDetector
 
@@ -56,6 +56,15 @@ class TestVideo(unittest.TestCase):
         ret.bbox = ret.bbox.map(str)
         refdf = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
         refdf = refdf[(refdf.frame % 30) == 0].reset_index(drop=True)
+        assert_frame_equal(refdf, ret, rtol=.01, check_dtype=False)
+
+    def test_video_keyframes(self):
+        gv = VideoKeyframes(face_classifier = Vggface_LSVM_YTF())
+        ret = gv(_vid)
+        ret.bbox = ret.bbox.map(str)
+        refdf = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
+        refdf = refdf[refdf.frame.map(lambda x: x in [0, 91, 182, 273])]
+        refdf = refdf.reset_index(drop = True)
         assert_frame_equal(refdf, ret, rtol=.01, check_dtype=False)
 
     # TODO: update with serialized ouput!

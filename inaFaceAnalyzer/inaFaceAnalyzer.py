@@ -26,6 +26,7 @@
 import pandas as pd
 from abc import ABC, abstractmethod
 from .opencv_utils import video_iterator, image_iterator, analysisFPS2subsamp_coeff
+from .pyav_utils import video_keyframes_iterator
 from .face_tracking import TrackerDetector
 from .face_detector import OcvCnnFacedetector, PrecomputedDetector
 from .face_classifier import Resnet50FairFaceGRA
@@ -213,3 +214,24 @@ class VideoTracking(VideoAnalyzer):
         df = self._process_stream(stream, detector)
 
         return self.classifier.average_results(df)
+
+class VideoKeyframes(FaceAnalyzer):
+    """
+    TODO
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def __call__(self, video_path):
+
+        """
+        TODO
+
+        Parameters:
+            video_path (string): Path for input video.
+        Returns:
+            A Dataframe with frame and face information (coordinates, decision function,labels..)
+        """
+        stream = video_keyframes_iterator(video_path, verbose=self.verbose)
+        return self._process_stream(stream, self.face_detector)
