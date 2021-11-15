@@ -41,13 +41,26 @@ class FaceClassifier(ABC):
     """
     Abstract class to be implemented by face classifiers
     """
-    @classmethod
-    @abstractmethod
-    def input_shape():
-        """
-        input image dimensions required by the classifier (width, height, depth)
-        """
-        pass
+
+    # The 3 properties bellow (input_shape, bbox_scale, bbox2square) are
+    # currently common to all implemented face classifiers
+    # they provide information on the face preprocessing steps used for
+    # training the classification models
+    # in future, they may be defined separately for each classifier using
+    # abstract properties
+
+    # input image dimensions required by the classifier (width, height, depth)
+    input_shape = (224, 224, 3)
+
+    # implemented classifiers are optimized for a given scale factor to be
+    # applied on face bounding boxes to be defined here
+    bbox_scale = 1.1
+
+    # implemented face classifiers may require a preprocessing step consisting
+    # to extend the face bounding box such as the resulting box is the smallest
+    # square containing the detected face
+    bbox2square = True
+
 
     @abstractmethod
     def list2batch(self, limg): pass
@@ -135,7 +148,6 @@ class FaceClassifier(ABC):
         return ret
 
 class Resnet50FairFace(FaceClassifier):
-    input_shape = (224, 224, 3)
 
     def __init__(self):
         m = keras.models.load_model(get_remote('keras_resnet50_fairface.h5'), compile=False)
@@ -190,7 +202,7 @@ class Resnet50FairFaceGRA(Resnet50FairFace):
         return df
 
 class OxfordVggFace(FaceClassifier):
-    input_shape = (224, 224, 3)
+    
     def __init__(self, hdf5_svm=None):
         # Face feature extractor from aligned and detected faces
         self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = self.input_shape, pooling ='avg')

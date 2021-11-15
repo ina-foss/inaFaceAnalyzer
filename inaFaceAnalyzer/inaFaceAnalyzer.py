@@ -42,7 +42,7 @@ class FaceAnalyzer(ABC):
     """
     batch_len = 32
 
-    def __init__(self, face_detector = None, face_classifier = None, bbox_scaling = 1.1, squarify_bbox = True, verbose = False):
+    def __init__(self, face_detector = None, face_classifier = None, verbose = False):
         """
         Constructor
         Parameters
@@ -51,38 +51,30 @@ class FaceAnalyzer(ABC):
             if None, LibFaceDetection is used by default
         face_classifier: instance of face_classifier.FaceClassifier or None
             if None, Resnet50FairFaceGRA is used by default (gender & age)
-        bbox_scaling : float
-            scaling factor to be applied to the face bounding box after detection
-            larger bounding box may help for sex classification from face
-        squarify_bbox : boolean
-            if set to True, then the bounding box (manual or automatic) is set
-            to the smallest square containing the bounding box
         verbose : boolean
             If True, will display several usefull intermediate images and results
         """
 
         # face detection system
         if face_detector is None:
-            #self.face_detector = OcvCnnFacedetector(padd_prct=0.)
-            self.face_detector = LibFaceDetection()
-        else:
-            self.face_detector = face_detector
+            face_detector = LibFaceDetection()
+        self.face_detector = face_detector
 
         # Face feature extractor from aligned and detected faces
         if face_classifier is None:
-            self.classifier = Resnet50FairFaceGRA()
-        else:
-            self.classifier = face_classifier
+            face_classifier = Resnet50FairFaceGRA()
+        self.classifier = face_classifier
 
-        # set all bounding box shapes to square
-        self.squarify_bbox = squarify_bbox
+        # if set to True, then the bounding box (manual or automatic) is set
+        # to the smallest square containing the bounding box
+        self.bbox2square = face_classifier.bbox2square
 
-        # scaling factor to be applied to face bounding boxes
-        self.bbox_scaling = bbox_scaling
+        # scaling factor to be applied to the face bounding box after detection
+        # larger bounding box may help for sex classification from face
+        self.bbox_scale = face_classifier.bbox_scale
 
         # face alignment module
         self.face_alignment = Dlib68FaceAlignment()
-
 
         # True if some verbose is required
         self.verbose = verbose
@@ -104,7 +96,7 @@ class FaceAnalyzer(ABC):
                 if self.verbose:
                     print(detection)
 
-                face_img, bbox = preprocess_face(frame, detection, self.squarify_bbox, self.bbox_scaling, self.face_alignment, oshape, self.verbose)
+                face_img, bbox = preprocess_face(frame, detection, self.bbox2square, self.bbox_scale, self.face_alignment, oshape, self.verbose)
 
                 linfo.append([iframe, detection._replace(bbox=tuple(bbox))])
                 lbatch_img.append(face_img)
@@ -177,12 +169,19 @@ class VideoAnalyzer(FaceAnalyzer):
         return self._process_stream(stream, self.face_detector)
 
 
-class VideoPrecomputedDetection(VideoAnalyzer):
-    def __init__(self, **kwargs):
-        if 'face_detector' in kwargs:
-            raise NotImplementedError('VideoPrecomputedDetection should NOT be constructed with a face detector')
-        kwargs['face_detector'] = PrecomputedDetector()
-        super().__init__(**kwargs)
+class VideoPrecomputedDetection(FaceAnalyzer):
+    def __init__(self, face_classifier = None, verbose = False, bbox_scale=None, bbox2square=None):
+        super().__init__(PrecomputedDetector(), face_classifier, verbose)
+        
+        # overrides classifier's bbox scaling instructions, in case provided
+        # boxes are already transformed
+        if bbox_scale is not None:
+            self.bbox_scale = bbox_scale
+        # overrides classifier's bbox to square instructions, in case provided
+        # boxes are already transformed
+        if bbox2square is not None:
+            self.bbox2square = bbox2square
+        
     def __call__(self, video_path, lbbox, fps=None, start_frame = 0):
         detector = PrecomputedDetector(lbbox)
 
