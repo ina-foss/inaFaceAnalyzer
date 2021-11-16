@@ -243,10 +243,11 @@ class OcvCnnFacedetector(FaceDetector):
 
 
 class IdentityFaceDetector(FaceDetector):
+    output_type = Detection
     def __init__(self):
-        pass
+        super().__init__(0, 0, 0, 0)
     def _call_imp(self, frame):
-        return [((0, 0, frame.shape[1], frame.shape[0]), np.NAN)]
+        return [Detection(Rect(0, 0, frame.shape[1], frame.shape[0]), np.NAN)]
 
 class LibFaceDetection(FaceDetector):
     """
