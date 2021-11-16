@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
 # The MIT License
 
 # Copyright (c) 2021 Ina (David Doukhan - http://www.ina.fr/)
@@ -20,30 +23,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# !!! IMPORTANT !!!
-# This docker image have been tested using the following configuration
-# NVIDIA-SMI 460.73.01    Driver Version: 460.73.01    CUDA Version: 11.2
+import os
+import av
+import av.datasets
+from .opencv_utils import disp_frame
 
-FROM tensorflow/tensorflow:2.7.0-gpu-jupyter
+def video_keyframes_iterator(video_path, verbose=False):
 
-MAINTAINER David Doukhan david.doukhan@gmail.com
-
-RUN apt-get update \
-    && apt-get install -y cmake libgl1-mesa-glx ffmpeg \
-    && apt-get clean \
-    && apt-get autoclean \
-    && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-COPY setup.py setup.cfg  LICENSE README.md run_tests.py versioneer.py ./
-COPY inaFaceAnalyzer /app/inaFaceAnalyzer
-COPY tests /app/tests
-COPY media /app/media
-
-
-RUN pip install --upgrade pip && pip install . && pip cache purge
-
-# This line is non mandatory
-# it's usefull for docker containers without internet access (it may happen)
-# removing this line allows to save 500 Mo in the image
-RUN echo "from inaFaceAnalyzer.remote_utils import download_all; download_all()" | python
+    content = av.datasets.curated(os.path.abspath(video_path))
+    with av.open(content) as container:
+        # Signal that we only want to look at keyframes.
+        stream = container.streams.video[0]
+        stream.codec_context.skip_frame = 'NONKEY'
+    
+        for frame in container.decode(stream):
+            ndframe = frame.to_rgb().to_ndarray()
+            iframe = int(frame.time/frame.time_base)
+            if verbose:
+                print('frame', iframe)
+                disp_frame(ndframe)
+            yield iframe, ndframe

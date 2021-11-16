@@ -28,11 +28,12 @@ import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
 import numpy as np
 import tensorflow as tf
-from inaFaceAnalyzer.inaFaceAnalyzer import VideoAnalyzer, VideoPrecomputedDetection
+from inaFaceAnalyzer.inaFaceAnalyzer import VideoAnalyzer, VideoPrecomputedDetection, VideoKeyframes
 from inaFaceAnalyzer.face_classifier import Resnet50FairFace, Resnet50FairFaceGRA, Vggface_LSVM_YTF
-from inaFaceAnalyzer.face_detector import LibFaceDetection, PrecomputedDetector
+from inaFaceAnalyzer.face_detector import LibFaceDetection, PrecomputedDetector, OcvCnnFacedetector
 
 _vid = './media/pexels-artem-podrez-5725953.mp4'
+_ocvfd = OcvCnnFacedetector(padd_prct=0.)
 
 class TestVideo(unittest.TestCase):
 
@@ -51,16 +52,25 @@ class TestVideo(unittest.TestCase):
 
 
     def test_video_subsamp(self):
-        gv = VideoAnalyzer(face_classifier = Vggface_LSVM_YTF())
+        gv = VideoAnalyzer(face_classifier = Vggface_LSVM_YTF(), face_detector=_ocvfd)
         ret = gv(_vid, fps=1)
         ret.bbox = ret.bbox.map(str)
         refdf = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
         refdf = refdf[(refdf.frame % 30) == 0].reset_index(drop=True)
         assert_frame_equal(refdf, ret, rtol=.01, check_dtype=False)
 
+    def test_video_keyframes(self):
+        gv = VideoKeyframes(face_classifier = Vggface_LSVM_YTF(), face_detector=_ocvfd)
+        ret = gv(_vid)
+        ret.bbox = ret.bbox.map(str)
+        refdf = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv')
+        refdf = refdf[refdf.frame.map(lambda x: x in [0, 91, 182, 273])]
+        refdf = refdf.reset_index(drop = True)
+        assert_frame_equal(refdf, ret, rtol=.01, check_dtype=False)
+
     # TODO: update with serialized ouput!
     def test_video_res50(self):
-        gv = VideoAnalyzer(face_classifier=Resnet50FairFace())
+        gv = VideoAnalyzer(face_classifier=Resnet50FairFace(), face_detector=_ocvfd)
         ret = gv('./media/pexels-artem-podrez-5725953.mp4', fps=1)
         raise NotImplementedError('test should be improved')
 
@@ -71,7 +81,7 @@ class TestVideo(unittest.TestCase):
 
 
     def test_videocall_multioutput(self):
-        gv = VideoAnalyzer(face_classifier=Resnet50FairFaceGRA())
+        gv = VideoAnalyzer(face_classifier=Resnet50FairFaceGRA(), face_detector=_ocvfd)
         preddf = gv('./media/pexels-artem-podrez-5725953.mp4', fps=1)
         refdf = pd.read_csv('./media/pexels-artem-podrez-subsamp30-Resnet50FFGRA.csv')
         refdf.bbox = refdf.bbox.map(eval)
@@ -79,7 +89,7 @@ class TestVideo(unittest.TestCase):
 
 
     def test_pred_from_vid_and_bblist(self):
-        gv = VideoPrecomputedDetection(bbox_scaling=1, squarify_bbox=False, face_classifier = Vggface_LSVM_YTF())
+        gv = VideoPrecomputedDetection(bbox_scale=1, bbox2square=False, face_classifier = Vggface_LSVM_YTF())
 
 
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notracking.csv',
@@ -97,7 +107,7 @@ class TestVideo(unittest.TestCase):
         assert_series_equal(retdf.sex_decfunc, df.sex_decfunc, rtol=.01)
 
     def test_pred_from_vid_and_bblist_multioutput(self):
-        gv = VideoPrecomputedDetection(bbox_scaling=1, squarify_bbox=False, face_classifier=Resnet50FairFaceGRA())
+        gv = VideoPrecomputedDetection(bbox_scale=1, bbox2square=False, face_classifier=Resnet50FairFaceGRA())
         df = pd.read_csv('./media/pexels-artem-podrez-subsamp30-Resnet50FFGRA.csv')
         # this trick keeps only single face per frame
         df = df.drop_duplicates(subset='frame').reset_index(drop=True)
@@ -110,7 +120,7 @@ class TestVideo(unittest.TestCase):
 
 
     def test_pred_from_vid_and_bblist_res50(self):
-        gv = VideoPrecomputedDetection(bbox_scaling=1, squarify_bbox=False, face_classifier=Resnet50FairFace())
+        gv = VideoPrecomputedDetection(bbox_scale=1, bbox2square=False, face_classifier=Resnet50FairFace())
         df = pd.read_csv('./media/pexels-artem-podrez-5725953-notrack-1dectpersec.csv')
         # this method read a single face per frame
         df = df.drop_duplicates(subset='frame').reset_index()

@@ -61,7 +61,8 @@ class TestTracking(unittest.TestCase):
         np.testing.assert_almost_equal(2.7552027282149045, conf)
 
     def test_tracking_singleoutput(self):
-        gv = VideoTracking(5, face_classifier=Vggface_LSVM_YTF())
+        gv = VideoTracking(5, face_classifier=Vggface_LSVM_YTF(),
+                           face_detector=OcvCnnFacedetector(padd_prct=0.))
         dfpred = gv(_vid, fps=3)
         dfpred.bbox = dfpred.bbox.map(str)
         dfref = pd.read_csv('./media/pexels-artem-podrez-tracking5-subsamp10-VggFace_LSVM_YTF.csv')
@@ -69,7 +70,8 @@ class TestTracking(unittest.TestCase):
 
 
     def test_tracking_nofail_multioutput(self):
-        gv = VideoTracking(5, face_classifier=Resnet50FairFaceGRA())
+        gv = VideoTracking(5, face_classifier=Resnet50FairFaceGRA(),
+                           face_detector = OcvCnnFacedetector(padd_prct=0.))
         dfpred = gv(_vid, fps=3)
         dfpred.bbox = dfpred.bbox.map(str)
         dfref = pd.read_csv('./media/pexels-artem-podrez-tracking5-subsamp10-Resnet50FFGRA.csv')
