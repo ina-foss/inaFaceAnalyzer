@@ -29,7 +29,4 @@ python run_tests.py # to check that the installation is ok
 
 ## CREDITS
 
-This work was realized in the framework of MeMAD project.
-https://memad.eu/
-MeMAD is an EU funded H2020 research project.
-It has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 780069.
+This work has been partially funded by the French National Research Agency (project GEM : Gender Equality Monitor : ANR-19-CE38-0012) and by European Union's Horizon 2020 research and innovation programme (project [MeMAD](https://memad.eu) : H2020 grant agreement No 780069).
