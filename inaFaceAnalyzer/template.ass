@@ -14,8 +14,8 @@ PlayDepth: 0
 Timer: 100,0000
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: box,DejaVu Sans,25,&HFF000000,&H00B4FCFC,&H000000FF,&H00000000,0,0,0,0,100,100,0.00,0.00,1,2.50,0.00,7,50,50,50,0
-Style: text,Arial,25,&H00FF0000,&H00B4FCFC,&H00000000,&H00000000,0,0,0,0,100,100,0.00,0.00,1,2.50,0.00,7,50,50,50,0
+Style: box,DejaVu Sans,$text_font_size,&HFF000000,&H00B4FCFC,&H000000FF,&H00000000,0,0,0,0,100,100,0.00,0.00,1,2.50,0.00,7,50,50,50,0
+Style: text,Arial,$text_font_size,&H00FF0000,&H00B4FCFC,&H00000000,&H00000000,0,0,0,0,100,100,0.00,0.00,1,2.50,0.00,7,50,50,50,0
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV,Effect, Text
 #for e in $display_df.itertuples()

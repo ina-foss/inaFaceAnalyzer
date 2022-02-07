@@ -119,6 +119,8 @@ def ass_subtitle_export(vid_src, result_df, subtitle_dst, analysis_fps=None):
     t.height = height
     t.width = width
     t.display_df = displaydf
+    # text font size set to 4% video height
+    t.text_font_size = int(0.04 * height)
 
     with open(subtitle_dst, 'wt') as fid:
         print(t, file=fid)
