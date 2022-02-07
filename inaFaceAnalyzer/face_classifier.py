@@ -107,7 +107,9 @@ class FaceClassifier(ABC):
 
             lbatchret.append(self(xbatch, False)) # to change when return features will be managed
 
-        return pd.concat(lbatchret).reset_index(drop=True)
+        df = pd.concat(lbatchret).reset_index(drop=True)
+        df.insert(0, 'filename', lfiles)
+        return df
 
     def __call__(self, limg, return_features):
         """
@@ -176,8 +178,10 @@ def _fairface_agedec2age(age_dec):
         age_dec = np.array([age_dec])
 
     age_dec = np.array(age_dec)
-    age_dec[age_dec <= -.5] = -.5 + 10**-8
-    age_dec[age_dec >= 9.5] = 9.5 - 10**-8
+    minval = -.5 + 10**-6
+    age_dec[age_dec < minval] = minval
+    maxval = 9.5 - 10**-6
+    age_dec[age_dec > maxval] = maxval
     idec = np.round(age_dec).astype(np.int32)
 
     age_label = ages_mean[idec] + (age_dec - idec) * ages_range[idec]
@@ -202,7 +206,7 @@ class Resnet50FairFaceGRA(Resnet50FairFace):
         return df
 
 class OxfordVggFace(FaceClassifier):
-    
+
     def __init__(self, hdf5_svm=None):
         # Face feature extractor from aligned and detected faces
         self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = self.input_shape, pooling ='avg')
