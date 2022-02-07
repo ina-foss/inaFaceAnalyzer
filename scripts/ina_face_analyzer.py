@@ -3,7 +3,7 @@
 
 # The MIT License
 
-# Copyright (c) 2019 Ina (Zohra Rezgui - http://www.ina.fr/)
+# Copyright (c) 2019-2022 Ina (David Doukhan & Zohra Rezgui - http://www.ina.fr/)
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,24 +24,92 @@
 # THE SOFTWARE.
 
 import argparse
-import glob
+#import glob
 import os
-import warnings
-import progressbar
-
-parser = argparse.ArgumentParser(description='Detect and classify faces by gender from a video. Store segmentations into CSV files')
-parser.add_argument('-i', '--input', nargs='+', help='Input media to analyse. May be a full path to a media (/home/david/test.mp4), a list of full paths (/home/david/test.mp4 /tmp/mymedia.avi), or a regex input pattern ("/home/david/myaudiobooks/*.mp4")', required=True)
-parser.add_argument('-o', '--output_directory', help='Directory used to store classification info. Resulting files have same base name as the corresponding input media, with csv extension. Ex: mymedia.MP4 will result in mymedia.csv', required=True)
+#import warnings
+#import progressbar
 
 
-parser.add_argument('-s', '--time_offset', help = 'time in milliseconds from which we begin extraction of the frames in video', required=False)
-parser.add_argument('-f', '--nframes', help = 'process every n frames', required = False)
-parser.add_argument('-t', '--mode', help = 'With or without tracking mode', choices = ['on','off'], required = False)
 
-parser.add_argument('-k', '--ktracking', help = 'Used in case of tracking: re-detect faces every k frames', required= False)
+parser = argparse.ArgumentParser(description='inaFaceAnalyzer: detects and classify faces from media collections and store results in csv. TODO ref biblio ',
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                 add_help=False)
+
+## Required arguments
+ra = parser.add_argument_group('required arguments')
+
+
+ra.add_argument('-i', '--input', nargs='+', required=True, 
+                help = 'list of medias to analyse. ex :/home/david/test.mp4 /tmp/mymedia.avi.')
+
+ra.add_argument('-o', '--output-directory', required=True,
+                help = 'Directory used to store results in csv')
+
+
+## Optional arguments
+oa = parser.add_argument_group('optional arguments')
+
+oa.add_argument("-h", "--help", action="help", help="show this help message and exit")
+
+oa.add_argument('-type',
+                choices = ['image', 'video'],
+                default = 'video',
+                help = 'type of media to be analyzed, either a list of images or a list of videos')
+
+
+# classifier
+oa.add_argument ('--classifier', default='Resnet50FairFaceGRA',
+                 choices = ['Resnet50FairFaceGRA', 'Vggface_LSVM_YTF'],
+                 help = '''face classifier to be used in the analysis:
+                    Resnet50FairFaceGRA predicts age and gender and is more accurate.
+                    Vggface_LSVM_YTF was used in earlier studies and predicts gender only''')
+
+
+## Face Detection related argument
+# detect; min size; confidence
+
+da = parser.add_argument_group('optional arguments related to face detection')
+
+da.add_argument ('--face_detector', default='LibFaceDetection',
+                 choices=['LibFaceDetection', 'OcvCnnFacedetector'],
+                 help='''face detection module to be used:
+                     LibFaceDetection can take advantage of GPU acceleration and has a higher recall.
+                     OcvCnnFaceDetector is embed in OpenCV has a better precision''')
+
+da.add_argument('--face_detection_confidence', type=float,
+                help='''minimal confidence threshold to be used for face detection.
+                    Default values are 0.98 for LibFaceDetection and 0.65 for OcvCnnFacedetector''')
+
+
+da.add_argument('--min_face_size_px', default=30, type=int,
+                help='minimal absolute size in pixels of the faces to be considered for the analysis. Optimal classification results are obtained for sizes above 75 pixels.')
+
+da.add_argument('--min_face_size_percent', default=0, type=float,
+                help='minimal relative size (percentage between 0 and 1) of the faces to be considered for the analysis with repect to image frames minimal dimension (generally height for videos)')
+
+
+## Video only parameters
+
+# ass subtitle
+
+# FPS
+
+# Tracking
+
+
+#parser.add_argument('-s', '--time_offset', help = 'time in milliseconds from which we begin extraction of the frames in video', required=False)
+#parser.add_argument('-f', '--nframes', help = 'process every n frames', required = False)
+#parser.add_argument('-t', '--mode', help = 'With or without tracking mode', choices = ['on','off'], required = False)
+
+#parser.add_argument('-k', '--ktracking', help = 'Used in case of tracking: re-detect faces every k frames', required= False)
 
 
 args = parser.parse_args()
+
+print(args['face-detection-confidence'])
+
+exit()
+
 input_files = []
 for e in args.input:
     input_files += glob.glob(e)
@@ -59,7 +127,7 @@ n_frames = args.nframes
 if n_frames:
     n_frames = int(n_frames)
 else: 
-    n_frames S= 1
+    n_frames = 1
 offset = args.time_offset
 if offset:
     offset = int(offset)
