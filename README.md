@@ -6,7 +6,6 @@ Should you need further details regarding this work, please refer to the followi
 @journal{doukhan2022joss,
   author = {David Doukhan and Thomas Petit},
   title = {inaFaceAnalyzer: a Python toolbox for large-scale face-based description of gender representation in media},
-  year = {2022},
   journal = {JOSS - The journal of Open Source Software},
   year = {submission in progress}
 }
