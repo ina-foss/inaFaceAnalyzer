@@ -89,11 +89,31 @@ class FaceClassifier(ABC):
 
         return df.join(gbm, on='face_id', rsuffix='_avg')
 
-    # Keras trick for async READ ?
+    # TODO : Keras trick for async READ ?
     # bench execution time : time spent in read/exce . CPU vs GPU
-    def imgpaths_batch(self, lfiles, return_features, batch_len=32):
+    # TODO: add progress bar with verbose option
+    def preprocessed_img_list(self, lfiles, return_features=False, batch_len=32):
         """
-        images are assumed to be faces already detected, scaled, aligned, croped
+        Performs classification on a list of preprocessed face images
+        Preprocessed face images are assumed to contain a single face which is
+        already detected, cropped, aligned and scaled to classifier's input
+        dimensions (for now: 224*224 pixels)
+
+        Parameters
+        ----------
+        lfiles : list
+            list of image paths
+        return_features : bool, optional
+            Not yet implemented. The default is False.
+        batch_len : input, optional
+            Larger batch sizes results in faster processing times.
+            Batch lenght is dependent on available GPU memory
+            The default is 32 (suitable for a laptop GPU).
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            a pandas dataframe with one record for each input image
         """
         assert len(lfiles) > 0
 

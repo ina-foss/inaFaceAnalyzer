@@ -24,11 +24,15 @@
 # THE SOFTWARE.
 
 import argparse
-#import glob
 import os
+import sys
 #import warnings
 #import progressbar
 
+import inaFaceAnalyzer.face_classifier
+import inaFaceAnalyzer.face_detector
+import inaFaceAnalyzer.inaFaceAnalyzer
+import inaFaceAnalyzer.display_utils
 
 
 parser = argparse.ArgumentParser(description='inaFaceAnalyzer: detects and classify faces from media collections and export results in csv',
@@ -39,12 +43,19 @@ parser = argparse.ArgumentParser(description='inaFaceAnalyzer: detects and class
 ## Required arguments
 ra = parser.add_argument_group('required arguments')
 
+h = '''INPUT is a list of documents to analyse. ex: /home/david/test.mp4 /tmp/mymedia.avi.
+INPUT can be a list of video paths OR a list of image paths.
+Videos and images can have heterogenous formats but cannot be mixed in a single command.
+'''
+ra.add_argument('-i', nargs='+', required=True, dest='input', help = h)
 
-ra.add_argument('-i', '--input', nargs='+', required=True,
-                help = 'list of medias to analyse. ex :/home/david/test.mp4 /tmp/mymedia.avi.')
-
-ra.add_argument('-o', '--output-directory', required=True,
-                help = 'Directory used to store results in csv')
+h = '''When used with an input list of videos, OUTPUT is the path to a directory
+storing one resulting CSV for each processed video. OUTPUT directory should exist
+before launching the program.
+When used with an input list of images, OUTPUT is the path to the resulting csv
+file storing a line for each detected faces. OUTPUT should have csv extension.
+'''
+ra.add_argument('-o', required=True, help = h, dest='output')
 
 
 ## Optional arguments
@@ -52,19 +63,24 @@ oa = parser.add_argument_group('optional arguments')
 
 oa.add_argument("-h", "--help", action="help", help="show this help message and exit")
 
+h = '''type of media to be analyzed, either a list of images (JPEG, PNG, etc...)
+    or a list of videos (AVI, MP4, ...)'''
 oa.add_argument('--type',
                 choices = ['image', 'video'],
                 default = 'video',
-                help = 'type of media to be analyzed, either a list of images or a list of videos')
+                help = h)
 
 
 # classifier
+h = '''face classifier to be used in the analysis:
+   Resnet50FairFaceGRA predicts age and gender and is more accurate.
+   Vggface_LSVM_YTF was used in earlier studies and predicts gender only'''
 oa.add_argument ('--classifier', default='Resnet50FairFaceGRA',
                  choices = ['Resnet50FairFaceGRA', 'Vggface_LSVM_YTF'],
-                 help = '''face classifier to be used in the analysis:
-                    Resnet50FairFaceGRA predicts age and gender and is more accurate.
-                    Vggface_LSVM_YTF was used in earlier studies and predicts gender only''')
+                 help = h)
 
+
+# TODO : GPU_BATCH_LEN option ??
 
 ## Face Detection related argument
 # detect; min size; confidence
@@ -82,20 +98,23 @@ da.add_argument('--face_detection_confidence', type=float,
                     Default values are 0.98 for LibFaceDetection and 0.65 for OcvCnnFacedetector''')
 
 
-da.add_argument('--min_face_size_px', default=30, type=int,
-                help='minimal absolute size in pixels of the faces to be considered for the analysis. Optimal classification results are obtained for sizes above 75 pixels.')
+da.add_argument('--min_face_size_px', default=30, type=int, dest='size_px',
+                help='''minimal absolute size in pixels of the faces to be considered for the analysis.
+                Optimal classification results are obtained for sizes above 75 pixels.''')
 
-da.add_argument('--min_face_size_percent', default=0, type=float,
-                help='minimal relative size (percentage between 0 and 1) of the faces to be considered for the analysis with repect to image frames minimal dimension (generally height for videos)')
+da.add_argument('--min_face_size_percent', default=0, type=float, dest='size_prct',
+                help='''minimal relative size (percentage between 0 and 1) of the
+                faces to be considered for the analysis with repect to image frames
+                minimal dimension (generally height for videos)''')
 
 
 ## Video only parameters
 dv = parser.add_argument_group('optional arguments to be used only with video materials (--type video)')
 
-dv.add_argument('--ass-subtitle-export', action='store_true',
-                help='export analyses into a rich ASS subtitle file which can be displayed with VLC')
+dv.add_argument('--ass_subtitle_export', action='store_true',
+                help='export analyses into a rich ASS subtitle file which can be displayed with VLC or ELAN')
 
-dv.add_argument('--mp4-export', action='store_true',
+dv.add_argument('--mp4_export', action='store_true',
                 help='export analyses into a a MP4 video with incrusted bounding boxes and analysis estimates')
 
 dv.add_argument('--fps', default=None, type=float,
@@ -108,72 +127,138 @@ dv.add_argument('--fps', default=None, type=float,
 dv.add_argument('--keyframes', action='store_true',
                 help='''Face detection and analysis from video limited to video key frames.
                 Allows fastest video analysis time associated to a summary with
-                non uniform frame sampling rate. Incompatible with the --fps argument.''')
+                non uniform frame sampling rate. Incompatible with the --fps, --ass_subtitle_export or --mp4_export arguments.''')
 
-dv.add_argument('--tracking', )
+dv.add_argument('--tracking', type=int, dest='face_detection_period',
+                help='''Activate face tracking and define FACE_DETECTION_PERIOD.
+                Face detection (costly) will be performed each FACE_DETECTION_PERIOD.
+                Face tracking (cheap) will be performed for the remaining (FACE_DETECTION_PERIOD -1) frames.
+                Tracked faces are associated to a numeric identifier.
+                Tracked faces classification predictions are averaged, and more robust than frame-isolated predictions.
+                To obtain the most robust result, --tracking 1 will perform face detection for each frame and track the detected faces''')
 
-# Tracking
+## image only parameters
 
+# TODO : add an option for preprocessing image lists
 
-#parser.add_argument('-s', '--time_offset', help = 'time in milliseconds from which we begin extraction of the frames in video', required=False)
-#parser.add_argument('-f', '--nframes', help = 'process every n frames', required = False)
-#parser.add_argument('-t', '--mode', help = 'With or without tracking mode', choices = ['on','off'], required = False)
+di = parser.add_argument_group('optional arguments to be used only with image material (--type image)')
+di.add_argument('--preprocessed_faces', action='store_true',
+                help='''To be used when using a list of preprocessed images.
+                Preprocessed images are assument to be already detected, cropped,
+                centered, aligned and rescaled to 224*224 pixels.
+                Result will be stored in a csv file with 1 line per image with name provided in --o argument''')
 
-#parser.add_argument('-k', '--ktracking', help = 'Used in case of tracking: re-detect faces every k frames', required= False)
-
-
+# parse arguments
 args = parser.parse_args()
 
-print(args['face-detection-confidence'])
+# deal with incompatible arguments
 
-exit()
+class ParserError:
+    def __init__(self, parser):
+        self.parser = parser
+    def __call__(self, a1, a2):
+        raise self.parser.error('%s argument cannot be mixed with %s')
+pe = ParserError(parser)
 
-input_files = []
-for e in args.input:
-    input_files += glob.glob(e)
-assert len(input_files) > 0, 'No existing media selected for analysis! Bad values provided to -i (%s)' % args.input
-
-odir = args.output_directory
-assert os.access(odir, os.W_OK), 'Directory %s is not writable!' % odir
-
-
-if args.mode == 'on' and args.ktracking is None :
-    parser.error("--mode requires --ktracking ! ")
+# keyframe analysis incompatible, fps, tracking, mp4 and ass export
+if args.keyframes:
+    for a in ['fps', 'mp4_export', 'ass_subtitle_export']:
+        if args.__dict__[a]:
+            pe('--keyframes', '--'+a)
+    if args.face_detection_period:
+        pe('--keyframes', '--tracking')
 
 
-n_frames = args.nframes
-if n_frames:
-    n_frames = int(n_frames)
+if args.type == 'video':
+    if args.preprocessed_faces:
+        pe('--type video', '--preprocessed_faces')
+    
+    if not os.path.isdir(args.output):
+        raise ValueError('OUTPUT directory %s provided to -o argument should be an existing directory' % args.output)
+        
+else: # image
+    for arg in ['ass_subtitle_export', 'mp4_export', 'keyframes', 'fps']:
+        if args.__dict__[arg]:
+            pe('--type image', '--' + arg)
+    if args.face_detection_period is not None:
+        pe('--type image', '--tracking')
+
+    out_ext = os.path.splitext(args.output)[1]
+    if out_ext.lower() != '.csv':
+        raise ValueError('OUTPUT value %s provided to -o argument should have .csv extension' % args.output)
+
+# classifier constructor
+if args.classifier == 'Resnet50FairFaceGRA':
+    classifier = inaFaceAnalyzer.face_classifier.Resnet50FairFaceGRA()
+elif args.classifier == 'Vggface_LSVM_YTF':
+    classifier = inaFaceAnalyzer.face_classifier.Vggface_LSVM_YTF()
+
+# Image list of preprocessed faces (do not need face detector)
+if args.preprocessed_faces:
+    df = classifier.preprocessed_img_list(args.input)
+    df.to_csv(args.output)
+    sys.exit(0)
+
+# Face detection contructor
+dargs = {'min_size_px': args.size_px, 'min_size_prct': args.size_prct}
+if args.face_detection_confidence:
+    dargs['minconf'] = args.face_detection_confidence
+if args.face_detector == 'LibFaceDetection':
+    detector = inaFaceAnalyzer.face_detector.LibFaceDetection(**dargs)
+elif args.face_detector == 'OcvCnnFacedetector':
+    detector = inaFaceAnalyzer.face_detector.OcvCnnFacedetector(**dargs)
+
+# List of images
+if args.type == 'image':
+    analyzer = inaFaceAnalyzer.inaFaceAnalyzer.ImageAnalyzer(detector, classifier)
+    df = analyzer(args.input)
+    df.to_csv(args.output)
+    sys.exit(0)
+
+# VIDEO
+if args.face_detection_period:
+    analyzer = inaFaceAnalyzer.inaFaceAnalyzer.VideoTracking(args.face_detection_period, detector, classifier)
+elif args.keyframes:
+    analyzer = inaFaceAnalyzer.inaFaceAnalyzer.VideoKeyframes(detector, classifier)
 else:
-    n_frames = 1
-offset = args.time_offset
-if offset:
-    offset = int(offset)
+    analyzer = inaFaceAnalyzer.inaFaceAnalyzer.VideoAnalyzer(detector, classifier)
 
-track_mode = args.mode
-track_frames = int(args.ktracking)
+dargs = {}
+if args.fps:
+    dargs = {'fps': args.fps}
 
-from inaFaceAnalyzer import GenderVideo, info2csv
 
-gen = GenderVideo()
+nbvid = len(args.input)
+for i, f in enumerate(args.input):
+    # TODO: add a try/catch system
+    print('analyzing video %d/%d: %s', i, nbvid, f)
+    base, _ = os.path.splitext(os.path.basename(f))
+    df = analyzer(f, **dargs)
+    df.to_csv('%s/%s.csv' % (args.output, base))
+    if args.ass_subtitle_export:
+        inaFaceAnalyzer.display_utils.ass_subtitle_export(f, df, '%s/%s.ass' % (args.output, base), analysis_fps=args.fps)
+    if args.mp4_export:
+        inaFaceAnalyzer.display_utils.video_export(f, df, '%s/%s.mp4' % (args.output, base), analysis_fps=args.fps)
 
-bar = progressbar.ProgressBar(maxval=10000, \
-widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
+            
 
-    bar.start()
-    if track_mode == 'on':
-        for i, e in enumerate(input_files):
-            #print('\n processing file %d/%d: %s' % (i+1, len(input_files), e))
-            base, _ = os.path.splitext(os.path.basename(e))
-            info2csv(gen.detect_with_tracking(e, track_frames, n_frames, offset ), '%s/%s_tracked.csv' % (odir, base))
-            bar.update(i)
-        bar.finish()
-    else:
-        for i, e in enumerate(input_files):
-            #print('\n processing file %d/%d: %s' % (i+1, len(input_files), e))
-            base, _ = os.path.splitext(os.path.basename(e))
-            info2csv(gen(e, n_frames, offset), '%s/%s.csv' % (odir, base))
-            bar.update(i)
-        bar.finish()
+# bar = progressbar.ProgressBar(maxval=10000, \
+# widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+# with warnings.catch_warnings():
+#     warnings.simplefilter("ignore")
+
+#     bar.start()
+#     if track_mode == 'on':
+#         for i, e in enumerate(input_files):
+#             #print('\n processing file %d/%d: %s' % (i+1, len(input_files), e))
+#             base, _ = os.path.splitext(os.path.basename(e))
+#             info2csv(gen.detect_with_tracking(e, track_frames, n_frames, offset ), '%s/%s_tracked.csv' % (odir, base))
+#             bar.update(i)
+#         bar.finish()
+#     else:
+#         for i, e in enumerate(input_files):
+#             #print('\n processing file %d/%d: %s' % (i+1, len(input_files), e))
+#             base, _ = os.path.splitext(os.path.basename(e))
+#             info2csv(gen(e, n_frames, offset), '%s/%s.csv' % (odir, base))
+#             bar.update(i)
+#         bar.finish()
