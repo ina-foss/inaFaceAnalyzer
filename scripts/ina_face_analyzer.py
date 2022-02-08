@@ -31,7 +31,8 @@ import os
 
 
 
-parser = argparse.ArgumentParser(description='inaFaceAnalyzer: detects and classify faces from media collections and store results in csv. TODO ref biblio ',
+parser = argparse.ArgumentParser(description='inaFaceAnalyzer: detects and classify faces from media collections and export results in csv',
+                                 epilog=' TODO ref biblio ',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                  add_help=False)
 
@@ -39,7 +40,7 @@ parser = argparse.ArgumentParser(description='inaFaceAnalyzer: detects and class
 ra = parser.add_argument_group('required arguments')
 
 
-ra.add_argument('-i', '--input', nargs='+', required=True, 
+ra.add_argument('-i', '--input', nargs='+', required=True,
                 help = 'list of medias to analyse. ex :/home/david/test.mp4 /tmp/mymedia.avi.')
 
 ra.add_argument('-o', '--output-directory', required=True,
@@ -51,7 +52,7 @@ oa = parser.add_argument_group('optional arguments')
 
 oa.add_argument("-h", "--help", action="help", help="show this help message and exit")
 
-oa.add_argument('-type',
+oa.add_argument('--type',
                 choices = ['image', 'video'],
                 default = 'video',
                 help = 'type of media to be analyzed, either a list of images or a list of videos')
@@ -89,10 +90,27 @@ da.add_argument('--min_face_size_percent', default=0, type=float,
 
 
 ## Video only parameters
+dv = parser.add_argument_group('optional arguments to be used only with video materials (--type video)')
 
-# ass subtitle
+dv.add_argument('--ass-subtitle-export', action='store_true',
+                help='export analyses into a rich ASS subtitle file which can be displayed with VLC')
 
-# FPS
+dv.add_argument('--mp4-export', action='store_true',
+                help='export analyses into a a MP4 video with incrusted bounding boxes and analysis estimates')
+
+dv.add_argument('--fps', default=None, type=float,
+                help='''Amount of video frames to be processed per second.
+                Remaining frames will be skipped.
+                If not provided, all video frames will be processed (generally between 25 and 30 per seconds).
+                Lower FPS values results in faster processing time.
+                Incompatible with the --keyframes argument''')
+
+dv.add_argument('--keyframes', action='store_true',
+                help='''Face detection and analysis from video limited to video key frames.
+                Allows fastest video analysis time associated to a summary with
+                non uniform frame sampling rate. Incompatible with the --fps argument.''')
+
+dv.add_argument('--tracking', )
 
 # Tracking
 
@@ -121,12 +139,12 @@ assert os.access(odir, os.W_OK), 'Directory %s is not writable!' % odir
 
 if args.mode == 'on' and args.ktracking is None :
     parser.error("--mode requires --ktracking ! ")
-    
-    
+
+
 n_frames = args.nframes
 if n_frames:
     n_frames = int(n_frames)
-else: 
+else:
     n_frames = 1
 offset = args.time_offset
 if offset:
@@ -145,14 +163,14 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
 
     bar.start()
-    if track_mode == 'on':       
+    if track_mode == 'on':
         for i, e in enumerate(input_files):
             #print('\n processing file %d/%d: %s' % (i+1, len(input_files), e))
             base, _ = os.path.splitext(os.path.basename(e))
             info2csv(gen.detect_with_tracking(e, track_frames, n_frames, offset ), '%s/%s_tracked.csv' % (odir, base))
             bar.update(i)
         bar.finish()
-    else:       
+    else:
         for i, e in enumerate(input_files):
             #print('\n processing file %d/%d: %s' % (i+1, len(input_files), e))
             base, _ = os.path.splitext(os.path.basename(e))
