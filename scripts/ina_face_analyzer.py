@@ -3,7 +3,7 @@
 
 # The MIT License
 
-# Copyright (c) 2019-2022 Ina (David Doukhan & Zohra Rezgui - http://www.ina.fr/)
+# Copyright (c) 2019-2022 Ina (David Doukhan - http://www.ina.fr/)
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,8 +26,6 @@
 import argparse
 import os
 import sys
-#import warnings
-#import progressbar
 
 import inaFaceAnalyzer.face_classifier
 import inaFaceAnalyzer.face_detector
@@ -36,7 +34,8 @@ import inaFaceAnalyzer.display_utils
 
 
 parser = argparse.ArgumentParser(description='inaFaceAnalyzer: detects and classify faces from media collections and export results in csv',
-                                 epilog=' TODO ref biblio ',
+                                 # TODO: add bibliographic reference
+                                 epilog='Add bibliographic reference',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                  add_help=False)
 
@@ -83,8 +82,7 @@ oa.add_argument ('--classifier', default='Resnet50FairFaceGRA',
 # TODO : GPU_BATCH_LEN option ??
 
 ## Face Detection related argument
-# detect; min size; confidence
-
+# TODO : move this in face_detection source file ?
 da = parser.add_argument_group('optional arguments related to face detection')
 
 da.add_argument ('--face_detector', default='LibFaceDetection',
