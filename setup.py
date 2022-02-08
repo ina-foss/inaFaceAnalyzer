@@ -25,7 +25,7 @@
 
 
 import os
-from setuptools import setup, find_packages
+from setuptools import setup #, find_packages
 import versioneer
 
 KEYWORDS = '''
@@ -47,7 +47,7 @@ CLASSIFIERS=[
     'Topic :: Sociology',
 ]
 
-DESCRIPTION='Detect faces in video streams and does gender classification'
+DESCRIPTION='Detect faces in video streams and do gender and age classification'
 LONGDESCRIPTION='''Detect faces in video streams and does gender classification. Designed for estimating the visual presence of women and men within TV programs.
 
 ```bibtex
@@ -73,8 +73,8 @@ setup(
     name = "inaFaceAnalyzer",
     version = versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    author = "David Doukhan, Zohra Rezgui",
-    author_email = "david.doukhan@gmail.com, zohra.rzg@gmail.com",
+    author = "David Doukhan, Zohra Rezgui, Thomas Petit",
+    author_email = "david.doukhan@gmail.com, zohra.rzg@gmail.com, tpetit@ina.fr",
     test_suite="run_tests.py",
     description = DESCRIPTION,
     license = "MIT",
@@ -90,8 +90,8 @@ setup(
     long_description=LONGDESCRIPTION,
     long_description_content_type='text/markdown',
 # TODO: add webcam script
-#    scripts=[os.path.join('scripts', script) for script in \
-#             ['ina_face_gender.py']],
+    scripts=[os.path.join('scripts', script) for script in \
+             ['ina_face_analyzer.py', 'ina_face_analyzer_webcam_demo.py']],
     classifiers=CLASSIFIERS,
     python_requires='>=3.6.9',
 

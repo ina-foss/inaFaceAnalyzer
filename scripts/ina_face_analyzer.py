@@ -33,7 +33,7 @@ import inaFaceAnalyzer.inaFaceAnalyzer
 import inaFaceAnalyzer.display_utils
 
 
-parser = argparse.ArgumentParser(description='inaFaceAnalyzer: detects and classify faces from media collections and export results in csv',
+parser = argparse.ArgumentParser(description='inaFaceAnalyzer %s: detects and classify faces from media collections and export results in csv' % inaFaceAnalyzer.__version__,
                                  # TODO: add bibliographic reference
                                  epilog='Add bibliographic reference',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -148,6 +148,7 @@ di.add_argument('--preprocessed_faces', action='store_true',
 
 # parse arguments
 args = parser.parse_args()
+    
 
 # deal with incompatible arguments
 
