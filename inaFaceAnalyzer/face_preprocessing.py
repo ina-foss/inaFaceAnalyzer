@@ -123,7 +123,9 @@ def preprocess_face(frame, detection, squarify, bbox_scale, face_alignment, outp
     else:
         bbox = detection.bbox
 
-
+    if face_alignment is not None:
+        left_eye, right_eye = face_alignment(frame, bbox)
+        
     # if True, extend the bounding box to the smallest square containing
     # the orignal bounding box
     if squarify:
@@ -138,7 +140,6 @@ def preprocess_face(frame, detection, squarify, bbox_scale, face_alignment, outp
 
     # performs face alignment based on facial landmark detection
     if face_alignment is not None:
-        left_eye, right_eye = face_alignment(frame, bbox)
         frame = alignCrop(frame, bbox, left_eye, right_eye, verbose=verbose)
     else:
         # crop image to the bounding box
