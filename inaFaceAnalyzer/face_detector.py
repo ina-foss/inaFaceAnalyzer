@@ -98,10 +98,10 @@ class FaceDetector(ABC):
     @abstractmethod
     def _call_imp(self, frame): pass
 
-    def most_central_face(self, frame, verbose=False):
+    def most_central_face(self, frame, contain_center=True, verbose=False):
         """
         This method returns the detected face which is closest from the center
-        The returned face must include image center
+        if contain_center == True, the returned face MUST include image center
         Usefull for preprocessign face datasets containing several faces per image
         Parameters
         ----------
@@ -117,7 +117,10 @@ class FaceDetector(ABC):
         frame_center = (frame.shape[1] / 2, frame.shape[0] / 2)
 
         # keep faces containing image center
-        faces = [f for f in self(frame, verbose) if frame_center in f.bbox]
+        if contain_center:
+            faces = [f for f in self(frame, verbose) if frame_center in f.bbox]
+        else:
+            faces = [f for f in self(frame, verbose)]
 
         if len(faces) == 0:
             return None
@@ -127,6 +130,44 @@ class FaceDetector(ABC):
 
         return faces[am]
 
+    
+    def get_closest_face(self, frame, ref_bbox, min_iou=.7, squarify=True, verbose=False):
+        """
+        Some face corpora may contain pictures with several faces
+        together with the reference bounding box of annotated faces
+        This function is aimed at preprocessing such face corpora
+        Automatic face detection is used, and the detected face with the largest
+        iou with the reference bounding box is returned
+        if no detected face corresponds to this IOU criteria, returns None
+        """
+        if not isinstance(ref_bbox, Rect):
+            ref_bbox = Rect(*ref_bbox)
+
+        # get closest detected faces from ref_bbox
+        if squarify:
+            f = lambda x: x.square
+        else:
+            f = lambda x: x
+
+        ref_bbox = f(ref_bbox)
+
+        lfaces = self(frame, verbose)
+        if len(lfaces) == 0:
+            return None
+
+        liou = [f(ref_bbox).iou(f(detection.bbox)) for detection in lfaces]
+
+
+        if verbose:
+            print([f(detection.bbox) for detection in lfaces])
+            print('liou', liou)
+        am = np.argmax(liou)
+        if liou[am] < min_iou:
+            return None
+        return lfaces[am]
+
+
+    
 def _sqdist(p1, p2):
     '''
     return squared distance between points p1(x,y) and p2(x,y)
@@ -212,34 +253,6 @@ class OcvCnnFacedetector(FaceDetector):
             faces_data.append(Detection(bbox, confidence))
 
         return faces_data
-
-
-    def get_closest_face(self, frame, ref_bbox, min_iou=.7, squarify=True, verbose=False):
-        if not isinstance(ref_bbox, Rect):
-            ref_bbox = Rect(*ref_bbox)
-
-        # get closest detected faces from ref_bbox
-        if squarify:
-            f = lambda x: x.square
-        else:
-            f = lambda x: x
-
-        ref_bbox = f(ref_bbox)
-
-        lfaces = self(frame, verbose)
-        if len(lfaces) == 0:
-            return None
-
-        liou = [f(ref_bbox).iou(f(detection.bbox)) for detection in lfaces]
-
-
-        if verbose:
-            print([f(bb) for bb, _, in lfaces])
-            print('liou', liou)
-        am = np.argmax(liou)
-        if liou[am] < min_iou:
-            return None
-        return lfaces[am]
 
 
 class IdentityFaceDetector(FaceDetector):
