@@ -43,7 +43,7 @@ class TestSingleImage(unittest.TestCase):
         self.assertEqual(len(df), 1)
         self.assertEqual(df.bbox[0], (432, 246, 988, 802))
         self.assertEqual(df.sex_label[0], 'f')
-        self.assertAlmostEqual(df.sex_decfunc[0], -3.323815, places=5)
+        self.assertAlmostEqual(df.sex_decfunc[0], -1.0635465434, places=5)
         self.assertAlmostEqual(df.detect_conf[0], 0.99964356, places=4)
 
     def test_image_all_diallo_multioutput(self):
@@ -54,9 +54,9 @@ class TestSingleImage(unittest.TestCase):
         e = next(df.itertuples(index=False, name = 'useless'))
         self.assertEqual(e.bbox, (421, 234, 997, 810))
         self.assertEqual(e.sex_label, 'f')
-        self.assertAlmostEqual(e.age_label, 25.239, places=2)
-        self.assertAlmostEqual(e.sex_decfunc, -5.258, places=2)
-        self.assertAlmostEqual(e.age_decfunc, 3.023, places=2)
+        self.assertAlmostEqual(e.age_label, 21.556363, places=2)
+        self.assertAlmostEqual(e.sex_decfunc, -4.92827, places=2)
+        self.assertAlmostEqual(e.age_decfunc, 2.6556363, places=2)
         self.assertAlmostEqual(e.detect_conf, 0.987, places=2)
 
 
@@ -68,7 +68,7 @@ class TestSingleImage(unittest.TestCase):
         e = next(df.itertuples(index=False, name = 'useless'))
         self.assertEqual(e.bbox, (78, 46, 321, 289))
         self.assertEqual(e.sex_label, 'm')
-        self.assertAlmostEqual(e.sex_decfunc, 6.615791, places=5)
+        self.assertAlmostEqual(e.sex_decfunc, 8.63619318, places=5)
         self.assertAlmostEqual(e.detect_conf, 0.99995565, places=4)
 
     def test_multifaceimage(self):
