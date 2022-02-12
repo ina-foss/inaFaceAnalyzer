@@ -92,15 +92,15 @@ class TestClassifiers(unittest.TestCase):
         y = [1, 40]
         np.testing.assert_almost_equal(y, _fairface_agedec2age(x), decimal=5)
 
-    def test_imgpaths_batch_singleoutput(self):
+    def test_preprocessed_img_list_singleoutput(self):
         c = Vggface_LSVM_YTF()
-        df = c.imgpaths_batch(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], False, batch_len=2)
+        df = c.preprocessed_img_list(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], False, batch_len=2)
         self.assertSequenceEqual(['f', 'm', 'f'], list(df.sex_label))
         np.testing.assert_almost_equal([-3.1886155, 6.7310688, -3.1886155], df.sex_decfunc, decimal=5)
 
-    def test_imgpaths_batch_multioutput(self):
+    def test_preprocessed_img_list_multioutput(self):
         c = Resnet50FairFaceGRA()
-        df = c.imgpaths_batch(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], False, batch_len=2)
+        df = c.preprocessed_img_list(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], False, batch_len=2)
         ref_genderL = ['f', 'm', 'f']
         ref_ageL =[25.723361, 61.890726, 25.723361]
         ref_genderD = [-5.632368, 7.2553654, -5.632368]
