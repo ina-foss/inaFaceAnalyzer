@@ -93,6 +93,6 @@ setup(
     scripts=[os.path.join('scripts', script) for script in \
              ['ina_face_analyzer.py', 'ina_face_analyzer_webcam_demo.py']],
     classifiers=CLASSIFIERS,
-    python_requires='>=3.6.9',
+    python_requires='>=3.7',
 
 )

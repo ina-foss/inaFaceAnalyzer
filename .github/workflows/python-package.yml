@@ -16,13 +16,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.6.9", "3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
 
     steps:
     - uses: actions/checkout@v2
-    - name: Install ffmpeg
-      run: |
-        sudo apt-get update && sudo apt-get install -y ffmpeg
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
