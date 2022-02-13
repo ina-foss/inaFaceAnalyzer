@@ -33,6 +33,10 @@ import inaFaceAnalyzer.inaFaceAnalyzer
 import inaFaceAnalyzer.display_utils
 
 
+# TODO: add options to perform detection only and/or preprocessing only
+
+# TODO: add padding options for the detection.
+
 parser = argparse.ArgumentParser(description='inaFaceAnalyzer %s: detects and classify faces from media collections and export results in csv' % inaFaceAnalyzer.__version__,
                                  # TODO: add bibliographic reference
                                  epilog='Add bibliographic reference',
@@ -78,8 +82,9 @@ oa.add_argument ('--classifier', default='Resnet50FairFaceGRA',
                  choices = ['Resnet50FairFaceGRA', 'Vggface_LSVM_YTF'],
                  help = h)
 
-
-# TODO : GPU_BATCH_LEN option ??
+oa.add_argument('--batch_size', default=32, type=int,
+                help = '''GPU batch size. Larger values allow faster processings, but requires more GPU memory.
+                Default 32 value used is fine for a Laptop Quadro T2000 Mobile GPU with 4 Gb memory.''')
 
 ## Face Detection related argument
 # TODO : move this in face_detection source file ?
@@ -89,7 +94,7 @@ da.add_argument ('--face_detector', default='LibFaceDetection',
                  choices=['LibFaceDetection', 'OcvCnnFacedetector'],
                  help='''face detection module to be used:
                      LibFaceDetection can take advantage of GPU acceleration and has a higher recall.
-                     OcvCnnFaceDetector is embed in OpenCV has a better precision''')
+                     OcvCnnFaceDetector is embed in OpenCV. It is faster for large resolutions since it first resize input frames to 300*300. It may miss small faces''')
 
 da.add_argument('--face_detection_confidence', type=float,
                 help='''minimal confidence threshold to be used for face detection.
@@ -148,7 +153,7 @@ di.add_argument('--preprocessed_faces', action='store_true',
 
 # parse arguments
 args = parser.parse_args()
-    
+
 
 # deal with incompatible arguments
 
@@ -171,10 +176,10 @@ if args.keyframes:
 if args.type == 'video':
     if args.preprocessed_faces:
         pe('--type video', '--preprocessed_faces')
-    
+
     if not os.path.isdir(args.output):
         raise ValueError('OUTPUT directory %s provided to -o argument should be an existing directory' % args.output)
-        
+
 else: # image
     for arg in ['ass_subtitle_export', 'mp4_export', 'keyframes', 'fps']:
         if args.__dict__[arg]:
@@ -194,8 +199,8 @@ elif args.classifier == 'Vggface_LSVM_YTF':
 
 # Image list of preprocessed faces (do not need face detector)
 if args.preprocessed_faces:
-    df = classifier.preprocessed_img_list(args.input)
-    df.to_csv(args.output)
+    df = classifier.preprocessed_img_list(args.input, batch_len=args.batch_size)
+    df.to_csv(args.output, index=False)
     sys.exit(0)
 
 # Face detection contructor
@@ -209,18 +214,18 @@ elif args.face_detector == 'OcvCnnFacedetector':
 
 # List of images
 if args.type == 'image':
-    analyzer = inaFaceAnalyzer.inaFaceAnalyzer.ImageAnalyzer(detector, classifier)
+    analyzer = inaFaceAnalyzer.inaFaceAnalyzer.ImageAnalyzer(detector, classifier, batch_len=args.batch_size)
     df = analyzer(args.input)
-    df.to_csv(args.output)
+    df.to_csv(args.output, index=False)
     sys.exit(0)
 
 # VIDEO
 if args.face_detection_period:
-    analyzer = inaFaceAnalyzer.inaFaceAnalyzer.VideoTracking(args.face_detection_period, detector, classifier)
+    analyzer = inaFaceAnalyzer.inaFaceAnalyzer.VideoTracking(args.face_detection_period, detector, classifier, batch_len=args.batch_size)
 elif args.keyframes:
-    analyzer = inaFaceAnalyzer.inaFaceAnalyzer.VideoKeyframes(detector, classifier)
+    analyzer = inaFaceAnalyzer.inaFaceAnalyzer.VideoKeyframes(detector, classifier, batch_len=args.batch_size)
 else:
-    analyzer = inaFaceAnalyzer.inaFaceAnalyzer.VideoAnalyzer(detector, classifier)
+    analyzer = inaFaceAnalyzer.inaFaceAnalyzer.VideoAnalyzer(detector, classifier, batch_len=args.batch_size)
 
 dargs = {}
 if args.fps:
@@ -230,16 +235,16 @@ if args.fps:
 nbvid = len(args.input)
 for i, f in enumerate(args.input):
     # TODO: add a try/catch system
-    print('analyzing video %d/%d: %s', i, nbvid, f)
+    print('analyzing video %d/%d: %s' % (i, nbvid, f))
     base, _ = os.path.splitext(os.path.basename(f))
     df = analyzer(f, **dargs)
-    df.to_csv('%s/%s.csv' % (args.output, base))
+    df.to_csv('%s/%s.csv' % (args.output, base), index=False)
     if args.ass_subtitle_export:
         inaFaceAnalyzer.display_utils.ass_subtitle_export(f, df, '%s/%s.ass' % (args.output, base), analysis_fps=args.fps)
     if args.mp4_export:
         inaFaceAnalyzer.display_utils.video_export(f, df, '%s/%s.mp4' % (args.output, base), analysis_fps=args.fps)
 
-            
+
 
 # bar = progressbar.ProgressBar(maxval=10000, \
 # widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])

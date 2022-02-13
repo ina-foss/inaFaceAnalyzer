@@ -1,4 +1,4 @@
-include *.py LICENSE *.md *.ipynb *.txt
+include *.py LICENSE *.md *.ipynb *.txt *.ass
 #include scripts *.py
 
 

@@ -77,12 +77,15 @@ class Rect(NamedTuple):
         x, y = point
         return x >= x1 and x <= x2 and y >= y1 and y <= y2
 
+    def to_int(self):
+        return Rect(*[int(round(e)) for e in self])
+
     @staticmethod
     def from_dlib(x):
         return Rect(x.left(), x.top(), x.right(), x.bottom())
 
     def to_dlibInt(self):
-        return dlib.rectangle(*[int(x) for x in np.round(self)])
+        return dlib.rectangle(*[e for e in self.to_int()])
 
     def to_dlibFloat(self):
         return dlib.drectangle(*self)

@@ -45,11 +45,11 @@ class FaceAnalyzer(ABC):
     * face preprocessing
     * face classification
     """
-    
-    # len of batches to be sent to face classifiers
-    batch_len = 32
 
-    def __init__(self, face_detector = None, face_classifier = None, verbose = False):
+    # len of batches to be sent to face classifiers
+    #batch_len = 32
+
+    def __init__(self, face_detector = None, face_classifier = None, batch_len=32, verbose = False):
         """
         Constructor
         Parameters
@@ -84,7 +84,12 @@ class FaceAnalyzer(ABC):
         self.face_alignment = Dlib68FaceAlignment()
 
         # True if some verbose is required
+        assert isinstance(verbose, bool)
         self.verbose = verbose
+
+        # set to large values with large memory GPU for faster processing times !
+        assert isinstance(batch_len, int) and batch_len > 0
+        self.batch_len = batch_len
 
 
     @abstractmethod
@@ -108,7 +113,7 @@ class FaceAnalyzer(ABC):
         Generic pipeline allowing to process image or video streams
         Faces are first detected, preprocessed and sent in batches in
         face classifiers
-        
+
         Parameters
         ----------
         stream_iterator : iterator
@@ -132,7 +137,7 @@ class FaceAnalyzer(ABC):
 
         # iterate on image list or video stream
         for iframe, frame in stream_iterator:
-            
+
             # iterate on detected faces
             for detection in detector(frame, self.verbose):
                 if self.verbose:
@@ -151,7 +156,7 @@ class FaceAnalyzer(ABC):
                 ldf.append(df)
                 lbatch_img = lbatch_img[self.batch_len:]
 
-        
+
         if len(lbatch_img) > 0:
             df = self.classifier(lbatch_img, False)
             ldf.append(df)
@@ -177,7 +182,7 @@ class ImageAnalyzer(FaceAnalyzer):
         Parameters
         ----------
         img_paths : str or list
-            path or list of paths to image file(s) to analyze            
+            path or list of paths to image file(s) to analyze
         Returns
         -------
         pandas Dataframe with column 'frame' containing the path to the source
@@ -210,7 +215,7 @@ class VideoAnalyzer(FaceAnalyzer):
                 Time in milliseconds to skip at the beginning of the video.
 
         Returns:
-            Dataframe with frame and face information: frame position, 
+            Dataframe with frame and face information: frame position,
             coordinates, predictions, decision function,labels...
         """
         subsamp_coeff = 1 if fps is None else analysisFPS2subsamp_coeff(video_path, fps)
@@ -233,7 +238,7 @@ class VideoKeyframes(FaceAnalyzer):
         Parameters:
             video_path (string): Path for input video.
         Returns:
-            Dataframe with frame and face information: frame position, 
+            Dataframe with frame and face information: frame position,
             coordinates, predictions, decision function,labels...
         """
         stream = video_keyframes_iterator(video_path, verbose=self.verbose)
@@ -270,7 +275,7 @@ class VideoTracking(FaceAnalyzer):
             If True, will display several usefull intermediate images and results.
             The default is False.
         """
-        super().__init__(face_detector, face_classifier, verbose)
+        super().__init__(face_detector, face_classifier, verbose=verbose)
         self.detection_period = detection_period
 
     def __call__(self, video_path, fps = None,  offset = 0):
@@ -287,13 +292,13 @@ class VideoTracking(FaceAnalyzer):
                 Time in milliseconds to skip at the beginning of the video.
 
         Returns:
-            Dataframe with frame and face information: frame position, 
+            Dataframe with frame and face information: frame position,
             coordinates, predictions, decision function,labels...
             faceid column allow to keep track of each unique face found
             predictions and decision functions with '_avg' suffix are obtained
             through a smoothing procedure of decision functions for all faces
             with same faceid. Smoothed estimates are usually more robust than
-            instantaneous ones            
+            instantaneous ones
         """
         detector = TrackerDetector(self.face_detector, self.detection_period)
 
@@ -310,11 +315,13 @@ class VideoPrecomputedDetection(FaceAnalyzer):
     """
     Video analysis class to be used combined with pre-detected face bounding
     boxes (uncommon use-case)
+    CANNOT BE USED WITH RESCALED OR SQUARIFIED BOUNDING BOXES!!!
+    FACE ALIGNMENT REQUIRE TO HAVE ORIGINAL BOUNDING BOX TO PERFORM WELL!!
     """
     def __init__(self, face_classifier = None, verbose = False, bbox_scale=None, bbox2square=None):
         """
         Constructor
-        
+
         Parameters
         ----------
         face_classifier: instance of face_classifier.FaceClassifier or None
@@ -330,13 +337,13 @@ class VideoPrecomputedDetection(FaceAnalyzer):
             if not None, will ovverides classifier's bbox2square instructions
             usefull if provided bounding boxes are already transformed - default None
         """
-        
-        super().__init__(PrecomputedDetector(), face_classifier, verbose)        
+
+        super().__init__(PrecomputedDetector(), face_classifier, verbose=verbose)
         if bbox_scale is not None:
             self.bbox_scale = bbox_scale
         if bbox2square is not None:
             self.bbox2square = bbox2square
-        
+
     def __call__(self, video_path, lbbox, fps=None, start_frame = 0):
         """
         Pipeline function for face classification from videos using pre-detected faces
@@ -354,7 +361,7 @@ class VideoPrecomputedDetection(FaceAnalyzer):
                 Time in milliseconds to skip at the beginning of the video.
 
         Returns:
-            Dataframe with frame and face information: frame position, 
+            Dataframe with frame and face information: frame position,
             coordinates, predictions, decision function,labels...
         """
         detector = PrecomputedDetector(lbbox)
