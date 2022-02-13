@@ -33,17 +33,27 @@ gender-equality
 gender-classification'''.strip().split('\n')
 
 CLASSIFIERS=[
-    'Development Status :: 2 - Pre-Alpha',
+    'Development Status :: 3 - Alpha',
     'Intended Audience :: Developers',
     'Intended Audience :: Education',
     'Intended Audience :: Science/Research',
     'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3 :: Only',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
     'Topic :: Multimedia :: Video',
     'Topic :: Scientific/Engineering',
     'Topic :: Scientific/Engineering :: Artificial Intelligence',
+    'Topic :: Scientific/Engineering :: Image Processing',
     'Topic :: Scientific/Engineering :: Image Recognition',
+    'Topic :: Sociology',
+    'Topic :: Software Development',
+    'Topic :: Software Development :: Libraries',
+    'Topic :: Software Development :: Libraries :: Python Modules',
     'Topic :: Sociology',
 ]
 
@@ -75,7 +85,7 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     author = "David Doukhan, Zohra Rezgui, Thomas Petit",
     author_email = "david.doukhan@gmail.com, zohra.rzg@gmail.com, tpetit@ina.fr",
-    test_suite="run_tests.py",
+    test_suite="test_inaFaceAnalyzer.py",
     description = DESCRIPTION,
     license = "MIT",
     install_requires=['opencv-contrib-python', 'dlib', 'pandas', 'sklearn',
