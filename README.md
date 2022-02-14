@@ -28,11 +28,11 @@ python run_tests.py # to check that the installation is ok
 ## Using inaFaceAnalyzer program
 
 Most common processings can be done using the script <code>ina_face_analyzer.py</code>
-provided with the distribution. Using <code>-h<option> display a detailed listing
+provided with the distribution. Using <code>-h</code> display a detailed listing
 of all options available from the command-line. Defaults parameters do not use
 tracking and provide some of the best available processing options - which may
 be a little slow. It computation time is an issue, we recommend using
-<code>--fps 1<option> which will process a single frame per second, instead of
+<code>--fps 1</code> which will process a single frame per second, instead of
 the whole amount of video frames.
 
 
