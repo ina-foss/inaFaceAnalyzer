@@ -43,8 +43,8 @@ class TestSingleImage(unittest.TestCase):
         self.assertEqual(len(df), 1)
         self.assertEqual(df.bbox[0], (432, 246, 989, 803))
         self.assertEqual(df.sex_label[0], 'f')
-        self.assertAlmostEqual(df.sex_decfunc[0], -1.16580753, places=5)
-        self.assertAlmostEqual(df.detect_conf[0], 0.99964356, places=4)
+        self.assertAlmostEqual(df.sex_decfunc[0], -1.16580753, places=3)
+        self.assertAlmostEqual(df.detect_conf[0], 0.99964356, places=3)
 
     def test_image_all_diallo_multioutput(self):
         gi = ImageAnalyzer(face_classifier = Resnet50FairFaceGRA(),
@@ -68,8 +68,8 @@ class TestSingleImage(unittest.TestCase):
         e = next(df.itertuples(index=False, name = 'useless'))
         self.assertEqual(e.bbox, (79, 47, 322, 290))
         self.assertEqual(e.sex_label, 'm')
-        self.assertAlmostEqual(e.sex_decfunc, 8.734114471, places=5)
-        self.assertAlmostEqual(e.detect_conf, 0.99995565, places=4)
+        self.assertAlmostEqual(e.sex_decfunc, 8.734114471, places=3)
+        self.assertAlmostEqual(e.detect_conf, 0.99995565, places=3)
 
     def test_multifaceimage(self):
         gi = ImageAnalyzer(face_detector = OcvCnnFacedetector())

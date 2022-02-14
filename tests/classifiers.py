@@ -119,3 +119,11 @@ class TestClassifiers(unittest.TestCase):
         d2 = retdf.sex_decfunc[1::2].reset_index(drop=True)
         np.testing.assert_almost_equal([d1[0]] * 32, d1, decimal=3)
         np.testing.assert_almost_equal([d2[0]] * 32, d2, decimal=3)
+
+    def test_racelayerdeleted(self):
+        # test if "race" prediction layer is set to NaN in the public distribution
+        c = Resnet50FairFaceGRA()
+        racelayer = c.model.layers[-2]
+        w, b = racelayer.weights
+        assert np.all(w.numpy() != w.numpy())
+        assert np.all(b.numpy() != b.numpy())
