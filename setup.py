@@ -44,7 +44,7 @@ CLASSIFIERS=[
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
-    'Programming Language :: Python :: 3.10',
+#    'Programming Language :: Python :: 3.10', # dependency onnxruntime-gpu does not support Python 3.10 yet
     'Topic :: Multimedia :: Video',
     'Topic :: Scientific/Engineering',
     'Topic :: Scientific/Engineering :: Artificial Intelligence',
