@@ -65,7 +65,7 @@ class TestTracking(unittest.TestCase):
                            face_detector=OcvCnnFacedetector(padd_prct=0.))
         dfpred = gv(_vid, fps=3)
         dfpred.bbox = dfpred.bbox.map(str)
-        dfref = pd.read_csv('./media/pexels-artem-podrez-tracking5-subsamp10-VggFace_LSVM_YTF.csv')
+        dfref = pd.read_csv('./media/pexels-artem-podrez-fps3-tracking5-vgglinsvm.csv')
         assert_frame_equal(dfref, dfpred, atol=.01, check_dtype=False)
 
 

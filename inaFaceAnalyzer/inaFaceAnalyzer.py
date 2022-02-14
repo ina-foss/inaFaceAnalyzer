@@ -253,7 +253,7 @@ class VideoTracking(FaceAnalyzer):
     Classification decision functions and predictions are averaged for each
     tracked faces, allowing to obtain more robust analysis estimates
     """
-    def __init__(self, detection_period, face_detector = None, face_classifier = None, verbose = False):
+    def __init__(self, detection_period, face_detector = None, face_classifier = None, batch_len=32, verbose = False):
         """
         Constructor
 
@@ -275,7 +275,7 @@ class VideoTracking(FaceAnalyzer):
             If True, will display several usefull intermediate images and results.
             The default is False.
         """
-        super().__init__(face_detector, face_classifier, verbose=verbose)
+        super().__init__(face_detector, face_classifier, batch_len=batch_len, verbose=verbose)
         self.detection_period = detection_period
 
     def __call__(self, video_path, fps = None,  offset = 0):

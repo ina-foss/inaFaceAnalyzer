@@ -28,7 +28,7 @@ import os
 import sys
 
 import inaFaceAnalyzer.face_classifier
-import inaFaceAnalyzer.face_detector
+from inaFaceAnalyzer.face_detector import facedetection_cmdlineparser, facedetection_factory
 import inaFaceAnalyzer.inaFaceAnalyzer
 import inaFaceAnalyzer.display_utils
 
@@ -86,30 +86,8 @@ oa.add_argument('--batch_size', default=32, type=int,
                 help = '''GPU batch size. Larger values allow faster processings, but requires more GPU memory.
                 Default 32 value used is fine for a Laptop Quadro T2000 Mobile GPU with 4 Gb memory.''')
 
-## Face Detection related argument
-# TODO : move this in face_detection source file ?
-da = parser.add_argument_group('optional arguments related to face detection')
-
-da.add_argument ('--face_detector', default='LibFaceDetection',
-                 choices=['LibFaceDetection', 'OcvCnnFacedetector'],
-                 help='''face detection module to be used:
-                     LibFaceDetection can take advantage of GPU acceleration and has a higher recall.
-                     OcvCnnFaceDetector is embed in OpenCV. It is faster for large resolutions since it first resize input frames to 300*300. It may miss small faces''')
-
-da.add_argument('--face_detection_confidence', type=float,
-                help='''minimal confidence threshold to be used for face detection.
-                    Default values are 0.98 for LibFaceDetection and 0.65 for OcvCnnFacedetector''')
-
-
-da.add_argument('--min_face_size_px', default=30, type=int, dest='size_px',
-                help='''minimal absolute size in pixels of the faces to be considered for the analysis.
-                Optimal classification results are obtained for sizes above 75 pixels.''')
-
-da.add_argument('--min_face_size_percent', default=0, type=float, dest='size_prct',
-                help='''minimal relative size (percentage between 0 and 1) of the
-                faces to be considered for the analysis with repect to image frames
-                minimal dimension (generally height for videos)''')
-
+# face detection
+facedetection_cmdlineparser(parser)
 
 ## Video only parameters
 dv = parser.add_argument_group('optional arguments to be used only with video materials (--type video)')
@@ -204,13 +182,8 @@ if args.preprocessed_faces:
     sys.exit(0)
 
 # Face detection contructor
-dargs = {'min_size_px': args.size_px, 'min_size_prct': args.size_prct}
-if args.face_detection_confidence:
-    dargs['minconf'] = args.face_detection_confidence
-if args.face_detector == 'LibFaceDetection':
-    detector = inaFaceAnalyzer.face_detector.LibFaceDetection(**dargs)
-elif args.face_detector == 'OcvCnnFacedetector':
-    detector = inaFaceAnalyzer.face_detector.OcvCnnFacedetector(**dargs)
+detector = facedetection_factory(args)
+
 
 # List of images
 if args.type == 'image':

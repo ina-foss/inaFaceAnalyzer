@@ -336,3 +336,67 @@ class PrecomputedDetector(FaceDetector):
         if isinstance(ret, tuple):
             ret = [ret]
         return [Detection(Rect(*e), None) for e in ret]
+
+
+def facedetection_cmdlineparser(parser):
+    '''
+    Update command line parser with face detection related arguments
+    Parameters
+    ----------
+    parser : argparse.ArgumentParser
+        command line parser to be updated
+
+    '''
+    da = parser.add_argument_group('optional arguments related to face detection')
+
+    da.add_argument ('--face_detector', default='LibFaceDetection',
+                     choices=['LibFaceDetection', 'OcvCnnFacedetector'],
+                     help='''face detection module to be used:
+                         LibFaceDetection can take advantage of GPU acceleration and has a higher recall.
+                         OcvCnnFaceDetector is embed in OpenCV. It is faster for large resolutions since it first resize input frames to 300*300. It may miss small faces''')
+
+    da.add_argument('--face_detection_confidence', type=float,
+                    help='''minimal confidence threshold to be used for face detection.
+                        Default values are 0.98 for LibFaceDetection and 0.65 for OcvCnnFacedetector''')
+
+
+    da.add_argument('--min_face_size_px', default=30, type=int, dest='size_px',
+                    help='''minimal absolute size in pixels of the faces to be considered for the analysis.
+                    Optimal classification results are obtained for sizes above 75 pixels.''')
+
+    da.add_argument('--min_face_size_percent', default=0, type=float, dest='size_prct',
+                    help='''minimal relative size (percentage between 0 and 1) of the
+                    faces to be considered for the analysis with repect to image frames
+                    minimal dimension (generally height for videos)''')
+
+    da.add_argument('--face_detection_padding', default=None, type=float, dest='face_detection_padding',
+                    help='''Black padding percentage to be applied to image frames before face detection.
+                    0.15 Padding may help detecting large faces occupying the whole image with OcvCnnFacedetector.
+                    Default padding values are 0.15 for OcvCnnFacedetector and 0 for LibFaceDetection''')
+
+def facedetection_factory(args):
+    '''
+    Instanciate a face detection object from parsed command line arguments
+    
+    Parameters
+    ----------
+    args : Namespace
+        Namespace containing fields face_detector, face_detection_confidence,
+        min_face_size_px, min_face_size_percent
+
+    Returns
+    -------
+    instance of class FaceDetector
+
+    '''
+    dargs = {'min_size_px': args.size_px, 'min_size_prct': args.size_prct}
+    if args.face_detection_padding is not None:
+        dargs['padd_prct'] = args.face_detection_padding
+    if args.face_detection_confidence:
+        dargs['minconf'] = args.face_detection_confidence
+    if args.face_detector == 'LibFaceDetection':
+        detector = LibFaceDetection(**dargs)
+    elif args.face_detector == 'OcvCnnFacedetector':
+        detector = OcvCnnFacedetector(**dargs)
+    
+    return detector
