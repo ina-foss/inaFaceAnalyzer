@@ -15,6 +15,9 @@ Should you need further details regarding this work, please refer to the followi
 }
 ```
 
+Have a look to sibling project [inaSpeechSegmenter](https://github.com/ina-foss/inaSpeechSegmenter).
+
+
 ## Installation
 
 ```
