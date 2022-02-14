@@ -80,7 +80,7 @@ class FaceDetector(ABC):
         if verbose:
             disp_frame_shapes(frame, [e.bbox for e in lret], [])
             for detection in lret:
-                x1, y1, x2, y2 = [int(e) for e in detection.bbox]
+                x1, y1, x2, y2 = [e for e in detection.bbox.to_int()]
                 print(detection)
                 x1 = max(x1, 0)
                 y1 = max(y1, 0)
@@ -130,7 +130,7 @@ class FaceDetector(ABC):
 
         return faces[am]
 
-    
+
     def get_closest_face(self, frame, ref_bbox, min_iou=.7, squarify=True, verbose=False):
         """
         Some face corpora may contain pictures with several faces
@@ -167,7 +167,7 @@ class FaceDetector(ABC):
         return lfaces[am]
 
 
-    
+
 def _sqdist(p1, p2):
     '''
     return squared distance between points p1(x,y) and p2(x,y)
