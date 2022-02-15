@@ -82,7 +82,7 @@ setup(
     keywords = KEYWORDS,
     #packages = find_packages(),
     include_package_data = True,
-    data_files = ['LICENSE', 'inaFaceAnalyzer/template.ass'],
+    data_files = ['LICENSE'], #'inaFaceAnalyzer/template.ass'],
     long_description = long_description,
     long_description_content_type='text/markdown',
     scripts=[os.path.join('scripts', script) for script in \
