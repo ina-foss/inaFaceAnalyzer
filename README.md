@@ -41,24 +41,26 @@ Most common processings can be done using the script <code>ina_face_analyzer.py<
 Some quick-starters commands are detailled bellow :
 
 ### Displaying detailed manual
-A detailed (and definitely long) listing of all options available from the command line can be obtained using the following command.
+A detailed listing of all options available from the command line can be obtained using the following command.
 We guess you don't want to read the whole listing at this point, but you can have a look at it later 😉.
 ```bash
 ina_face_analyzer.py -h
 ```
 ### Process all frames from a list of video (without tracking)
-Video processing requires at least a variable lenght list of input video paths, together with a directory where analysis results will be stored in CSV.
-The command line program needs to load classification models before doing computations, and this step may takes several seconds.
-We recommend to use long lists of files when using the program.
-The following command process all available video frames and may be slow.
+Video processing requires a list of input video paths, together with a directory used to store results in CSV.
+Program initialization time requires several seconds, and we recommend using large list of files instead of calling the program for each file to process.
 ```bash
 # directory storing result must exist
 mkdir my_output_directory
 # -i is followed by the list of video to analyze, and -o is followed by the name of the output_directory
 ina_face_analyzer.py -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
+# displaying the first 2 lines of the resulting CSV
+head -n 2 ./my_output_directory/pexels-artem-podrez-5725953.csv 
+frame,bbox,detect_conf,sex_decfunc,age_decfunc,sex_label,age_label
+0,"(945, -17, 1139, 177)",0.999998927116394,8.408014,3.9126961,m,34.12696123123169
 ```
 
-The resulting CSV contain several columns
+Resulting CSV contain several columns:
 * frame: frame position in the video (here we have 5 lines corresponding to frame 0 - so 5 detected faces)
 * bbox: face bounding box
 * detect_conf: face detection confidence (dependent on the detection system used)
@@ -66,20 +68,6 @@ The resulting CSV contain several columns
 * sex_label: m for male and f for female
 * age_label: age prediction
 
-```bash
-# display resulting CSV with same basename than input file
-cat ./my_ouput_directory/pexels-artem-podrez-5725953.csv
-#frame,bbox,detect_conf,sex_decfunc,age_decfunc,sex_label,age_label
-#0,"(945, -17, 1139, 177)",0.999998927116394,8.408014,3.9126961,m,34.12696123123169
-#0,"(71, 119, 272, 320)",0.9999958872795105,-13.514768,3.1241806,f,26.24180555343628
-#0,"(311, 163, 491, 343)",0.99997878074646,-11.023162,3.035822,f,25.358219146728516
-#0,"(558, 202, 728, 371)",0.9999741911888123,8.824918,2.910231,m,24.10231113433838
-#0,"(745, 23, 930, 208)",0.9815391302108765,-7.9449368,2.427218,f,19.27217960357666
-#1,"(946, -17, 1138, 175)",0.9999986290931702,7.916046,3.8727958,m,33.72795820236206
-#1,"(66, 117, 274, 324)",0.9999975562095642,-12.532552,3.105084,f,26.0508394241333
-#1,"(558, 202, 730, 373)",0.9999759793281555,7.8327827,2.8403559,m,23.4035587310791
-#1,"(311, 164, 491, 344)",0.9999755620956421,-10.973633,2.9896245,f,24.896245002746582
-```
 
 ### Faster processing of a video
 It computation time is an issue, we recommend using <code>--fps 1</code> which will process a single frame per second, instead of the whole amount of video frames. When using GPU architectures, we also recommend setting large <code>batch_size</code> values.
@@ -91,15 +79,6 @@ ina_face_analyzer.py --fps 1 --batch_size 128 -i ./media/pexels-artem-podrez-572
 ### Exporting results
 
 ### Processing list of images
-
-
-
-Using <code>ina_face_analyzer.py -h</code> display a detailed (definitely long and detailled) listing of all options available from the command-line.
-
-
-tracking and provide some of the best available processing options - which may
-be a little slow. 
-
 
 
 ## Using inaFaceAnalyzer API
