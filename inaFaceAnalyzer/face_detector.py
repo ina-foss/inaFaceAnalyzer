@@ -299,6 +299,10 @@ class LibFaceDetection(FaceDetector):
 
         dets = pb.decode(loc, conf, iou, self.minconf)
 
+        # dirty hack used for google collab compatibility
+        if len(dets.shape) == 3 and dets.shape[1] == 1:
+            dets = dets.reshape((dets.shape[0], dets.shape[2]))
+
 
         # NMS
         if dets.shape[0] > 0:
@@ -315,6 +319,7 @@ class LibFaceDetection(FaceDetector):
             return []
 
         assert dets.shape[1] == 15, dets.shape
+
         lret = []
         for i in range(len(dets)):
             score = dets[i,-1]
