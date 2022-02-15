@@ -58,10 +58,12 @@ CLASSIFIERS=[
 ]
 
 DESCRIPTION='inaFaceAnalyzer is a Python toolbox for large-scale face-based \
-description of gender representation in media with limited gender, racial and \
-age biases. It provides fast API and command line programs allowing to perform \
-face detection, tracking, gender and age prediction, export of the results into \
-CSV or rich ass subtitle'
+analysis of image and video streams. It provides fast API and command line programs allowing to perform \
+face detection, face tracking, gender and age prediction, and export to CSV or rich ASS subtitles'
+
+# read the contents of your README file
+with open('README.md', 'r') as fid:
+    long_description = fid.read()
 
 
 setup(
@@ -81,7 +83,7 @@ setup(
     #packages = find_packages(),
     include_package_data = True,
     data_files = ['LICENSE', 'inaFaceAnalyzer/template.ass'],
-#    long_description=LONGDESCRIPTION,
+    long_description = long_description,
     long_description_content_type='text/markdown',
 # TODO: add webcam script
     scripts=[os.path.join('scripts', script) for script in \
