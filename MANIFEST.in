@@ -1,4 +1,4 @@
-include *.py LICENSE *.md *.ipynb *.txt *.ass
+include *.py LICENSE *.md *.ipynb *.txt inaFaceAnalyzer/template.ass
 #include scripts *.py
 
 

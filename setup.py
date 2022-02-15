@@ -85,7 +85,6 @@ setup(
     data_files = ['LICENSE', 'inaFaceAnalyzer/template.ass'],
     long_description = long_description,
     long_description_content_type='text/markdown',
-# TODO: add webcam script
     scripts=[os.path.join('scripts', script) for script in \
              ['ina_face_analyzer.py', 'ina_face_analyzer_webcam_demo.py']],
     classifiers=CLASSIFIERS,
