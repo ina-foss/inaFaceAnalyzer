@@ -8,8 +8,8 @@
 # it is released under MIT LICENSE and available at
 # https://github.com/rcmalli/keras-vggface
 #
-# The module is no more maintained and the code bellow is a copy/pasted
-# minimal adaptation allowing to use it with tensorflow 2.x
+# The module is no more maintained and the code bellow is a minimal copy/pasted
+# adaptation allowing to use the VGG16 model provided in this package
 # 
 # In order to use a fully patched version of keras-vggface, see this fork
 # https://github.com/DavidDoukhan/keras-vggface
@@ -38,21 +38,12 @@
 #
 
 from tensorflow.keras.layers import Input, GlobalAveragePooling2D, Conv2D, MaxPooling2D
-
-from keras_applications.imagenet_utils import _obtain_input_shape
 from tensorflow.python.keras.utils.data_utils import get_file
-from tensorflow.keras import backend as K
 from tensorflow.keras.models import Model
 
 import numpy as np
 
-def VGG16(input_shape=None):
-    input_shape = _obtain_input_shape(input_shape,
-                                      default_size=224,
-                                      min_size=48,
-                                      data_format=K.image_data_format(),
-                                      require_flatten=False)
-
+def VGG16(input_shape):
     img_input = Input(shape=input_shape)
 
     # Block 1
@@ -102,9 +93,9 @@ def VGG16(input_shape=None):
     # Create model.
     model = Model(inputs, x, name='vggface_vgg16')  # load weights
 
+    url = 'https://github.com/rcmalli/keras-vggface/releases/download/v2.0/rcmalli_vggface_tf_notop_vgg16.h5'
     weights_path = get_file('rcmalli_vggface_tf_notop_vgg16.h5',
-                            'https://github.com/rcmalli/keras-vggface/releases/download/v2.0/rcmalli_vggface_tf_notop_vgg16.h5',
-                            cache_subdir='models/vggface')
+                            url , cache_subdir='models/vggface')
     
     model.load_weights(weights_path, by_name=True)
 
@@ -114,18 +105,9 @@ def VGG16(input_shape=None):
 def preprocess_input(x):
     x_temp = np.copy(x)
 
-    data_format = K.image_data_format()
-    assert data_format in {'channels_last', 'channels_first'}
-
-    if data_format == 'channels_first':
-        x_temp = x_temp[:, ::-1, ...]
-        x_temp[:, 0, :, :] -= 93.5940
-        x_temp[:, 1, :, :] -= 104.7624
-        x_temp[:, 2, :, :] -= 129.1863
-    else:
-        x_temp = x_temp[..., ::-1]
-        x_temp[..., 0] -= 93.5940
-        x_temp[..., 1] -= 104.7624
-        x_temp[..., 2] -= 129.1863
+    x_temp = x_temp[..., ::-1]
+    x_temp[..., 0] -= 93.5940
+    x_temp[..., 1] -= 104.7624
+    x_temp[..., 2] -= 129.1863
 
     return x_temp
