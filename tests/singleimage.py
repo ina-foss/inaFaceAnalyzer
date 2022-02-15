@@ -25,11 +25,12 @@
 
 import tensorflow as tf
 import unittest
+import glob
 from inaFaceAnalyzer.inaFaceAnalyzer import ImageAnalyzer
-from inaFaceAnalyzer.face_detector import OcvCnnFacedetector
+from inaFaceAnalyzer.face_detector import OcvCnnFacedetector, LibFaceDetection
 from inaFaceAnalyzer.face_classifier import Resnet50FairFaceGRA, Vggface_LSVM_YTF
 
-class TestSingleImage(unittest.TestCase):
+class TestImageAnalyzer(unittest.TestCase):
 
     def tearDown(self):
         tf.keras.backend.clear_session()
@@ -76,3 +77,9 @@ class TestSingleImage(unittest.TestCase):
         ret = gi('./media/800px-India_(236650352).jpg')
         self.assertEqual(len(ret), 5)
         # TODO: complete test later
+
+    def test_imagelist(self):
+        # test robustness of Libfacedetection with variable size image list
+        # used to be associated with GPU memory issues on some architectures
+        ia = ImageAnalyzer(face_detector=LibFaceDetection())
+        ia(glob.glob('./media/*.jpg'))

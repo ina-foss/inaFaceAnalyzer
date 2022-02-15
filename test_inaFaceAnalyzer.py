@@ -31,7 +31,7 @@ from tests.classifiers import TestClassifiers
 # tests related to opencv_utils.py
 from tests.ocvutils import TestOpenCvUtils
 # single image related tests
-from tests.singleimage import TestSingleImage
+from tests.singleimage import TestImageAnalyzer
 # tracking pipeline tests
 from tests.tracking import TestTracking
 # face detection tests
