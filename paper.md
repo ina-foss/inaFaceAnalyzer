@@ -126,7 +126,7 @@ resolution (pixels) |  10|15|20|25|30|40|50|75|100|150|224  |
 
 
 # Distribution
-`inaFaceAnalyzer` source code and trained models are available on [github](https://github.com/ina-foss/inaFaceAnalyzer), [PyPI](http://FIXME) and  [Dockerhub](http://fixme);  and distributed under MIT license.
+`inaFaceAnalyzer` source code and trained models are available on [github](https://github.com/ina-foss/inaFaceAnalyzer), [PyPI](https://pypi.org/project/inaFaceAnalyzer/) and  [Dockerhub](http://fixme);  and distributed under MIT license.
 After consultation of French CNIL (French data protection authority) and DDD (French Rights Defender), racial classification layers of our models were removed from their public distribution in order to prevent their use for non ethical purposes. These models can however be provided for free after examination of each demand.
 
 
