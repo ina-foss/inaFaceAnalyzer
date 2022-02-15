@@ -8,7 +8,7 @@
 It provides a modular processing pipeline allowing to predict age and gender from faces.
 Results can be exported to tables, augmented video streams, or rich ASS subtitles.
 `inaFaceAnalyzer` is designed with speed in mind to perform large-scale media monitoring campaigns.
-The trained age and gender classification model provided is based on a `ResNet50` architecture and evaluated on 4 face databases.
+The trained age and gender classification model provided is based on a `ResNet50` architecture.
 Evaluation results are highly competitive with respect to the current state-of-the-art, and appear to reduce gender, age and racial biases.
 
 Should you need further details regarding this work, please refer to the following [paper](https://github.com/ina-foss/inaFaceAnalyzer/blob/master/paper.md):
@@ -32,147 +32,75 @@ apt-get install cmake ffmpeg libgl1-mesa-glx
 git clone https://github.com/ina-foss/inaFaceAnalyzer.git
 cd inaFaceAnalyzer
 pip install .
-python run_tests.py # to check that the installation is ok
+./test_inaFaceAnalyzer.py # to check that the installation is ok
 ```
 
-## Using inaFaceAnalyzer program
+## Using inaFaceAnalyzer command line program
 
-Most common processings can be done using the script <code>ina_face_analyzer.py</code>
-provided with the distribution. Using <code>-h</code> display a detailed listing
-of all options available from the command-line. Defaults parameters do not use
-tracking and provide some of the best available processing options - which may
-be a little slow. It computation time is an issue, we recommend using
-<code>--fps 1</code> which will process a single frame per second, instead of
-the whole amount of video frames.
+Most common processings can be done using the script <code>ina_face_analyzer.py</code> provided with the distribution.
+Some quick-starters commands are detailled bellow :
 
+### Displaying detailed manual
+A detailed (and definitely long) listing of all options available from the command line can be obtained using the following command.
+We guess you don't want to read the whole listing at this point, but you can have a look at it later 😉.
+```bash
+ina_face_analyzer.py -h
+```
+### Process all frames from a list of video (without tracking)
+Video processing requires at least a variable lenght list of input video paths, together with a directory where analysis results will be stored in CSV.
+The command line program needs to load classification models before doing computations, and this step may takes several seconds.
+We recommend to use long lists of files when using the program.
+The following command process all available video frames and may be slow.
+```bash
+# directory storing result must exist
+mkdir my_output_directory
+# -i is followed by the list of video to analyze, and -o is followed by the name of the output_directory
+ina_face_analyzer.py -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
+```
+
+The resulting CSV contain several columns
+* frame: frame position in the video (here we have 5 lines corresponding to frame 0 - so 5 detected faces)
+* bbox: face bounding box
+* detect_conf: face detection confidence (dependent on the detection system used)
+* sex_decfunc and age_decfunc: raw classifier output. Can be used to smooth results or ignored.
+* sex_label: m for male and f for female
+* age_label: age prediction
 
 ```bash
-(env) ddoukhan@blahtop:~/git_repos/inaFaceAnalyzer$ ina_face_analyzer.py -h
-usage: ina_face_analyzer.py -i INPUT [INPUT ...] -o OUTPUT [-h]
-                            [--type {image,video}]
-                            [--classifier {Resnet50FairFaceGRA,Vggface_LSVM_YTF}]
-                            [--batch_size BATCH_SIZE]
-                            [--face_detector {LibFaceDetection,OcvCnnFacedetector}]
-                            [--face_detection_confidence FACE_DETECTION_CONFIDENCE]
-                            [--min_face_size_px SIZE_PX]
-                            [--min_face_size_percent SIZE_PRCT]
-                            [--face_detection_padding FACE_DETECTION_PADDING]
-                            [--ass_subtitle_export] [--mp4_export] [--fps FPS]
-                            [--keyframes] [--tracking FACE_DETECTION_PERIOD]
-                            [--preprocessed_faces]
-
-inaFaceAnalyzer 1.0.0+55.g918ac80.dirty: detects and classify faces from media
-collections and export results in csv
-
-required arguments:
-  -i INPUT [INPUT ...]  INPUT is a list of documents to analyse. ex:
-                        /home/david/test.mp4 /tmp/mymedia.avi. INPUT can be a
-                        list of video paths OR a list of image paths. Videos
-                        and images can have heterogenous formats but cannot be
-                        mixed in a single command. (default: None)
-  -o OUTPUT             When used with an input list of videos, OUTPUT is the
-                        path to a directory storing one resulting CSV for each
-                        processed video. OUTPUT directory should exist before
-                        launching the program. When used with an input list of
-                        images, OUTPUT is the path to the resulting csv file
-                        storing a line for each detected faces. OUTPUT should
-                        have csv extension. (default: None)
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --type {image,video}  type of media to be analyzed, either a list of images
-                        (JPEG, PNG, etc...) or a list of videos (AVI, MP4,
-                        ...) (default: video)
-  --classifier {Resnet50FairFaceGRA,Vggface_LSVM_YTF}
-                        face classifier to be used in the analysis:
-                        Resnet50FairFaceGRA predicts age and gender and is
-                        more accurate. Vggface_LSVM_YTF was used in earlier
-                        studies and predicts gender only (default:
-                        Resnet50FairFaceGRA)
-  --batch_size BATCH_SIZE
-                        GPU batch size. Larger values allow faster
-                        processings, but requires more GPU memory. Default 32
-                        value used is fine for a Laptop Quadro T2000 Mobile
-                        GPU with 4 Gb memory. (default: 32)
-
-optional arguments related to face detection:
-  --face_detector {LibFaceDetection,OcvCnnFacedetector}
-                        face detection module to be used: LibFaceDetection can
-                        take advantage of GPU acceleration and has a higher
-                        recall. OcvCnnFaceDetector is embed in OpenCV. It is
-                        faster for large resolutions since it first resize
-                        input frames to 300*300. It may miss small faces
-                        (default: LibFaceDetection)
-  --face_detection_confidence FACE_DETECTION_CONFIDENCE
-                        minimal confidence threshold to be used for face
-                        detection. Default values are 0.98 for
-                        LibFaceDetection and 0.65 for OcvCnnFacedetector
-                        (default: None)
-  --min_face_size_px SIZE_PX
-                        minimal absolute size in pixels of the faces to be
-                        considered for the analysis. Optimal classification
-                        results are obtained for sizes above 75 pixels.
-                        (default: 30)
-  --min_face_size_percent SIZE_PRCT
-                        minimal relative size (percentage between 0 and 1) of
-                        the faces to be considered for the analysis with
-                        repect to image frames minimal dimension (generally
-                        height for videos) (default: 0)
-  --face_detection_padding FACE_DETECTION_PADDING
-                        Black padding percentage to be applied to image frames
-                        before face detection. 0.15 Padding may help detecting
-                        large faces occupying the whole image with
-                        OcvCnnFacedetector. Default padding values are 0.15
-                        for OcvCnnFacedetector and 0 for LibFaceDetection
-                        (default: None)
-
-optional arguments to be used only with video materials (--type video):
-  --ass_subtitle_export
-                        export analyses into a rich ASS subtitle file which
-                        can be displayed with VLC or ELAN (default: False)
-  --mp4_export          export analyses into a a MP4 video with incrusted
-                        bounding boxes and analysis estimates (default: False)
-  --fps FPS             Amount of video frames to be processed per second.
-                        Remaining frames will be skipped. If not provided, all
-                        video frames will be processed (generally between 25
-                        and 30 per seconds). Lower FPS values results in
-                        faster processing time. Incompatible with the
-                        --keyframes argument (default: None)
-  --keyframes           Face detection and analysis from video limited to
-                        video key frames. Allows fastest video analysis time
-                        associated to a summary with non uniform frame
-                        sampling rate. Incompatible with the --fps,
-                        --ass_subtitle_export or --mp4_export arguments.
-                        (default: False)
-  --tracking FACE_DETECTION_PERIOD
-                        Activate face tracking and define
-                        FACE_DETECTION_PERIOD. Face detection (costly) will be
-                        performed each FACE_DETECTION_PERIOD. Face tracking
-                        (cheap) will be performed for the remaining
-                        (FACE_DETECTION_PERIOD -1) frames. Tracked faces are
-                        associated to a numeric identifier. Tracked faces
-                        classification predictions are averaged, and more
-                        robust than frame-isolated predictions. To obtain the
-                        most robust result, --tracking 1 will perform face
-                        detection for each frame and track the detected faces
-                        (default: None)
-
-optional arguments to be used only with image material (--type image):
-  --preprocessed_faces  To be used when using a list of preprocessed images.
-                        Preprocessed images are assument to be already
-                        detected, cropped, centered, aligned and rescaled to
-                        224*224 pixels. Result will be stored in a csv file
-                        with 1 line per image with name provided in --o
-                        argument (default: False)
-
-If you are using inaFaceAnalyzer in your research-related documents, please
-cite the current version number used (1.0.0+55.g918ac80.dirty) together with a
-reference to the following paper: David Doukhan and Thomas Petit (2022).
-inaFaceAnalyzer: a Python toolbox for large-scale face-based description of
-gender representation in media with limited gender, racial and age biases.
-Submitted to JOSS - The journal of Open Source Software (submission in
-progress).
+# display resulting CSV with same basename than input file
+cat ./my_ouput_directory/pexels-artem-podrez-5725953.csv
+#frame,bbox,detect_conf,sex_decfunc,age_decfunc,sex_label,age_label
+#0,"(945, -17, 1139, 177)",0.999998927116394,8.408014,3.9126961,m,34.12696123123169
+#0,"(71, 119, 272, 320)",0.9999958872795105,-13.514768,3.1241806,f,26.24180555343628
+#0,"(311, 163, 491, 343)",0.99997878074646,-11.023162,3.035822,f,25.358219146728516
+#0,"(558, 202, 728, 371)",0.9999741911888123,8.824918,2.910231,m,24.10231113433838
+#0,"(745, 23, 930, 208)",0.9815391302108765,-7.9449368,2.427218,f,19.27217960357666
+#1,"(946, -17, 1138, 175)",0.9999986290931702,7.916046,3.8727958,m,33.72795820236206
+#1,"(66, 117, 274, 324)",0.9999975562095642,-12.532552,3.105084,f,26.0508394241333
+#1,"(558, 202, 730, 373)",0.9999759793281555,7.8327827,2.8403559,m,23.4035587310791
+#1,"(311, 164, 491, 344)",0.9999755620956421,-10.973633,2.9896245,f,24.896245002746582
 ```
+
+### Faster processing of a video
+It computation time is an issue, we recommend using <code>--fps 1</code> which will process a single frame per second, instead of the whole amount of video frames. When using GPU architectures, we also recommend setting large <code>batch_size</code> values.
+```
+ina_face_analyzer.py --fps 1 --batch_size 128 -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
+```
+### Using Tracking
+
+### Exporting results
+
+### Processing list of images
+
+
+
+Using <code>ina_face_analyzer.py -h</code> display a detailed (definitely long and detailled) listing of all options available from the command-line.
+
+
+tracking and provide some of the best available processing options - which may
+be a little slow. 
+
+
 
 ## Using inaFaceAnalyzer API
 
