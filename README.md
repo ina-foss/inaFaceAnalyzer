@@ -71,15 +71,39 @@ Resulting CSV contain several columns:
 
 ### Faster processing of a video
 It computation time is an issue, we recommend using <code>--fps 1</code> which will process a single frame per second, instead of the whole amount of video frames. When using GPU architectures, we also recommend setting large <code>batch_size</code> values.
-```
+```bash
+# here we process a single frame per second, which is 25/30 faster than processing the whole video
 ina_face_analyzer.py --fps 1 --batch_size 128 -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
 ```
 ### Using Tracking
+Tracking allows to lower computation time, since it is less costly than a face detection procedure. It also allows to smooth prediction results associated to a tracked face and obtain more robust estimates.
+```bash
+# Process 5 frames per second, use face detection for 1/3 and face tracking for 2/3 frames
+ina_face_analyzer.py --fps 5 --tracking 3 -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
+```
 
 ### Exporting results
+Result visualization allows to validate if a give processing pipeline is suited to a specific material.
+<code>--mp4_export</code> generate a new video with embeded bounding boxes and classification information.
+<code>--ass_subtitle_export</code> generate a ASS subtitle file allowing to display bounding boxes and classification results in vlc or ELAN, and which is more convenient to share..
+
+```bash
+# Process 10 frames per second, use face detection for 1/2 and face tracking for 1/2 frames
+# results are exported to a newly generated MP4 video and ASS subtitle
+ina_face_analyzer.py --fps 10 --tracking 2 --mp4_export --ass_subtitle_export  -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
+# display the resulting video
+vlc ./my_output_directory/pexels-artem-podrez-5725953.mp4
+# display the original video with the resulting subtitle files
+vlc media/pexels-artem-podrez-5725953.mp4 --sub-file my_output_directory/pexels-artem-podrez-5725953.ass 
+```
 
 ### Processing list of images
-
+The processing of list of images can be speed up using <code>--type image</code>.
+A single resulting csv will be generated with entries for each detected faces, together with a reference to its original filename path.
+```bash
+# process all images stored in directory media, outputs a single csv file
+ina_face_analyzer.py -i media/*.jpg -o ./myresults.csv --type image
+```
 
 ## Using inaFaceAnalyzer API
 
