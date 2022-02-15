@@ -314,6 +314,7 @@ class LibFaceDetection(FaceDetector):
         else:
             return []
 
+        assert dets.shape[1] == 15, dets.shape
         lret = []
         for i in range(len(dets)):
             score = dets[i,-1]
@@ -377,7 +378,7 @@ def facedetection_cmdlineparser(parser):
 def facedetection_factory(args):
     '''
     Instanciate a face detection object from parsed command line arguments
-    
+
     Parameters
     ----------
     args : Namespace
@@ -398,5 +399,5 @@ def facedetection_factory(args):
         detector = LibFaceDetection(**dargs)
     elif args.face_detector == 'OcvCnnFacedetector':
         detector = OcvCnnFacedetector(**dargs)
-    
+
     return detector
