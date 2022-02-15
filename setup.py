@@ -57,27 +57,12 @@ CLASSIFIERS=[
     'Topic :: Sociology',
 ]
 
-DESCRIPTION='Detect faces in video streams and do gender and age classification'
-LONGDESCRIPTION='''Detect faces in video streams and does gender classification. Designed for estimating the visual presence of women and men within TV programs.
+DESCRIPTION='''inaFaceAnalyzer is a Python toolbox for large-scale face-based
+description of gender representation in media with limited gender, racial and
+age biases. It provides fast API and command line programs allowing to perform
+face detection, tracking, gender and age prediction, export of the results into
+CSV or rich ass subtitle'''
 
-```bibtex
-@techreport{rezgui2019carthage,
-  type = {Msc. Thesis},
-  author = {Zohra Rezgui},
-  title = {Détection et classification de visages pour la description de l’égalité femme-homme dans les archives télévisuelles},
-  submissiondate = {2019/11/19},
-  year = {2019},
-  url = {https://www.researchgate.net/publication/337635267_Rapport_de_stage_Detection_et_classification_de_visages_pour_la_description_de_l'egalite_femme-homme_dans_les_archives_televisuelles},
-  institution = {Higher School of Statistics and Information Analysis, University of Carthage}
-}
-
-@inproceedings{doukhan2019estimer,
-  title={Estimer automatiquement les diff{\'e}rences de repr{\'e}sentation existant entre les femmes et les hommes dans les m{\'e}dias},
-  author={Doukhan, David and Rezgui, Zohra and Poels, G{\'e}raldine and Carrive, Jean},
-  year={2019}
-}
-
-'''
 
 setup(
     name = "inaFaceAnalyzer",
@@ -97,7 +82,7 @@ setup(
     #packages = find_packages(),
     include_package_data = True,
     data_files = ['LICENSE', 'inaFaceAnalyzer/template.ass'],
-    long_description=LONGDESCRIPTION,
+#    long_description=LONGDESCRIPTION,
     long_description_content_type='text/markdown',
 # TODO: add webcam script
     scripts=[os.path.join('scripts', script) for script in \

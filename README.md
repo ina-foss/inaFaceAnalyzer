@@ -1,10 +1,17 @@
-# inaFaceAnalyzer
+# inaFaceAnalyzer: a Python toolbox for large-scale face-based description of gender representation in media with limited gender, racial and age biases
 [![test py 3.7](https://github.com/ina-foss/inaFaceAnalyzer/actions/workflows/test_py3-7.yml/badge.svg)](https://github.com/ina-foss/inaFaceAnalyzer/actions/workflows/test_py3-7.yml)
 [![test py 3.8](https://github.com/ina-foss/inaFaceAnalyzer/actions/workflows/test_py3-8.yml/badge.svg)](https://github.com/ina-foss/inaFaceAnalyzer/actions/workflows/test_py3-8.yml)
 [![test py 3.9](https://github.com/ina-foss/inaFaceAnalyzer/actions/workflows/test_py3-9.yml/badge.svg)](https://github.com/ina-foss/inaFaceAnalyzer/actions/workflows/test_py3-9.yml)
 <!-- [![test py 3.10](https://github.com/ina-foss/inaFaceAnalyzer/actions/workflows/test_py3-10.yml/badge.svg)](https://github.com/ina-foss/inaFaceAnalyzer/actions/workflows/test_py3-10.yml) -->
 
-Should you need further details regarding this work, please refer to the following paper:
+`inaFaceAnalyzer` is a Python toolbox designed for large-scale analysis of faces in image or video streams.
+It provides a modular processing pipeline allowing to predict age and gender from faces.
+Results can be exported to tables, augmented video streams, or rich ASS subtitles.
+`inaFaceAnalyzer` is designed with speed in mind to perform large-scale media monitoring campaigns.
+The trained age and gender classification model provided is based on a `ResNet50` architecture and evaluated on 4 face databases.
+Evaluation results are highly competitive with respect to the current state-of-the-art, and appear to reduce gender, age and racial biases.
+
+Should you need further details regarding this work, please refer to the following [paper](paper.md):
 
 ```bibtex
 @journal{doukhan2022joss,
