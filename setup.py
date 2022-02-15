@@ -57,11 +57,11 @@ CLASSIFIERS=[
     'Topic :: Sociology',
 ]
 
-DESCRIPTION='''inaFaceAnalyzer is a Python toolbox for large-scale face-based
-description of gender representation in media with limited gender, racial and
-age biases. It provides fast API and command line programs allowing to perform
-face detection, tracking, gender and age prediction, export of the results into
-CSV or rich ass subtitle'''
+DESCRIPTION='inaFaceAnalyzer is a Python toolbox for large-scale face-based \
+description of gender representation in media with limited gender, racial and \
+age biases. It provides fast API and command line programs allowing to perform \
+face detection, tracking, gender and age prediction, export of the results into \
+CSV or rich ass subtitle'
 
 
 setup(
