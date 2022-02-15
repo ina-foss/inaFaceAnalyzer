@@ -318,6 +318,10 @@ class LibFaceDetection(FaceDetector):
         else:
             return []
 
+        # dirty hack used for google collab compatibility
+        if len(dets.shape) == 3 and dets.shape[1] == 1:
+            dets = dets.reshape((dets.shape[0], dets.shape[2]))
+        assert len(dets.shape) == 2, dets.shape
         assert dets.shape[1] == 15, dets.shape
 
         lret = []
