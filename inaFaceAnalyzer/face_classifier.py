@@ -27,11 +27,11 @@ import numpy as np
 import pandas as pd
 import numbers
 from abc import ABC, abstractmethod
-from keras_vggface.vggface import VGGFace
-from keras_vggface import utils
 import tensorflow
 from tensorflow import keras
 from tensorflow.keras.preprocessing.image import img_to_array
+
+import inaFaceAnalyzer.keras_vggface_patch as keras_vggface
 from .svm_utils import svm_load
 from .opencv_utils import imread_rgb
 from .remote_utils import get_remote
@@ -226,10 +226,24 @@ class Resnet50FairFaceGRA(Resnet50FairFace):
         return df
 
 class OxfordVggFace(FaceClassifier):
+    '''
+    OxfordVggFace instances are based on pretrained VGG16 architectures
+    pretrained using a triplet loss paradigm allowing to obtain face neural
+    representation, that we use to train linear SVM classification systems.
+    
+    The approach used is fully described in Zohra Rezgui's internship report at INA:
+    Détection et classification de visages pour la description de l’égalité
+    femme-homme dans les archives télévisuelles, Higher School of Statistics
+    and Information Analysis, University of Carthage, 2019
 
+    This class takes advantage of Refik Can Malli's keras-vggface module,
+    providing pretrained VGG16 models
+    https://github.com/rcmalli/keras-vggface    
+    '''
+    
     def __init__(self, hdf5_svm=None):
         # Face feature extractor from aligned and detected faces
-        self.vgg_feature_extractor = VGGFace(include_top = False, input_shape = self.input_shape, pooling ='avg')
+        self.vgg_feature_extractor = keras_vggface.VGG16(self.input_shape)
         # SVM trained on VGG neural features
         if hdf5_svm is not None:
             self.gender_svm = svm_load(hdf5_svm)
@@ -244,7 +258,7 @@ class OxfordVggFace(FaceClassifier):
         limg is a list of preprocessed images supposed to be aligned and cropped and resized to 224*224
         """
         limg = [np.expand_dims(img_to_array(e[:, :, ::-1]), axis=0) for e in limg]
-        x = utils.preprocess_input(np.concatenate(limg), version=1)
+        x = keras_vggface.preprocess_input(np.concatenate(limg))
         return self.vgg_feature_extractor(x)
 
     def inference(self, x):
