@@ -11,13 +11,13 @@ Results can be exported to tables, augmented video streams, or rich ASS subtitle
 The trained age and gender classification model provided is based on a `ResNet50` architecture and evaluated on 4 face databases.
 Evaluation results are highly competitive with respect to the current state-of-the-art, and appear to reduce gender, age and racial biases.
 
-Should you need further details regarding this work, please refer to the following [paper](paper.md):
+Should you need further details regarding this work, please refer to the following [paper](https://github.com/ina-foss/inaFaceAnalyzer/blob/master/paper.md):
 
 ```bibtex
 @journal{doukhan2022joss,
   author = {David Doukhan and Thomas Petit},
   title = {inaFaceAnalyzer: a Python toolbox for large-scale face-based description of gender representation in media},
-  journal = {JOSS - The journal of Open Source Software},
+  journal = {JOSS - The journal of Open Source Software (currently being reviewed)},
   year = {submission in progress}
 }
 ```
@@ -173,6 +173,8 @@ gender representation in media with limited gender, racial and age biases.
 Submitted to JOSS - The journal of Open Source Software (submission in
 progress).
 ```
+
+## Using inaFaceAnalyzer API
 
 
 ## CREDITS
