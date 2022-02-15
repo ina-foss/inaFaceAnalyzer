@@ -302,7 +302,7 @@ class LibFaceDetection(FaceDetector):
         # dirty hack used for google collab compatibility
         if len(dets.shape) == 3 and dets.shape[1] == 1:
             dets = dets.reshape((dets.shape[0], dets.shape[2]))
-
+        assert len(dets.shape) == 2, dets.shape
 
         # NMS
         if dets.shape[0] > 0:
