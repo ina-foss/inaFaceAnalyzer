@@ -76,7 +76,7 @@ setup(
     description = DESCRIPTION,
     license = "MIT",
     install_requires=['opencv-contrib-python', 'dlib', 'pandas', 'sklearn',
-                      'h5py', 'matplotlib', 'onnxruntime-gpu', 'cheetah3', 'av', 'tensorflow'],
+                      'h5py', 'matplotlib', 'onnxruntime-gpu', 'cheetah3', 'av', 'tensorflow>=2.6'],
     url = "https://github.com/ina-foss/inaFaceAnalyzer",
     packages=['inaFaceAnalyzer'],
     keywords = KEYWORDS,
