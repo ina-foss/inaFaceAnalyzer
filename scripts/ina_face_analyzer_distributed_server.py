@@ -29,6 +29,8 @@ import inaFaceAnalyzer.commandline_utils as ifacu
 from inaFaceAnalyzer.face_detector import facedetection_cmdlineparser
 import warnings
 
+from collections import namedtuple
+
 
 @Pyro4.expose
 class JobServer(object):
@@ -42,10 +44,8 @@ class JobServer(object):
         args : argument parser results
             see ina_face_analyzer_distributed_server.py -h for a detailed listing
         '''
-        
-        # full name of the host to be used by remote clients
-        Pyro4.config.HOST = args.host_adress
-        
+
+
         # open csv and check mandatory columns are provided
         csv = args.joblist_csv
         print('parsing joblist %s' % csv)
@@ -56,23 +56,31 @@ class JobServer(object):
         for k in df.columns:
             if k not in ['source_path', 'dest_csv', 'dest_ass', 'dest_mp4']:
                 warnings.warn('column %s in %s is not supported and will be ignored' % (k, csv))
-            df[k] = df[k].strip()
+            df[k] = df[k].map(lambda x: x.strip())
         # shuffle records and drop duplicates
         df = df.drop_duplicates().sample(frac=1).reset_index(drop=True)
-        
+
         print('setting jobs')
         print('random job record example:', next(df.itertuples()))
         print('Total number of files to process:', len(df))
-        self.jobiterator = df.iterrows()
+        self.jobiterator = enumerate(df.itertuples())
+        nt = namedtuple('serverargs', args.__dict__)
+        self.args = nt(*args.__dict__)
+        #self.args = args
 
     def get_analysis_args(self, msg):
         print(msg)
         return self.args
-        
+
     def get_job(self, msg):
+        #try:
         ijob, job = next(self.jobiterator)
         print('job %d: %s' % (ijob, msg))
+        print(job)
         return job
+        #except StopIteration:
+        #    print('no more jogs')
+        #    return None
 
     # to be implemented - only usefull for image collections
     # def get_njobs(self, msg, nbjobs=20):
@@ -101,13 +109,13 @@ if __name__ == '__main__':
     #ra = parser.add_argument_group('required arguments')
 
     parser.add_argument("-h", "--help", action="help", help="show this help message and exit")
-    
-    h = '''host_address is used by workers to communicate remotely with 
+
+    h = '''host_address is used by workers to communicate remotely with
     the server. It can be either server's IP adress, or host full name ex: mymachine.my-domain.fr
     '''
     parser.add_argument(dest='host_address', help = h)
-    
-    h = ''' joblist_csv is the full path to a csv file storing one line per file 
+
+    h = ''' joblist_csv is the full path to a csv file storing one line per file
     to process. It may contain up to 4 columns, separated by coma ",".
     "source_path" column (mandatory) contains the path or the url to a file to be processed.
     "dest_csv" (mandatory) contains the path used to write the resulting csv.
@@ -121,14 +129,17 @@ if __name__ == '__main__':
     facedetection_cmdlineparser(parser)
 
     #### OPTION SKIP IF EXIST
-    
+
     ifacu.add_fps(parser)
     ifacu.add_keyframes(parser)
 
     # parse command line arguments
     args = parser.parse_args()
-    
+
+    # full name of the host to be used by remote clients
+    Pyro4.config.HOST = args.host_address
     daemon = Pyro4.Daemon()
+
     uri = daemon.register(JobServer(args))
     print("Provide the following objet URI to remove ina_face_analyzer_distributed_workers: ", uri)
     daemon.requestLoop()

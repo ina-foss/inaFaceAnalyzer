@@ -23,11 +23,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+# Here are defined the common pieces of code used by command line argument programs
+
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import inaFaceAnalyzer
 
 epilog = '''
-If you are using inaFaceAnalyzer in your research-related documents, please cite
+If you are using inaFaceAnalyzer in your research, please cite
 the current version number used (%s) together with a reference to the following
 paper: David Doukhan and Thomas Petit (2022). inaFaceAnalyzer: a Python toolbox
 for large-scale face-based description of gender representation in media with
@@ -56,3 +58,13 @@ Allows fastest video analysis time associated to a summary with
 non uniform frame sampling rate. Incompatible with the --fps, --ass_subtitle_export or --mp4_export arguments.'''
 def add_keyframes(parser):
     parser.add_argument('--keyframes', action='store_true', help=hkeyframes)
+
+htracking = '''Activate face tracking and define FACE_DETECTION_PERIOD.
+Face detection (costly) will be performed each FACE_DETECTION_PERIOD.
+Face tracking (cheap) will be performed for the remaining (FACE_DETECTION_PERIOD -1) frames.
+Tracked faces are associated to a numeric identifier.
+Tracked faces classification predictions are averaged, and more robust than frame-isolated predictions.
+To obtain the most robust result, --tracking 1 will perform face detection for each frame and track the detected faces
+'''
+def add_tracking(parser):
+    parser.add_argument('--tracking', type=int, dest='face_detection_period', help=htracking)

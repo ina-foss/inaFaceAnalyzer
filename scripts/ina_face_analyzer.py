@@ -104,15 +104,8 @@ dv.add_argument('--mp4_export', action='store_true',
 #                 Incompatible with the --keyframes argument''')
 ifacu.add_fps(dv)
 ifacu.add_keyframes(dv)
+ifacu.add_tracking(dv)
 
-
-dv.add_argument('--tracking', type=int, dest='face_detection_period',
-                help='''Activate face tracking and define FACE_DETECTION_PERIOD.
-                Face detection (costly) will be performed each FACE_DETECTION_PERIOD.
-                Face tracking (cheap) will be performed for the remaining (FACE_DETECTION_PERIOD -1) frames.
-                Tracked faces are associated to a numeric identifier.
-                Tracked faces classification predictions are averaged, and more robust than frame-isolated predictions.
-                To obtain the most robust result, --tracking 1 will perform face detection for each frame and track the detected faces''')
 
 ## image only parameters
 
