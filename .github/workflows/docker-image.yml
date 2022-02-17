@@ -25,9 +25,9 @@ jobs:
         hash=$(git log -n1 --format=format:"%H")
         echo "::set-output name=master-hash::${hash}"
         echo $hash
-    - name: exit if tag commit hash don't match master commit hash
-      if: steps.tag-commit-hash.outputs.tag-hash != steps.master-commit-hash.outputs.master-hash
-      run: exit 1
+#    - name: exit if tag commit hash don't match master commit hash
+#      if: steps.tag-commit-hash.outputs.tag-hash != steps.master-commit-hash.outputs.master-hash
+#      run: exit 1
   test:
     runs-on: ubuntu-18.04
     steps:
