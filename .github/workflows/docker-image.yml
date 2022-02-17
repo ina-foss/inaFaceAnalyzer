@@ -1,0 +1,51 @@
+name: Docker Image CI
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  check-tag-branch:
+    runs-on: ubuntu-latest
+    steps:
+    - name: get tag commit hash
+      id: tag-commit-hash
+      run: |
+        hash=${{ GITHUB.SHA }}
+        echo "::set-output name=tag-hash::${hash}"
+        echo $hash
+    - name: checkout master
+      uses: actions/checkout@v2
+      with:
+        ref: master
+    - name: get latest master commit hash
+      id: master-commit-hash
+      run: |
+        hash=$(git log -n1 --format=format:"%H")
+        echo "::set-output name=master-hash::${hash}"
+        echo $hash
+    - name: exit if tag commit hash don't match master commit hash
+      if: steps.tag-commit-hash.outputs.tag-hash != steps.master-commit-hash.outputs.master-hash
+      run: exit 1
+  test:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Extract tag name
+        id: tag
+        uses: actions/github-script@0.2.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            return context.payload.ref.replace(/\/refs\/tags\//, '');
+      - name: Echo
+        run: echo ${{ steps.tag.outputs.result }}
+      
+#  build:
+#
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#    - uses: actions/checkout@v2
+#    - name: Build the Docker image
+#      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
