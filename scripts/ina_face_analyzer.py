@@ -23,10 +23,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import argparse
+#import argparse
 import os
 import sys
 
+import inaFaceAnalyzer.commandline_utils as ifacu
 import inaFaceAnalyzer.face_classifier
 from inaFaceAnalyzer.face_detector import facedetection_cmdlineparser, facedetection_factory
 import inaFaceAnalyzer.inaFaceAnalyzer
@@ -35,20 +36,10 @@ import inaFaceAnalyzer.display_utils
 
 # TODO: add options to perform detection only and/or preprocessing only
 
-epilog = '''
-If you are using inaFaceAnalyzer in your research-related documents, please cite
-the current version number used (%s) together with a reference to the following
-paper: David Doukhan and Thomas Petit (2022). inaFaceAnalyzer: a Python toolbox
-for large-scale face-based description of gender representation in media with
-limited gender, racial and age biases. Submitted to JOSS - The journal of Open
-Source Software (submission in progress).
-''' % inaFaceAnalyzer.__version__
 
-parser = argparse.ArgumentParser(description='inaFaceAnalyzer %s: detects and classify faces from media collections and export results in csv' % inaFaceAnalyzer.__version__,
-                                 # TODO: add bibliographic reference
-                                 epilog=epilog,
-                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                 add_help=False)
+
+description = 'inaFaceAnalyzer %s: detects and classify faces from media collections and export results in csv' % inaFaceAnalyzer.__version__
+parser = ifacu.new_parser(description)
 
 ## Required arguments
 ra = parser.add_argument_group('required arguments')

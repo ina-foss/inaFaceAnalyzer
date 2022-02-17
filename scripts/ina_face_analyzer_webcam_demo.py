@@ -24,12 +24,26 @@
 # THE SOFTWARE.
 
 import cv2
-from inaFaceAnalyzer import GenderImage
+import inaFaceAnalyzer
+from inaFaceAnalyzer import ImageAnalyzer
 from inaFaceAnalyzer.face_classifier import Resnet50FairFaceGRA
+import inaFaceAnalyzer.commandline_utils as ifacu
+from inaFaceAnalyzer.face_detector import facedetection_cmdlineparser, facedetection_factory
 
 
+### BUILD PARSER
+description = 'inaFaceAnalyzer %s: Webcam demo. Funny and Real-Time' % inaFaceAnalyzer.__version__
+parser = ifacu.new_parser(description)
+# update parser with face detection arguments
+parser.add_argument("-h", "--help", action="help", help="show this help message and exit")
+facedetection_cmdlineparser(parser)
 
-gi = GenderImage(face_classifier=Resnet50FairFaceGRA())
+# PARSE ARGUMENTS
+args = parser.parse_args()
+detector = facedetection_factory(args)
+
+
+gi = ImageAnalyzer(face_classifier=Resnet50FairFaceGRA(), face_detector=detector)
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -37,13 +51,15 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 video_capture = cv2.VideoCapture(0)
 
 
+iframe = 0
+
 while True:
     # Capture frame-by-frame
     ret, frame = video_capture.read()
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    faces = gi.detect_and_classify_faces_from_frame(frame)
+    faces = gi._process_stream([(iframe, frame)], detector)
 
     # Draw a rectangle around the faces
     for e in faces.itertuples():
@@ -63,6 +79,8 @@ while True:
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+
+    iframe += 1
 
 # When everything is done, release the capture
 video_capture.release()
