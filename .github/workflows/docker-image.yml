@@ -34,6 +34,9 @@ jobs:
   test:
     runs-on: ubuntu-18.04
     steps:
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
       - name: Extract tag name
         id: tag
         uses: actions/github-script@0.2.0
