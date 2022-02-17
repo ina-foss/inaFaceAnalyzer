@@ -38,12 +38,12 @@ cd inaFaceAnalyzer
 pip install .
 ./test_inaFaceAnalyzer.py # to check that the installation is ok
 ```
-### Installing from pypi
+### Installing from pypi on ubuntu
 ```
+# for GPU support, cuda, cudnn and nvidia drivers should be already installed
 apt-get install cmake ffmpeg libgl1-mesa-glx
 pip install inaFaceAnalyzer
 ```
-
 
 ## Using inaFaceAnalyzer command line programs
 Several scripts are provided with the distribution:
