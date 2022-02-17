@@ -76,7 +76,8 @@ setup(
     description = DESCRIPTION,
     license = "MIT",
     install_requires=['opencv-contrib-python', 'dlib', 'pandas', 'sklearn',
-                      'h5py', 'matplotlib', 'onnxruntime-gpu', 'cheetah3', 'av', 'tensorflow>=2.6'],
+                      'h5py', 'matplotlib', 'onnxruntime-gpu', 'cheetah3',
+                      'av', 'tensorflow>=2.6', 'pyro4'],
     url = "https://github.com/ina-foss/inaFaceAnalyzer",
     packages=['inaFaceAnalyzer'],
     keywords = KEYWORDS,
@@ -86,7 +87,9 @@ setup(
     long_description = long_description,
     long_description_content_type='text/markdown',
     scripts=[os.path.join('scripts', script) for script in \
-             ['ina_face_analyzer.py', 'ina_face_analyzer_webcam_demo.py']],
+             ['ina_face_analyzer.py', 'ina_face_analyzer_webcam_demo.py',
+              'ina_face_analyzer_distributed_server.py',
+              'ina_face_analyzer_distributed_worker.py']],
     classifiers=CLASSIFIERS,
     python_requires='>=3.7',
 

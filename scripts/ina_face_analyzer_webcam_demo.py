@@ -24,7 +24,6 @@
 # THE SOFTWARE.
 
 import cv2
-import inaFaceAnalyzer
 from inaFaceAnalyzer import ImageAnalyzer
 from inaFaceAnalyzer.face_classifier import Resnet50FairFaceGRA
 import inaFaceAnalyzer.commandline_utils as ifacu
@@ -32,7 +31,7 @@ from inaFaceAnalyzer.face_detector import facedetection_cmdlineparser, facedetec
 
 
 ### BUILD PARSER
-description = 'inaFaceAnalyzer %s: Webcam demo. Funny and Real-Time' % inaFaceAnalyzer.__version__
+description = 'Webcam demo. Funny and Real-Time'
 parser = ifacu.new_parser(description)
 # update parser with face detection arguments
 parser.add_argument("-h", "--help", action="help", help="show this help message and exit")

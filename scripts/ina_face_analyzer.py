@@ -96,17 +96,15 @@ dv.add_argument('--ass_subtitle_export', action='store_true',
 dv.add_argument('--mp4_export', action='store_true',
                 help='export analyses into a a MP4 video with incrusted bounding boxes and analysis estimates')
 
-dv.add_argument('--fps', default=None, type=float,
-                help='''Amount of video frames to be processed per second.
-                Remaining frames will be skipped.
-                If not provided, all video frames will be processed (generally between 25 and 30 per seconds).
-                Lower FPS values results in faster processing time.
-                Incompatible with the --keyframes argument''')
+# dv.add_argument('--fps', default=None, type=float,
+#                 help='''Amount of video frames to be processed per second.
+#                 Remaining frames will be skipped.
+#                 If not provided, all video frames will be processed (generally between 25 and 30 per seconds).
+#                 Lower FPS values results in faster processing time.
+#                 Incompatible with the --keyframes argument''')
+ifacu.add_fps(dv)
+ifacu.add_keyframes(dv)
 
-dv.add_argument('--keyframes', action='store_true',
-                help='''Face detection and analysis from video limited to video key frames.
-                Allows fastest video analysis time associated to a summary with
-                non uniform frame sampling rate. Incompatible with the --fps, --ass_subtitle_export or --mp4_export arguments.''')
 
 dv.add_argument('--tracking', type=int, dest='face_detection_period',
                 help='''Activate face tracking and define FACE_DETECTION_PERIOD.

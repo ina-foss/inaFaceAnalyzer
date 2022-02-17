@@ -42,3 +42,17 @@ def new_parser(description):
                             formatter_class= ArgumentDefaultsHelpFormatter,
                             add_help=False)
     return parser
+
+hfps = '''Amount of video frames to be processed per second.
+Remaining frames will be skipped.
+If not provided, all video frames will be processed (generally between 25 and 30 per seconds).
+Lower FPS values results in faster processing time.
+Incompatible with the --keyframes argument'''
+def add_fps(parser):
+    parser.add_argument('--fps', default=None, type=float, help=hfps)
+
+hkeyframes = '''Face detection and analysis from video limited to video key frames.
+Allows fastest video analysis time associated to a summary with
+non uniform frame sampling rate. Incompatible with the --fps, --ass_subtitle_export or --mp4_export arguments.'''
+def add_keyframes(parser):
+    parser.add_argument('--keyframes', action='store_true', help=hkeyframes)
