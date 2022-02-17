@@ -50,6 +50,7 @@ Several scripts are provided with the distribution:
 * <code>ina_face_analyzer.py</code> : can perform the most common processings provided by the framework
 * <code>ina_face_analyzer_webcam_demo.py</code> : a demo script using webcam
 A detailed listing of all options available from command line programs using <code>-h</code> argument.
+
 We guess you don't want to read the whole listing at this point, but you can have a look at it later 😉.
 
 ### Displaying detailed manual
