@@ -30,7 +30,7 @@ Have a look to sibling project [inaSpeechSegmenter](https://github.com/ina-foss/
 `inaFaceAnalyzer` requires python version between 3.7 and 3.9.
 Python 3.10 is not yet supported due to `onnxruntime-gpu` dependency.
 
-### installing from sources
+### Installing from sources
 ```
 apt-get install cmake ffmpeg libgl1-mesa-glx
 git clone https://github.com/ina-foss/inaFaceAnalyzer.git
@@ -38,14 +38,14 @@ cd inaFaceAnalyzer
 pip install .
 ./test_inaFaceAnalyzer.py # to check that the installation is ok
 ```
-### installing from pypi
+### Installing from pypi
 ```
 apt-get install cmake ffmpeg libgl1-mesa-glx
 pip install inaFaceAnalyzer
 ```
 
 
-## Using inaFaceAnalyzer command line program
+## Using inaFaceAnalyzer command line programs
 Several scripts are provided with the distribution:
 * <code>ina_face_analyzer.py</code> : can perform the most common processings provided by the framework
 * <code>ina_face_analyzer_webcam_demo.py</code> : a demo script using webcam
