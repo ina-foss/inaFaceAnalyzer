@@ -32,7 +32,6 @@ import inaFaceAnalyzer.face_classifier
 from inaFaceAnalyzer.face_detector import facedetection_cmdline
 from inaFaceAnalyzer.face_classifier import faceclassifier_cmdline
 
-import inaFaceAnalyzer.inaFaceAnalyzer as ifa
 import inaFaceAnalyzer.display_utils
 
 

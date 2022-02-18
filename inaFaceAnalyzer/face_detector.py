@@ -405,9 +405,12 @@ def facedetection_factory(args):
         dargs['padd_prct'] = args.face_detection_padding
     if args.face_detection_confidence:
         dargs['minconf'] = args.face_detection_confidence
+
     if args.face_detector == 'LibFaceDetection':
         detector = LibFaceDetection(**dargs)
     elif args.face_detector == 'OcvCnnFacedetector':
         detector = OcvCnnFacedetector(**dargs)
+    else:
+        raise NotImplementedError(args.face_dector)
 
     return detector

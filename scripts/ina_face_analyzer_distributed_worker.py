@@ -28,14 +28,13 @@
 
 import Pyro4
 import sys
-#import os
+import os
 import socket
+from collections import namedtuple
+import pandas as pd
 import inaFaceAnalyzer.commandline_utils as ifacu
-from inaFaceAnalyzer.face_classifier import faceclassifier_factory
-from inaFaceAnalyzer.face_detection import facedetection_factory
+from inaFaceAnalyzer.display_utils import ass_subtitle_export, video_export
 
-#from argparse import Namespace
-#import argparse.Namespace
 
 description = '''Worker in charge of analyzing documents and receive orders
 from a central job server. Workers need to have access to input files (url or path)
@@ -52,40 +51,63 @@ Sample URI: PYRO:obj_25e3ee9d312848fcaf0784c2b80933c4@blahtop:44175
 
 
 if __name__ == '__main__':
-    parser = ifacu.new_parser(description)
 
+    # parse command line arguments
+    parser = ifacu.new_parser(description)
     parser.add_argument(dest='server_uri', help=hserver_uri)
     ifacu.add_batchsize(parser)
-
     args = parser.parse_args()
 
+    # setup network configuration
     hostname = socket.gethostname()
-
     jobserver = Pyro4.Proxy(args.server_uri)
 
+    # get processing settings from server, and update with command line arguments
     server_args = jobserver.get_analysis_args('initializing ' + hostname)
+    print('recieved args', server_args)
+    server_args['batch_size'] = args.batch_size
+    nt = namedtuple('inaFaceAnalyzerArgs', server_args)
+    args = nt(**server_args)
 
-    ## perform instantiation
-    print('recieved args', args)
-    #TODO
-    classifier = faceclassifier_factory(args)
-    detector  = facedetection_factory(args)
+    # to be used at engine inference
+    dargs = {}
+    if args.fps:
+        dargs = {'fps': args.fps}
+
+    ## perform engine instantiation
+    engine = ifacu.engine_factory(args)
 
 
     ret = 'first call'
     stopit = False
     while not stopit:
         try:
-            job = jobserver.get_job('%s %s' % (hostname, ret))
+            src, dst, dst_ass, dst_mp4 = jobserver.get_job('%s %s' % (hostname, ret))
         except StopIteration:
             print('all jobs are done')
             stopit = True
             sys.exit(0)
-        print(job)
-#        ret = engine()
-#        df = engine(f, **dargs)
-#        df.to_csv('%s/%s.csv' % (args.output, base), index=False)
-#        if args.ass_subtitle_export:
-#            inaFaceAnalyzer.display_utils.ass_subtitle_export(f, df, '%s/%s.ass' % (args.output, base), analysis_fps=args.fps)
-#        if args.mp4_export:
-#            inaFaceAnalyzer.display_utils.video_export(f, df, '%s/%s.mp4' % (args.output, base), analysis_fps=args.fps)
+
+        print('received job', src, dst, dst_ass, dst_mp4)
+        df = None
+
+        ret = ''
+        if not os.path.exists(dst):
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            df = engine(src, **dargs)
+            df.to_csv(dst, index=False)
+            ret += '%s done ' % dst
+
+        if dst_ass == dst_ass and not os.path.exists(dst_ass):
+            os.makedirs(os.path.dirname(dst_ass), exist_ok=True)
+            if df is None:
+                df = pd.read_csv(dst)
+            ass_subtitle_export(src, df, dst_ass, analysis_fps=args.fps)
+            ret += '%s done ' % dst_ass
+
+        if dst_mp4 == dst_mp4 and not os.path.exists(dst_mp4):
+            os.makedirs(os.path.dirname(dst_mp4), exist_ok=True)
+            if df is None:
+                df = pd.read_csv(dst)
+            video_export(src, df, dst_mp4, analysis_fps=args.fps)
+            ret += '%s done ' % dst_mp4

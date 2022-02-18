@@ -31,7 +31,7 @@ from inaFaceAnalyzer.face_classifier import faceclassifier_cmdline
 
 import warnings
 
-from collections import namedtuple
+#from collections import namedtuple
 
 
 @Pyro4.expose
@@ -58,16 +58,21 @@ class JobServer(object):
         for k in df.columns:
             if k not in ['source_path', 'dest_csv', 'dest_ass', 'dest_mp4']:
                 warnings.warn('column %s in %s is not supported and will be ignored' % (k, csv))
-            df[k] = df[k].map(lambda x: x.strip())
+            df[k] = df[k].map(lambda x: x.strip() if isinstance(x, str) else x)
         # shuffle records and drop duplicates
         df = df.drop_duplicates().sample(frac=1).reset_index(drop=True)
+        if 'dest_ass' not in df:
+            df['dest_ass'] = None
+        if 'dest_mp4' not in df:
+            df['dest_mp4'] = None
+
 
         print('setting jobs')
         print('random job record example:', next(df.itertuples()))
         print('Total number of files to process:', len(df))
         self.jobiterator = enumerate(df.itertuples())
-        nt = namedtuple('serverargs', args.__dict__)
-        self.args = nt(*args.__dict__)
+        #nt = namedtuple('serverargs', args.__dict__)
+        self.args = args.__dict__ #nt(*args.__dict__)
         #self.args = args
 
     def get_analysis_args(self, msg):
@@ -79,10 +84,10 @@ class JobServer(object):
         ijob, job = next(self.jobiterator)
         print('job %d: %s' % (ijob, msg))
         print(job)
-        return job
-        #except StopIteration:
-        #    print('no more jogs')
-        #    return None
+
+        ret = (job.source_path, job.dest_csv, job.dest_ass, job.dest_mp4)
+        print (ret)
+        return ret
 
     # to be implemented - only usefull for image collections
     # def get_njobs(self, msg, nbjobs=20):

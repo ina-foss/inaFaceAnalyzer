@@ -114,6 +114,7 @@ def engine_factory(args):
         return classifier
 
     # face detection constructor
+    print('engine factory args', args)
     detector = facedetection_factory(args)
 
     if engine == 'image':
