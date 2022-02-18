@@ -132,7 +132,7 @@ head -n 2 myresults.csv
 
 ### Distributing analyses over a network
 
-We provide to scripts allowing to perform distributed large scale analyses.
+We provide two scripts allowing to perform distributed large scale analyses.
 
 <code>ina_face_analyzer_distributed_server.py</code> is in charge of distributing a list of documents to analyze to workers distributed over the network, and to define analysis options (fps, tracking, etc..).
 The server requires 2 positional arguments: its host name (or IP) and the path to a csv containing one line per file to process together with the destination path of the results.
@@ -148,16 +148,16 @@ cat test.scv
 >> source_path,dest_csv,dest_ass,dest_mp4
 >> /home/ddoukhan/git_repos/inaFaceAnalyzer/media/pexels-artem-podrez-5725953.mp4,/tmp/csv/test1.csv,/tmp/ass/test1.ass,/tmp/mp4/test1.mp4
 >> https://github.com/ina-foss/inaFaceAnalyzer/raw/master/media/pexels-artem-podrez-5725953.mp4,/tmp/csv/test2.csv,,
-# the server define an analysis procedure with at 1 FPS
+# the server define an analysis procedure at 1 FPS
 # after initialization, it display a network adress to be passed to the workers
 ina_face_analyzer_distributed_server.py blahtop.ina.fr test.csv --engine video --fps 1
 >> parsing joblist test.csv
 >> Total number of files to process: 2
-Provide the following objet URI to remove ina_face_analyzer_distributed_workers:  PYRO:obj_4c027f06be5b40e7bcf2f3f1e235b68c@blahtop.ina.fr:33825
+Provide the following objet URI to remote ina_face_analyzer_distributed_workers:  PYRO:obj_4c027f06be5b40e7bcf2f3f1e235b68c@blahtop.ina.fr:33825
 ```
 
 <code>ina_face_analyzer_distributed_worker.py</code> is in charge of computing analyses and writing results to a centralized storage directory.
-It requires the network adress displayed by the server in order to communicate. A good practice is to launch one worker per available GPU and set <code>CUDA_AVAILABLE_DEVICES<code>. Several workers can process the list of the server in parallel.
+It requires the network adress displayed by the server in order to communicate. A good practice is to launch one worker per available GPU and set <code>CUDA_AVAILABLE_DEVICES</code>. Several workers can process the list of the server in parallel.
 ```bash
 # CUDA_AVAILABLE_DEVICES=2 is non mandatory and tells the worker to use a single GPU with id 2.
 # the PYRO:obj_ adress is displayed when lauching the server and should copy/pasted when launching the worker

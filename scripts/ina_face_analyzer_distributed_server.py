@@ -154,5 +154,5 @@ Pyro4.config.HOST = args.host_address
 daemon = Pyro4.Daemon()
 
 uri = daemon.register(JobServer(args))
-print("Provide the following objet URI to remove ina_face_analyzer_distributed_workers: ", uri)
+print("Provide the following objet URI to remote ina_face_analyzer_distributed_workers: ", uri)
 daemon.requestLoop()
