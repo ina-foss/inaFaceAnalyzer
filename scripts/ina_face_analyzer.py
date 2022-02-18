@@ -29,12 +29,15 @@ import sys
 
 import inaFaceAnalyzer.commandline_utils as ifacu
 import inaFaceAnalyzer.face_classifier
-from inaFaceAnalyzer.face_detector import facedetection_cmdlineparser, facedetection_factory
+from inaFaceAnalyzer.face_detector import facedetection_cmdline
+from inaFaceAnalyzer.face_classifier import faceclassifier_cmdline
+
 import inaFaceAnalyzer.inaFaceAnalyzer as ifa
 import inaFaceAnalyzer.display_utils
 
 
 # TODO: add options to perform detection only and/or preprocessing only
+# options to export image results to PDF with incrusted bounding boxes ?
 
 
 description = 'inaFaceAnalyzer %s: detects and classify faces from media collections and export results in csv' % inaFaceAnalyzer.__version__
@@ -81,16 +84,9 @@ oa = parser.add_argument_group('optional arguments')
 
 
 # classifier
-h = '''face classifier to be used in the analysis:
-   Resnet50FairFaceGRA predicts age and gender and is more accurate.
-   Vggface_LSVM_YTF was used in earlier studies and predicts gender only'''
-oa.add_argument ('--classifier', default='Resnet50FairFaceGRA',
-                 choices = ['Resnet50FairFaceGRA', 'Vggface_LSVM_YTF'],
-                 help = h)
+faceclassifier_cmdline(parser)
 
-oa.add_argument('--batch_size', default=32, type=int,
-                help = '''GPU batch size. Larger values allow faster processings, but requires more GPU memory.
-                Default 32 value used is fine for a Laptop Quadro T2000 Mobile GPU with 4 Gb memory.''')
+ifacu.add_batchsize(oa)
 
 ## Video only parameters
 dv = parser.add_argument_group('optional arguments to be used only with "video" and "videotracking" engines')
@@ -106,7 +102,7 @@ dv.add_argument('--mp4_export', action='store_true',
 ifacu.add_tracking(parser)
 
 # face detection
-facedetection_cmdlineparser(parser)
+facedetection_cmdline(parser)
 
 
 #### parse arguments
@@ -129,15 +125,8 @@ for k in ['fps', 'ass_subtitle_export', 'mp4_export']:
         pe('--' + k, '--engine ' + args.engine)
 
 
-# classifier constructor
-if args.classifier == 'Resnet50FairFaceGRA':
-    classifier = inaFaceAnalyzer.face_classifier.Resnet50FairFaceGRA()
-elif args.classifier == 'Vggface_LSVM_YTF':
-    classifier = inaFaceAnalyzer.face_classifier.Vggface_LSVM_YTF()
-
-# face detection constructor
-if args.engine != 'preprocessed_image':
-    detector = facedetection_factory(args)
+# analysis engine constructor
+engine = ifacu.engine_factory(args)
 
 # image engines
 if args.engine in ['image', 'preprocessed_image']:
@@ -148,10 +137,9 @@ if args.engine in ['image', 'preprocessed_image']:
 
     # run engine
     if args.engine == 'image':
-        engine = ifa.ImageAnalyzer(detector, classifier, batch_len=args.batch_size)
         df = engine(args.input)
     elif args.engine == 'preprocessed_image':
-        df = classifier.preprocessed_img_list(args.input, batch_len=args.batch_size)
+        df = engine.preprocessed_img_list(args.input, batch_len=args.batch_size)
     # save results
     df.to_csv(args.output, index=False)
     sys.exit(0)
@@ -163,14 +151,6 @@ if args.engine in ['image', 'preprocessed_image']:
 # test that provided output path is an existing directory
 if not os.path.isdir(args.output):
     raise ValueError('OUTPUT directory %s provided to -o argument should be an existing directory' % args.output)
-
-if args.engine == 'video':
-    engine = ifa.VideoAnalyzer(detector, classifier, batch_len=args.batch_size)
-elif args.engine == 'videotracking':
-    engine = ifa.VideoTracking(args.detect_period, detector, classifier, batch_len=args.batch_size)
-elif args.engine == 'videokeyframes':
-    engine = ifa.VideoKeyframes(detector, classifier, batch_len=args.batch_size)
-
 
 dargs = {}
 if args.fps:

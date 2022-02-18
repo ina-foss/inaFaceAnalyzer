@@ -26,7 +26,9 @@
 import Pyro4
 import pandas as pd
 import inaFaceAnalyzer.commandline_utils as ifacu
-from inaFaceAnalyzer.face_detector import facedetection_cmdlineparser
+from inaFaceAnalyzer.face_detector import facedetection_cmdline
+from inaFaceAnalyzer.face_classifier import faceclassifier_cmdline
+
 import warnings
 
 from collections import namedtuple
@@ -99,47 +101,53 @@ centralized storage directory for writing output results (mounted with
 NFS, sshfs, ...).
 To be used jointly with ina_face_analyzer_distributed_worker.py.'''
 
-if __name__ == '__main__':
+hhostaddress = '''host_address is used by workers to communicate remotely with
+the server. It can be either server's IP adress, or host full name ex: mymachine.my-domain.fr
+'''
+
+hjoblist = ''' joblist_csv is the full path to a csv file storing one line per file
+to process. It may contain up to 4 columns, separated by coma ",".
+"source_path" column (mandatory) contains the path or the url to a file to be processed.
+"dest_csv" (mandatory) contains the path used to write the resulting csv.
+"dest_ass" (non mantatory) is a path used to export results to ASS rich subtitles (displayed in VLC or ELAN).
+"dest_mp4" (non mandatory) is a path used to export results to MP4 video
+with incrusted face bouding boxes and classification results.
+'''
+
+hengine = '''Analysis engine to be used.
+"video" should be the default choice for video materials.
+"videotracking" use face tracking methods to lower computation time and smooth
+face classification results obtained on video materials.
+Tracked faces are associated to a numeric identifier.
+Smoothed classification estimates are associated to "_avg" suffix in resulting column names,
+and are more robust than frame-isolated predictions.
+"videokeyframes" restrict analyses to video key frames. It allows the fastest
+video analysis sumary, but is is associated to a non uniform frame sampling rate.
+'''
+
+parser = ifacu.new_parser(description)
+
+parser.add_argument(dest='host_address', help = hhostaddress)
+parser.add_argument(help = hjoblist, dest='joblist_csv')
 
 
+parser.add_argument('--engine', choices=['video', 'videotracking', 'videokeyframes'],
+            required=True, help=hengine)
 
-    parser = ifacu.new_parser(description)
+faceclassifier_cmdline(parser)
+ifacu.add_fps(parser)
+ifacu.add_tracking(parser)
+facedetection_cmdline(parser)
 
-    ## Required arguments
-    #ra = parser.add_argument_group('required arguments')
+#### OPTION SKIP IF EXIST
 
-    parser.add_argument("-h", "--help", action="help", help="show this help message and exit")
+# parse command line arguments
+args = parser.parse_args()
 
-    h = '''host_address is used by workers to communicate remotely with
-    the server. It can be either server's IP adress, or host full name ex: mymachine.my-domain.fr
-    '''
-    parser.add_argument(dest='host_address', help = h)
+# full name of the host to be used by remote clients
+Pyro4.config.HOST = args.host_address
+daemon = Pyro4.Daemon()
 
-    h = ''' joblist_csv is the full path to a csv file storing one line per file
-    to process. It may contain up to 4 columns, separated by coma ",".
-    "source_path" column (mandatory) contains the path or the url to a file to be processed.
-    "dest_csv" (mandatory) contains the path used to write the resulting csv.
-    "dest_ass" (non mantatory) is a path used to export results to ASS rich subtitles (displayed in VLC or ELAN).
-    "dest_mp4" (non mandatory) is a path used to export results to MP4 video
-    with incrusted face bouding boxes and classification results.
-    '''
-    parser.add_argument(help = h, dest='joblist_csv')
-
-    # face detection
-    facedetection_cmdlineparser(parser)
-
-    #### OPTION SKIP IF EXIST
-
-    ifacu.add_framerate(parser)
-#    ifacu.add_keyframes(parser)
-
-    # parse command line arguments
-    args = parser.parse_args()
-
-    # full name of the host to be used by remote clients
-    Pyro4.config.HOST = args.host_address
-    daemon = Pyro4.Daemon()
-
-    uri = daemon.register(JobServer(args))
-    print("Provide the following objet URI to remove ina_face_analyzer_distributed_workers: ", uri)
-    daemon.requestLoop()
+uri = daemon.register(JobServer(args))
+print("Provide the following objet URI to remove ina_face_analyzer_distributed_workers: ", uri)
+daemon.requestLoop()

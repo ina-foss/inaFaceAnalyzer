@@ -230,7 +230,7 @@ class OxfordVggFace(FaceClassifier):
     OxfordVggFace instances are based on pretrained VGG16 architectures
     pretrained using a triplet loss paradigm allowing to obtain face neural
     representation, that we use to train linear SVM classification systems.
-    
+
     The approach used is fully described in Zohra Rezgui's internship report at INA:
     Détection et classification de visages pour la description de l’égalité
     femme-homme dans les archives télévisuelles, Higher School of Statistics
@@ -238,9 +238,9 @@ class OxfordVggFace(FaceClassifier):
 
     This class takes advantage of Refik Can Malli's keras-vggface module,
     providing pretrained VGG16 models
-    https://github.com/rcmalli/keras-vggface    
+    https://github.com/rcmalli/keras-vggface
     '''
-    
+
     def __init__(self, hdf5_svm=None):
         # Face feature extractor from aligned and detected faces
         self.vgg_feature_extractor = keras_vggface.VGG16(self.input_shape)
@@ -272,3 +272,32 @@ class Vggface_LSVM_YTF(OxfordVggFace):
 class Vggface_LSVM_FairFace(OxfordVggFace):
     def __init__(self):
         OxfordVggFace.__init__(self, get_remote('svm_vgg16_fairface.hdf5'))
+
+help = '''face classifier to be used in the analysis:
+Resnet50FairFaceGRA predicts age and gender and is the most accurate.
+It uses Resnet50 architecture and is trained to predict gender, age and race on FairFace.
+After consultation of French CNIL (French data protection authority) and
+DDD (French Rights Defender), racial classification layers were erased
+from this public distribution in order to prevent their use for non ethical purposes.
+These models can however be provided for free after examination of each demand.
+Resnet50FairFace only predicts gender, and is trained on Fairface with a Resnet50 architecture.
+Vggface_LSVM_YTF predict only gender. It uses an Oxford VGG 16 neural representation
+of faces combined with a linear SVM that was trained on Youtube Faces datavase
+by Zohra Rezgui during her internship at INA. It was used in digital earlier humanities studies.
+Vggface_LSVM_Fairface has the same architecture and equivalent performances than
+Vggface_LSVM_YTF. It's linear SVM model was trained on FairFace.
+'''
+choices = ['Resnet50FairFaceGRA', 'Vggface_LSVM_YTF', 'Resnet50FairFace', 'Vggface_LSVM_FairFace']
+def faceclassifier_cmdline(parser):
+    parser.add_argument ('--classifier', default='Resnet50FairFaceGRA',
+                         choices = choices, help = help)
+
+def faceclassifier_factory(args):
+    if args.classifier == 'Resnet50FairFaceGRA':
+        return Resnet50FairFaceGRA()
+    if args.classifier == 'Resnet50FairFace':
+        return Resnet50FairFace()
+    if args.classifier == 'Vggface_LSVM_FairFace':
+        return Vggface_LSVM_FairFace()
+    if args.classifier == 'Vggface_LSVM_YTF':
+        return Vggface_LSVM_YTF()

@@ -27,9 +27,12 @@
 
 
 import Pyro4
+import sys
 #import os
 import socket
 import inaFaceAnalyzer.commandline_utils as ifacu
+from inaFaceAnalyzer.face_classifier import faceclassifier_factory
+from inaFaceAnalyzer.face_detection import facedetection_factory
 
 #from argparse import Namespace
 #import argparse.Namespace
@@ -52,6 +55,7 @@ if __name__ == '__main__':
     parser = ifacu.new_parser(description)
 
     parser.add_argument(dest='server_uri', help=hserver_uri)
+    ifacu.add_batchsize(parser)
 
     args = parser.parse_args()
 
@@ -63,12 +67,25 @@ if __name__ == '__main__':
 
     ## perform instantiation
     print('recieved args', args)
+    #TODO
+    classifier = faceclassifier_factory(args)
+    detector  = facedetection_factory(args)
 
-    ret = True
-    for job in jobserver.get_job('%s %s' % (hostname, ret)):
+
+    ret = 'first call'
+    stopit = False
+    while not stopit:
+        try:
+            job = jobserver.get_job('%s %s' % (hostname, ret))
+        except StopIteration:
+            print('all jobs are done')
+            stopit = True
+            sys.exit(0)
         print(job)
-    #ret = True
-    #while True:
-    #    job = jobserver.get_job('%s %s' % (hostname, ret))
-    #    print(job)
-    #    ret =  True #g.batch_process(lsrc, ldst, skipifexist=True, nbtry=3)
+#        ret = engine()
+#        df = engine(f, **dargs)
+#        df.to_csv('%s/%s.csv' % (args.output, base), index=False)
+#        if args.ass_subtitle_export:
+#            inaFaceAnalyzer.display_utils.ass_subtitle_export(f, df, '%s/%s.ass' % (args.output, base), analysis_fps=args.fps)
+#        if args.mp4_export:
+#            inaFaceAnalyzer.display_utils.video_export(f, df, '%s/%s.mp4' % (args.output, base), analysis_fps=args.fps)

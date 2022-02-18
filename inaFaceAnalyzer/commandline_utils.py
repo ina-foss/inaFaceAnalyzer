@@ -26,7 +26,9 @@
 # Here are defined the common pieces of code used by command line argument programs
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-import inaFaceAnalyzer
+import inaFaceAnalyzer as ifa
+from inaFaceAnalyzer.face_classifier import faceclassifier_factory
+from inaFaceAnalyzer.face_detector import facedetection_factory
 
 epilog = '''
 If you are using inaFaceAnalyzer in your research, please cite
@@ -35,7 +37,7 @@ paper: David Doukhan and Thomas Petit (2022). inaFaceAnalyzer: a Python toolbox
 for large-scale face-based description of gender representation in media with
 limited gender, racial and age biases. Submitted to JOSS - The journal of Open
 Source Software (submission in progress).
-''' % inaFaceAnalyzer.__version__
+''' % ifa.__version__
 
 
 def new_parser(description):
@@ -80,3 +82,46 @@ def add_tracking(parser):
     # TODO: add tracking threshold in the options
     tg = parser.add_argument_group('Arguments specific to "videotracking" engine')
     tg.add_argument('--detect_period', type=int, default=1, dest='detect_period', help=htracking)
+
+def add_batchsize(parser):
+    parser.add_argument('--batch_size', default=32, type=int,
+                help = '''GPU batch size. Larger values allow faster processings, but requires more GPU memory.
+                Default 32 value used is fine for a Laptop Quadro T2000 Mobile GPU with 4 Gb memory.''')
+
+def engine_factory(args):
+    """
+    Instantiante classifier, face detector and analysis engine from command
+    line arguments
+    Parameters
+    ----------
+    args : argparse.Namespace
+        result of argparse.parse()
+
+    Returns
+    -------
+    Analysis engine
+
+    """
+
+    bs = args.batch_size
+    engine = args.engine
+
+    # classifier constructor
+    classifier = faceclassifier_factory(args)
+
+    if args.engine == 'preprocessed_image':
+        # TODO: make an engine class
+        return classifier
+
+    # face detection constructor
+    detector = facedetection_factory(args)
+
+    if engine == 'image':
+        return ifa.ImageAnalyzer(detector, classifier, bs)
+    if engine == 'video':
+        return ifa.VideoAnalyzer(detector, classifier, bs)
+    if engine == 'videotracking':
+        return ifa.VideoTracking(args.detect_period, detector, classifier, bs)
+    if engine == 'videokeyframes':
+        engine = ifa.VideoKeyframes(detector, classifier, bs)
+    raise NotImplementedError()

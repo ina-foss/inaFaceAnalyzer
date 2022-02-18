@@ -349,7 +349,7 @@ class PrecomputedDetector(FaceDetector):
         return [Detection(Rect(*e), None) for e in ret]
 
 
-def facedetection_cmdlineparser(parser):
+def facedetection_cmdline(parser):
     '''
     Update command line parser with face detection related arguments
     Parameters
