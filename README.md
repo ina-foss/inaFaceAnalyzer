@@ -136,7 +136,7 @@ We provide two scripts allowing to perform distributed large scale analyses.
 
 <code>ina_face_analyzer_distributed_server.py</code> is in charge of distributing a list of documents to analyze to workers distributed over the network, and to define analysis options (fps, tracking, etc..).
 The server requires 2 positional arguments: its host name (or IP) and the path to a csv containing one line per file to process together with the destination path of the results.
-Workers need to have writing permissions in the destination paths (mounted with NFS, sshfs, ...). Output directory are created on the fly if they don't exist.
+Workers need to have writing permissions in the destination paths (mounted with NFS, sshfs, ...). Output directory are created on the fly if they don't exist. Jobs order are randomized before being distributed to the workers. When a destination file already exist, the corresponding analysis is skipped.
 
 ```bash
 # a sample job list csv with 2 records and 4 columns
@@ -161,8 +161,8 @@ It requires the network adress displayed by the server in order to communicate. 
 ```bash
 # CUDA_AVAILABLE_DEVICES=2 is non mandatory and tells the worker to use a single GPU with id 2.
 # the PYRO:obj_ adress is displayed when lauching the server and should copy/pasted when launching the worker
-CUDA_AVAILABLE_DEVICSE=2 ina_face_analyzer_distributed_worker.py PYRO:obj_4c027f06be5b40e7bcf2f3f1e235b68c@blahtop:33825
->> received job /home/ddoukhan/git_repos/inaFaceAnalyzer/media/pexels-artem-podrez-5725953.mp4 /tmp/test2.csv nan nan
+CUDA_AVAILABLE_DEVICES=2 ina_face_analyzer_distributed_worker.py PYRO:obj_4c027f06be5b40e7bcf2f3f1e235b68c@blahtop:33825
+>> received job https://github.com/ina-foss/inaFaceAnalyzer/raw/master/media/pexels-artem-podrez-5725953.mp4 /tmp/test2.csv nan nan
 >>received job /home/ddoukhan/git_repos/inaFaceAnalyzer/media/pexels-artem-podrez-5725953.mp4 /tmp/test1.csv /tmp/test1.ass /tmp/test1.mp4
 >>all jobs are done
 ```
