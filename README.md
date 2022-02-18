@@ -123,7 +123,11 @@ The processing of list of images requires to use <code>image</code> engine.
 A single resulting csv will be generated with entries for each detected faces, together with a reference to their original filename path.
 ```bash
 # process all images stored in directory media, outputs a single csv file
-ina_face_analyzer.py --engine image -i media/*.jpg -o ./myresults.csv
+ina_face_analyzer.py --engine image -i media/* -o ./myresults.csv
+# display first 2 lines of the result file
+head -n 2 myresults.csv
+>> frame,bbox,detect_conf,sex_decfunc,age_decfunc,sex_label,age_label
+>> media/1546923312_7cc94957e8_o.jpg,"(57, 104, 435, 483)",1.0,14.436495,3.5770981,m,30.770981311798096
 ```
 
 ### Distributing analyses over a network
