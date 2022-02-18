@@ -1,3 +1,4 @@
 include LICENSE README.md inaFaceAnalyzer/template.ass
 include setup.py versioneer.py
+exclude *.ipynb
 include inaFaceAnalyzer/_version.py
