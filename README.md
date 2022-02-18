@@ -49,6 +49,7 @@ pip install inaFaceAnalyzer
 Several scripts are provided with the distribution:
 * <code>ina_face_analyzer.py</code> : can perform the most common processings provided by the framework
 * <code>ina_face_analyzer_webcam_demo.py</code> : a demo script using webcam
+* <code>ina_face_analyzer_distributed_server.py</code> and <code>ina_face_analyzer_distributed_worker</code> : a set of scripts allowing to perform distributed analyses on a heterogeneous clusters.
 
 A detailed listing of all options available from command line programs using <code>-h</code> argument. We guess you don't want to read the whole listing at this point, but you can have a look at it later 😉.
 
@@ -58,17 +59,19 @@ A detailed listing of all options available from command line programs using <co
 ina_face_analyzer.py -h
 ```
 ### Process all frames from a list of video (without tracking)
-Video processing requires a list of input video paths, together with a directory used to store results in CSV.
+Video processing use <code>video</code> engine and requires a list of input video paths, together with a directory used to store results in CSV.
 Program initialization time requires several seconds, and we recommend using large list of files instead of calling the program for each file to process.
 ```bash
 # directory storing result must exist
 mkdir my_output_directory
 # -i is followed by the list of video to analyze, and -o is followed by the name of the output_directory
-ina_face_analyzer.py -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
+ina_face_analyzer.py --engine video -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
 # displaying the first 2 lines of the resulting CSV
 head -n 2 ./my_output_directory/pexels-artem-podrez-5725953.csv 
 frame,bbox,detect_conf,sex_decfunc,age_decfunc,sex_label,age_label
 0,"(945, -17, 1139, 177)",0.999998927116394,8.408014,3.9126961,m,34.12696123123169
+# using remote urls is also an option
+ina_face_analyzer.py --engine video -i 'https://github.com/ina-foss/inaFaceAnalyzer/raw/master/media/pexels-artem-podrez-5725953.mp4' -o ./my_output_directory
 ```
 
 Resulting CSV contain several columns:
@@ -84,24 +87,31 @@ Resulting CSV contain several columns:
 It computation time is an issue, we recommend using <code>--fps 1</code> which will process a single frame per second, instead of the whole amount of video frames. When using GPU architectures, we also recommend setting large <code>batch_size</code> values.
 ```bash
 # here we process a single frame per second, which is 25/30 faster than processing the whole video
-ina_face_analyzer.py --fps 1 --batch_size 128 -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
+ina_face_analyzer.py --engine video --fps 1 --batch_size 128 -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
 ```
 ### Using Tracking
-Tracking allows to lower computation time, since it is less costly than a face detection procedure. It also allows to smooth prediction results associated to a tracked face and obtain more robust estimates.
+Tracking allows to lower computation time, since it is less costly than a face detection procedure.
+It also allows to smooth prediction results associated to a tracked face and obtain more robust estimates.
+It is activated with <code>videotracking<engine> and requires to define a face <code>detect_period</code>.
 ```bash
 # Process 5 frames per second, use face detection for 1/3 and face tracking for 2/3 frames
-ina_face_analyzer.py --fps 5 --tracking 3 -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
+ina_face_analyzer.py --engine videotracking --fps 5 --detect_period 3 -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
+# displaying the first 2 lines of the resulting CSV
+head -n 2 ./my_output_directory/pexels-artem-podrez-5725953.csv
+>> frame,bbox,face_id,detect_conf,track_conf,sex_decfunc,age_decfunc,sex_label,age_label,sex_decfunc_avg,age_decfunc_avg,sex_label_avg,age_label_avg
+>> 0,"(945, -17, 1139, 177)",0,0.999998927116394,,8.408026,3.9126964,m,34.12696361541748,8.391026,3.8831162,m,33.831162452697754
 ```
+Resulting CSV will contain additional columns with <code>_avg</code> suffixes, corresponding to the smoothed estimates obtained for each tracked face. It will also contain a <code>face_id<column> with a numeric identifier associated to each tracked face.
 
 ### Exporting results
-Result visualization allows to validate if a give processing pipeline is suited to a specific material.
+Result visualization allows to validate if a given processing pipeline is suited to a specific material.
 <code>--mp4_export</code> generate a new video with embeded bounding boxes and classification information.
 <code>--ass_subtitle_export</code> generate a ASS subtitle file allowing to display bounding boxes and classification results in vlc or ELAN, and which is more convenient to share..
 
 ```bash
 # Process 10 frames per second, use face detection for 1/2 and face tracking for 1/2 frames
 # results are exported to a newly generated MP4 video and ASS subtitle
-ina_face_analyzer.py --fps 10 --tracking 2 --mp4_export --ass_subtitle_export  -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
+ina_face_analyzer.py --engine videotracking --fps 10 --detect_period 2 --mp4_export --ass_subtitle_export  -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
 # display the resulting video
 vlc ./my_output_directory/pexels-artem-podrez-5725953.mp4
 # display the original video with the resulting subtitle files
@@ -109,11 +119,11 @@ vlc media/pexels-artem-podrez-5725953.mp4 --sub-file my_output_directory/pexels-
 ```
 
 ### Processing list of images
-The processing of list of images can be speed up using <code>--type image</code>.
-A single resulting csv will be generated with entries for each detected faces, together with a reference to its original filename path.
+The processing of list of images requires to use <code>image</code> engine.
+A single resulting csv will be generated with entries for each detected faces, together with a reference to their original filename path.
 ```bash
 # process all images stored in directory media, outputs a single csv file
-ina_face_analyzer.py -i media/*.jpg -o ./myresults.csv --type image
+ina_face_analyzer.py --engine image -i media/*.jpg -o ./myresults.csv
 ```
 
 ## Using inaFaceAnalyzer API
