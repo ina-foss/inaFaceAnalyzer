@@ -159,11 +159,13 @@ Provide the following objet URI to remote ina_face_analyzer_distributed_workers:
 <code>ina_face_analyzer_distributed_worker.py</code> is in charge of computing analyses and writing results to a centralized storage directory.
 It requires the network adress displayed by the server in order to communicate. A good practice is to launch one worker per available GPU and set <code>CUDA_AVAILABLE_DEVICES</code>. Several workers can process the list of the server in parallel.
 ```bash
-# CUDA_AVAILABLE_DEVICES=2 is non mandatory and tells the worker to use a single GPU with id 2.
-# the PYRO:obj_ adress is displayed when lauching the server and should copy/pasted when launching the worker
+# CUDA_AVAILABLE_DEVICES=2 is non mandatory and tells the worker
+# to use a single GPU with id 2.
+# the PYRO:obj_ adress is displayed when lauching the server and
+# should copy/pasted when launching the worker
 CUDA_AVAILABLE_DEVICES=2 ina_face_analyzer_distributed_worker.py PYRO:obj_4c027f06be5b40e7bcf2f3f1e235b68c@blahtop:33825
 >> received job https://github.com/ina-foss/inaFaceAnalyzer/raw/master/media/pexels-artem-podrez-5725953.mp4 /tmp/test2.csv nan nan
->>received job /home/ddoukhan/git_repos/inaFaceAnalyzer/media/pexels-artem-podrez-5725953.mp4 /tmp/test1.csv /tmp/test1.ass /tmp/test1.mp4
+>> received job /home/ddoukhan/git_repos/inaFaceAnalyzer/media/pexels-artem-podrez-5725953.mp4 /tmp/test1.csv /tmp/test1.ass /tmp/test1.mp4
 >>all jobs are done
 ```
 
