@@ -68,8 +68,8 @@ mkdir my_output_directory
 ina_face_analyzer.py --engine video -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
 # displaying the first 2 lines of the resulting CSV
 head -n 2 ./my_output_directory/pexels-artem-podrez-5725953.csv 
-frame,bbox,detect_conf,sex_decfunc,age_decfunc,sex_label,age_label
-0,"(945, -17, 1139, 177)",0.999998927116394,8.408014,3.9126961,m,34.12696123123169
+>> frame,bbox,detect_conf,sex_decfunc,age_decfunc,sex_label,age_label
+>> 0,"(945, -17, 1139, 177)",0.999998927116394,8.408014,3.9126961,m,34.12696123123169
 # using remote urls is also an option
 ina_face_analyzer.py --engine video -i 'https://github.com/ina-foss/inaFaceAnalyzer/raw/master/media/pexels-artem-podrez-5725953.mp4' -o ./my_output_directory
 ```
