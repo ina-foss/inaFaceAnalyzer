@@ -92,7 +92,7 @@ ina_face_analyzer.py --engine video --fps 1 --batch_size 128 -i ./media/pexels-a
 ### Using Tracking
 Tracking allows to lower computation time, since it is less costly than a face detection procedure.
 It also allows to smooth prediction results associated to a tracked face and obtain more robust estimates.
-It is activated with <code>videotracking<engine> and requires to define a face <code>detect_period</code>.
+It is activated with <code>videotracking</code> engine and requires to define a face <code>detect_period</code>.
 ```bash
 # Process 5 frames per second, use face detection for 1/3 and face tracking for 2/3 frames
 ina_face_analyzer.py --engine videotracking --fps 5 --detect_period 3 -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
@@ -101,7 +101,7 @@ head -n 2 ./my_output_directory/pexels-artem-podrez-5725953.csv
 >> frame,bbox,face_id,detect_conf,track_conf,sex_decfunc,age_decfunc,sex_label,age_label,sex_decfunc_avg,age_decfunc_avg,sex_label_avg,age_label_avg
 >> 0,"(945, -17, 1139, 177)",0,0.999998927116394,,8.408026,3.9126964,m,34.12696361541748,8.391026,3.8831162,m,33.831162452697754
 ```
-Resulting CSV will contain additional columns with <code>_avg</code> suffixes, corresponding to the smoothed estimates obtained for each tracked face. It will also contain a <code>face_id<column> with a numeric identifier associated to each tracked face.
+Resulting CSV will contain additional columns with <code>_avg</code> suffixes, corresponding to the smoothed estimates obtained for each tracked face. It will also contain a <code>face_id</code> with a numeric identifier associated to each tracked face.
 
 ### Exporting results
 Result visualization allows to validate if a given processing pipeline is suited to a specific material.
@@ -126,8 +126,11 @@ A single resulting csv will be generated with entries for each detected faces, t
 ina_face_analyzer.py --engine image -i media/*.jpg -o ./myresults.csv
 ```
 
+### Distributing analyses over a network
+
 ## Using inaFaceAnalyzer API
 
+TODO
 
 ## CREDITS
 This work has been partially funded by the French National Research Agency (project GEM : Gender Equality Monitor : ANR-19-CE38-0012) and by European Union's Horizon 2020 research and innovation programme (project [MeMAD](https://memad.eu) : H2020 grant agreement No 780069).
