@@ -130,8 +130,8 @@ if __name__ == '__main__':
 
     #### OPTION SKIP IF EXIST
 
-    ifacu.add_fps(parser)
-    ifacu.add_keyframes(parser)
+    ifacu.add_framerate(parser)
+#    ifacu.add_keyframes(parser)
 
     # parse command line arguments
     args = parser.parse_args()

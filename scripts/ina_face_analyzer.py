@@ -102,8 +102,11 @@ dv.add_argument('--mp4_export', action='store_true',
 #                 If not provided, all video frames will be processed (generally between 25 and 30 per seconds).
 #                 Lower FPS values results in faster processing time.
 #                 Incompatible with the --keyframes argument''')
-ifacu.add_fps(dv)
-ifacu.add_keyframes(dv)
+
+#ifacu.add_fps(dv)
+#ifacu.add_keyframes(dv)
+ifacu.add_framerate(dv)
+
 ifacu.add_tracking(dv)
 
 

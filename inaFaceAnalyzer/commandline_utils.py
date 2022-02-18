@@ -50,14 +50,20 @@ Remaining frames will be skipped.
 If not provided, all video frames will be processed (generally between 25 and 30 per seconds).
 Lower FPS values results in faster processing time.
 Incompatible with the --keyframes argument'''
-def add_fps(parser):
+def _add_fps(parser):
     parser.add_argument('--fps', default=None, type=float, help=hfps)
 
 hkeyframes = '''Face detection and analysis from video limited to video key frames.
 Allows fastest video analysis time associated to a summary with
 non uniform frame sampling rate. Incompatible with the --fps, --ass_subtitle_export or --mp4_export arguments.'''
-def add_keyframes(parser):
+def _add_keyframes(parser):
     parser.add_argument('--keyframes', action='store_true', help=hkeyframes)
+
+def add_framerate(parser):
+    # keyframes and fps arguments are mutually exclusive
+    group = parser.add_mutually_exclusive_group()
+    _add_fps(group)
+    _add_keyframes(group)
 
 htracking = '''Activate face tracking and define FACE_DETECTION_PERIOD.
 Face detection (costly) will be performed each FACE_DETECTION_PERIOD.
