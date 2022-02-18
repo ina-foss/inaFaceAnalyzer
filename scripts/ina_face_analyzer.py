@@ -119,13 +119,13 @@ class ParserError:
     def __init__(self, parser):
         self.parser = parser
     def __call__(self, a1, a2):
-        raise self.parser.error('%s argument cannot be mixed with %s')
+        raise self.parser.error('%s argument cannot be mixed with %s' % (a1, a2))
 pe = ParserError(parser)
 
 # Management of incompatible uses
 
 for k in ['fps', 'ass_subtitle_export', 'mp4_export']:
-    if (args.__dict__[k] is not None) and (args.engine not in ['video', 'videotracking']):
+    if args.__dict__[k] and (args.engine not in ['video', 'videotracking']):
         pe('--' + k, '--engine ' + args.engine)
 
 
