@@ -1,0 +1,9 @@
+.*
+build
+dist
+__pycache__
+bin
+etc
+lib
+share
+

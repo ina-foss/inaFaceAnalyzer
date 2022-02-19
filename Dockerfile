@@ -35,10 +35,11 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY setup.py setup.cfg  LICENSE README.md run_tests.py versioneer.py ./
+COPY setup.py setup.cfg  LICENSE README.md test_inaFaceAnalyzer.py versioneer.py ./
 COPY inaFaceAnalyzer /app/inaFaceAnalyzer
 COPY tests /app/tests
 COPY media /app/media
+COPY scripts /app/scripts
 
 
 RUN pip install --upgrade pip && pip install . && pip cache purge
