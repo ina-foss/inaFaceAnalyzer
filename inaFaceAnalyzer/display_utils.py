@@ -181,3 +181,13 @@ def video_export(vid_src, result_df, vid_dst, analysis_fps=None):
 
         out.release()
         os.system('ffmpeg -y -i %s -i %s -map 0:v:0 -map 1:a? -vcodec libx264 -acodec copy %s' % (tmpout, vid_src, vid_dst))
+
+try:
+    # To be used only in ipython/collab environments
+    from IPython.core.display import display, HTML
+
+    def notebook_display_vid(fname):
+        data = '<div align="middle"> <video width="80%%" controls> <source src=%s> </video></div>' % fname
+        display(HTML(data))
+except:
+    pass
