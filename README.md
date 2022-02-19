@@ -171,7 +171,13 @@ CUDA_AVAILABLE_DEVICES=2 ina_face_analyzer_distributed_worker.py PYRO:obj_4c027f
 
 ## Using inaFaceAnalyzer API
 
-TODO
+`inaFaceAnalyzer`'s API documentation is based on several tutorial notebooks stored in directory [`tutorial_API_notebooks`](https://github.com/ina-foss/inaFaceAnalyzer/tree/master/tutorial_API_notebooks):
+
+We provide below a brief description of these notebooks, together with links allowing to run them remotely in Google's colab platform.
+When using colab platform, we recommend to [take advantage of GPU acceleration](https://www.tutorialspoint.com/google_colab/google_colab_using_free_gpu.htm).
+
+* [Video Quick-Start](https://colab.research.google.com/github/ina-foss/inaFaceAnalyzer/blob/master/tutorial_API_notebooks/quick_start.ipynb): inaFaceAnalyzer is used to process video with default analysis parameters and export results to CSV, rich ASS subtitles and incrusted MP4.
+* more tutorials to come
 
 ## CREDITS
 This work has been partially funded by the French National Research Agency (project GEM : Gender Equality Monitor : ANR-19-CE38-0012) and by European Union's Horizon 2020 research and innovation programme (project [MeMAD](https://memad.eu) : H2020 grant agreement No 780069).

@@ -184,10 +184,19 @@ def video_export(vid_src, result_df, vid_dst, analysis_fps=None):
 
 try:
     # To be used only in ipython/collab environments
-    from IPython.core.display import display, HTML
+    from IPython.core.display import display
+    from IPython.display import HTML
+    from base64 import b64encode
 
-    def notebook_display_vid(fname):
-        data = '<div align="middle"> <video width="80%%" controls> <source src=%s> </video></div>' % fname
+    def notebook_display_remote_vid(fname, width=600):
+        data = '<div align="middle"> <video width=%d controls> <source src=%s> </video></div>' % (width, fname)
         display(HTML(data))
+
+    def notebook_display_local_vid(video_path, width = 600):
+      # thanks https://androidkt.com/how-to-capture-and-play-video-in-google-colab/
+      video_file = open(video_path, "r+b").read()
+      video_url = f"data:video/mp4;base64,{b64encode(video_file).decode()}"
+      return HTML(f"""<video width={width} controls><source src="{video_url}"></video>""")
+
 except:
     pass
