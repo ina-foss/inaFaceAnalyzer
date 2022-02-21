@@ -177,6 +177,7 @@ We provide below a brief description of these notebooks, together with links all
 When using colab platform, we recommend to [take advantage of GPU acceleration](https://www.tutorialspoint.com/google_colab/google_colab_using_free_gpu.htm).
 
 * [Video Analysis Quick-Start](https://colab.research.google.com/github/ina-foss/inaFaceAnalyzer/blob/master/tutorial_API_notebooks/quick_start.ipynb): inaFaceAnalyzer is used to process video with default analysis parameters and export results to CSV, rich ASS subtitles and incrusted MP4. We also introduce FPS runtime argument allowing to speed-up analyses.
+* [Image Analysis Quick-Start](https://colab.research.google.com/github/ina-foss/inaFaceAnalyzer/blob/master/tutorial_API_notebooks/quick_start-image.ipynb): inaFaceAnalyzer is used to process image files. Final and intermediate results are displayed and exported to CSV.
 * more tutorials to come
 
 ## CREDITS
