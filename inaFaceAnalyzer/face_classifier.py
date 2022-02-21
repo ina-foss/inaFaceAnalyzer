@@ -33,7 +33,7 @@ from tensorflow.keras.preprocessing.image import img_to_array
 
 import inaFaceAnalyzer.keras_vggface_patch as keras_vggface
 from .svm_utils import svm_load
-from .opencv_utils import imread_rgb
+from .opencv_utils import imread_rgb, disp_frame
 from .remote_utils import get_remote
 
 
@@ -131,7 +131,7 @@ class FaceClassifier(ABC):
         df.insert(0, 'filename', lfiles)
         return df
 
-    def __call__(self, limg, return_features):
+    def __call__(self, limg, return_features, verbose=False):
         """
         Classify a list of images
         images are supposed to be preprocessed faces: aligned, cropped
@@ -158,6 +158,11 @@ class FaceClassifier(ABC):
         assert np.all([e.shape == self.input_shape for e in limg])
         batch_ret_feats, batch_ret_preds = self.inference(self.list2batch(limg))
         batch_ret_preds = self.decisionfunction2labels(batch_ret_preds)
+
+        if verbose:
+            for img, pred in zip(limg, batch_ret_preds.itertuples(index=False, name='FaceClassifierResult')):
+                disp_frame(img)
+                print('prediction', pred)
 
         if islist:
             if return_features:
