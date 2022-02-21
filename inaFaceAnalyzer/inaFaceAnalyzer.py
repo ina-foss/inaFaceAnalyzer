@@ -140,11 +140,9 @@ class FaceAnalyzer(ABC):
 
             # iterate on detected faces
             for detection in detector(frame, self.verbose):
-                if self.verbose:
-                    print(detection)
 
                 # preprocess detected faces: bbox normalization, eye detection, rotation, ...
-                face_img, bbox = preprocess_face(frame, detection, self.bbox2square, self.bbox_scale, self.face_alignment, oshape, self.verbose)
+                face_img, bbox = preprocess_face(frame, detection, self.bbox2square, self.bbox_scale, self.face_alignment, oshape, False)
 
                 linfo.append([iframe, detection._replace(bbox=tuple(bbox))])
                 # store preprocessed faces in a list, for further batch processing

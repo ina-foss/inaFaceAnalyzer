@@ -78,6 +78,7 @@ class FaceDetector(ABC):
             lret = [e._replace(bbox=e.bbox.transpose(-xoffset, -yoffset)) for e in lret]
 
         if verbose:
+            print('%d DETECTED FACES' % len(lret))
             disp_frame_shapes(frame, [e.bbox for e in lret], [])
             for detection in lret:
                 x1, y1, x2, y2 = [e for e in detection.bbox.to_int()]
