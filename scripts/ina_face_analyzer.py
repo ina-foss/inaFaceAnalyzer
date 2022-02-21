@@ -48,14 +48,14 @@ ra = parser.add_argument_group('required arguments')
 hengine = '''Analysis engine to be used.
 "video" should be the default choice for video materials.
 "image" should be the default choice for image files.
-"videotracking" use face tracking methods to lower computation time and smooth
+"videotracking" uses face tracking methods to lower computation time and smooth
 face classification results obtained on video materials.
 Tracked faces are associated to a numeric identifier.
 Smoothed classification estimates are associated to "_avg" suffix in resulting column names,
 and are more robust than frame-isolated predictions.
-"videokeyframes" restrict analyses to video key frames. It allows the fastest
-video analysis sumary, but is is associated to a non uniform frame sampling rate.
-"preprocessed_image" skip face detection and alignement steps and requires face
+"videokeyframes" restricts analyses to video key frames. It allows the fastest
+video analysis summary, but is is associated to a non-uniform frame sampling rate.
+"preprocessed_image" skips face detection and alignment steps and requires face
 images that can be used directly by face classifiers.
 These images should be already detected, cropped, centered, aligned and rescaled to 224*224 pixels.
 '''

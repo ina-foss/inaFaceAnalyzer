@@ -50,7 +50,7 @@ def new_parser(description):
 hfps = '''Amount of video frames to be processed per second.
 Remaining frames will be skipped.
 If not provided, all video frames will be processed (generally between 25 and 30 per seconds).
-Lower FPS values results in faster processing time'''
+Lower FPS values result in faster processing time'''
 def add_fps(parser):
     parser.add_argument('--fps', default=None, type=float, help=hfps)
 
@@ -69,9 +69,9 @@ def add_fps(parser):
 htracking = '''Face tracking works jointly with face detection systems :
 a face should be first detected before being tracked.
 Face detection will be performed one every DETECT_PERIOD frames and allow to
-detect new faces, or faces that were lost due to occulusions.
+detect new faces, or faces that were lost due to occlusions.
 Face tracking is performed on every frame.
-Default DETECT_PERIOD (1) is the more costly and the more robust: face detection will
+Default DETECT_PERIOD (1) is the most costly and the most robust: face detection will
 be performed for every video frames together with face tracking allowing to smooth results.
 Larger DETECT_PERIOD are efficient as long as analysis FPS is high, and users
 should define a proper trade-off between DETECT_PERIOD and the FPS.
@@ -85,7 +85,7 @@ def add_tracking(parser):
 
 def add_batchsize(parser):
     parser.add_argument('--batch_size', default=32, type=int,
-                help = '''GPU batch size. Larger values allow faster processings, but requires more GPU memory.
+                help = '''GPU batch size. Larger values allow faster processings, but require more GPU memory.
                 Default 32 value used is fine for a Laptop Quadro T2000 Mobile GPU with 4 Gb memory.''')
 
 def engine_factory(args):

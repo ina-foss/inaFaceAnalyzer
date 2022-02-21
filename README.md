@@ -7,7 +7,7 @@
 
 `inaFaceAnalyzer` is a Python toolbox designed for large-scale analysis of faces in image or video streams.
 It provides a modular processing pipeline allowing to predict age and gender from faces.
-Results can be exported to tables, augmented video streams, or rich ASS subtitles.
+Results can be exported as tables, augmented video streams, or rich ASS subtitles.
 `inaFaceAnalyzer` is designed with speed in mind to perform large-scale media monitoring campaigns.
 The trained age and gender classification model provided is based on a `ResNet50` architecture.
 Evaluation results are highly competitive with respect to the current state-of-the-art, and appear to reduce gender, age and racial biases.
@@ -27,7 +27,7 @@ Have a look to sibling project [inaSpeechSegmenter](https://github.com/ina-foss/
 
 
 ## Installation
-`inaFaceAnalyzer` requires python version between 3.7 and 3.9.
+`inaFaceAnalyzer` requires Python version between 3.7 and 3.9.
 Python 3.10 is not yet supported due to `onnxruntime-gpu` dependency.
 
 ### Installing from sources
@@ -49,9 +49,9 @@ pip install inaFaceAnalyzer
 Several scripts are provided with the distribution:
 * <code>ina_face_analyzer.py</code> : can perform the most common processings provided by the framework
 * <code>ina_face_analyzer_webcam_demo.py</code> : a demo script using webcam
-* <code>ina_face_analyzer_distributed_server.py</code> and <code>ina_face_analyzer_distributed_worker</code> : a set of scripts allowing to perform distributed analyses on a heterogeneous clusters.
+* <code>ina_face_analyzer_distributed_server.py</code> and <code>ina_face_analyzer_distributed_worker</code> : a set of scripts allowing to perform distributed analyses on a heterogeneous cluster.
 
-A detailed listing of all options available from command line programs using <code>-h</code> argument. We guess you don't want to read the whole listing at this point, but you can have a look at it later 😉.
+A detailed listing of all the options from the command line programs is available using the <code>-h</code> argument. We guess you don't want to read the whole listing at this point, but you can have a look at it later 😉.
 
 ### Displaying detailed manual
 
@@ -59,7 +59,7 @@ A detailed listing of all options available from command line programs using <co
 ina_face_analyzer.py -h
 ```
 ### Process all frames from a list of video (without tracking)
-Video processing use <code>video</code> engine and requires a list of input video paths, together with a directory used to store results in CSV.
+Video processing uses the <code>video</code> engine and requires a list of input video paths, together with a directory used to store results in CSV.
 Program initialization time requires several seconds, and we recommend using large list of files instead of calling the program for each file to process.
 ```bash
 # directory storing result must exist
@@ -74,7 +74,7 @@ head -n 2 ./my_output_directory/pexels-artem-podrez-5725953.csv
 ina_face_analyzer.py --engine video -i 'https://github.com/ina-foss/inaFaceAnalyzer/raw/master/media/pexels-artem-podrez-5725953.mp4' -o ./my_output_directory
 ```
 
-Resulting CSV contain several columns:
+The resulting CSV contains several columns:
 * frame: frame position in the video (here we have 5 lines corresponding to frame 0 - so 5 detected faces)
 * bbox: face bounding box
 * detect_conf: face detection confidence (dependent on the detection system used)
@@ -84,7 +84,7 @@ Resulting CSV contain several columns:
 
 
 ### Faster processing of a video
-It computation time is an issue, we recommend using <code>--fps 1</code> which will process a single frame per second, instead of the whole amount of video frames. When using GPU architectures, we also recommend setting large <code>batch_size</code> values.
+If computation time is an issue, we recommend using <code>--fps 1</code> which will process a single frame per second, instead of the whole amount of video frames. When using GPU architectures, we also recommend setting large <code>batch_size</code> values.
 ```bash
 # here we process a single frame per second, which is 25/30 faster than processing the whole video
 ina_face_analyzer.py --engine video --fps 1 --batch_size 128 -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
@@ -92,7 +92,7 @@ ina_face_analyzer.py --engine video --fps 1 --batch_size 128 -i ./media/pexels-a
 ### Using Tracking
 Tracking allows to lower computation time, since it is less costly than a face detection procedure.
 It also allows to smooth prediction results associated to a tracked face and obtain more robust estimates.
-It is activated with <code>videotracking</code> engine and requires to define a face <code>detect_period</code>.
+It is activated with the <code>videotracking</code> engine and requires to define <code>detect_period</code>, the time period (in frames) at which the face detector will be applied.
 ```bash
 # Process 5 frames per second, use face detection for 1/3 and face tracking for 2/3 frames
 ina_face_analyzer.py --engine videotracking --fps 5 --detect_period 3 -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
@@ -104,8 +104,8 @@ head -n 2 ./my_output_directory/pexels-artem-podrez-5725953.csv
 Resulting CSV will contain additional columns with <code>_avg</code> suffixes, corresponding to the smoothed estimates obtained for each tracked face. It will also contain a <code>face_id</code> with a numeric identifier associated to each tracked face.
 
 ### Exporting results
-Result visualization allows to validate if a given processing pipeline is suited to a specific material.
-<code>--mp4_export</code> generate a new video with embeded bounding boxes and classification information.
+Results visualization allows to validate if a given processing pipeline is suited to a specific material.
+<code>--mp4_export</code> generate a new video with embedded bounding boxes and classification information.
 <code>--ass_subtitle_export</code> generate a ASS subtitle file allowing to display bounding boxes and classification results in vlc or ELAN, and which is more convenient to share..
 
 ```bash
@@ -119,8 +119,8 @@ vlc media/pexels-artem-podrez-5725953.mp4 --sub-file my_output_directory/pexels-
 ```
 
 ### Processing list of images
-The processing of list of images requires to use <code>image</code> engine.
-A single resulting csv will be generated with entries for each detected faces, together with a reference to their original filename path.
+The processing of a list of images requires to use the <code>image</code> engine.
+A single resulting CSV will be generated with entries for each detected faces, together with a reference to their original filename.
 ```bash
 # process all images stored in directory media, outputs a single csv file
 ina_face_analyzer.py --engine image -i media/* -o ./myresults.csv
@@ -132,11 +132,11 @@ head -n 2 myresults.csv
 
 ### Distributing analyses over a network
 
-We provide two scripts allowing to perform distributed large scale analyses.
+We provide two scripts allowing to perform distributed large-scale analyses.
 
 <code>ina_face_analyzer_distributed_server.py</code> is in charge of distributing a list of documents to analyze to workers distributed over the network, and to define analysis options (fps, tracking, etc..).
-The server requires 2 positional arguments: its host name (or IP) and the path to a csv containing one line per file to process together with the destination path of the results.
-Workers need to have writing permissions in the destination paths (mounted with NFS, sshfs, ...). Output directory are created on the fly if they don't exist. Jobs order are randomized before being distributed to the workers. When a destination file already exist, the corresponding analysis is skipped.
+The server requires 2 positional arguments: its host name (or IP) and the path to a CSV containing one line per file to process together with the destination path of the results.
+Workers need to have writing permissions in the destination paths (mounted with NFS, sshfs, ...). Output directories are created on the fly if they don't exist. Jobs order is randomized before being distributed to the workers. When a destination file already exists, the corresponding analysis is skipped.
 
 ```bash
 # a sample job list csv with 2 records and 4 columns
