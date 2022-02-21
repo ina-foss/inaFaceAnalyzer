@@ -178,7 +178,7 @@ When using colab platform, we recommend to [take advantage of GPU acceleration](
 
 * [Video Analysis Quick-Start](https://colab.research.google.com/github/ina-foss/inaFaceAnalyzer/blob/master/tutorial_API_notebooks/quick_start.ipynb): inaFaceAnalyzer is used to process video with default analysis parameters and export results to CSV, rich ASS subtitles and incrusted MP4. We also introduce FPS runtime argument allowing to speed-up analyses.
 * [Image Analysis Quick-Start](https://colab.research.google.com/github/ina-foss/inaFaceAnalyzer/blob/master/tutorial_API_notebooks/quick_start-image.ipynb): inaFaceAnalyzer is used to process image files. Final and intermediate results are displayed and exported to CSV.
-* more tutorials to come
+* [Advanced tutorial](https://colab.research.google.com/github/ina-foss/inaFaceAnalyzer/blob/master/tutorial_API_notebooks/advanced_tutorial.ipynb): define a custom analysis pipeline by defining 3 core parametric elements: face detection, face classification and image or video processing engine.
 
 ## CREDITS
 This work has been partially funded by the French National Research Agency (project GEM : Gender Equality Monitor : ANR-19-CE38-0012) and by European Union's Horizon 2020 research and innovation programme (project [MeMAD](https://memad.eu) : H2020 grant agreement No 780069).
