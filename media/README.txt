@@ -17,6 +17,11 @@ Uploaded at October 28, 2020
 https://www.pexels.com/video/a-group-of-young-professionals-are-having-a-teamwork-5725953/
 author : https://www.pexels.com/@artempodrez
 
+1328360239_e56cc26d26_o.jpg
+obtained from flickr https://flic.kr/p/32ocdK
+Author: https://www.flickr.com/photos/goblogk/
+License: CC BY-NC-ND 2.0
+
 
 800px-India_(236650352).jpg
 obtained from wikimedia https://commons.wikimedia.org/wiki/File:India_(236650352).jpg
