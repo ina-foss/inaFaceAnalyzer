@@ -4,6 +4,7 @@
 [![test py 3.9](https://github.com/ina-foss/inaFaceAnalyzer/actions/workflows/test_py3-9.yml/badge.svg)](https://github.com/ina-foss/inaFaceAnalyzer/actions/workflows/test_py3-9.yml)
 <!-- [![test py 3.10](https://github.com/ina-foss/inaFaceAnalyzer/actions/workflows/test_py3-10.yml/badge.svg)](https://github.com/ina-foss/inaFaceAnalyzer/actions/workflows/test_py3-10.yml) -->
 [![PyPI version](https://badge.fury.io/py/inaFaceAnalyzer.svg)](https://badge.fury.io/py/inaFaceAnalyzer)
+[![Docker Pulls](https://img.shields.io/docker/pulls/inafoss/inafaceanalyzer)](https://hub.docker.com/r/inafoss/inafaceanalyzer)
 
 `inaFaceAnalyzer` is a Python toolbox designed for large-scale analysis of faces in image or video streams.
 It provides a modular processing pipeline allowing to predict age and gender from faces.
