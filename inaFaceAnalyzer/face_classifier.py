@@ -280,12 +280,12 @@ After consultation of French CNIL (French data protection authority) and
 DDD (French Rights Defender), racial classification layers were erased
 from this public distribution in order to prevent their use for non ethical purposes.
 These models can however be provided for free after examination of each demand.
-Resnet50FairFace only predicts gender, and is trained on Fairface with a Resnet50 architecture.
-Vggface_LSVM_YTF predict only gender. It uses an Oxford VGG 16 neural representation
-of faces combined with a linear SVM that was trained on Youtube Faces datavase
+Resnet50FairFace only predicts gender, and is trained on FairFace with a Resnet50 architecture.
+Vggface_LSVM_YTF predicts only gender. It uses an Oxford VGG 16 neural representation
+of faces combined with a linear SVM that was trained on Youtube Faces database
 by Zohra Rezgui during her internship at INA. It was used in digital earlier humanities studies.
 Vggface_LSVM_Fairface has the same architecture and equivalent performances than
-Vggface_LSVM_YTF. It's linear SVM model was trained on FairFace.
+Vggface_LSVM_YTF. Its linear SVM model was trained on FairFace.
 '''
 choices = ['Resnet50FairFaceGRA', 'Vggface_LSVM_YTF', 'Resnet50FairFace', 'Vggface_LSVM_FairFace']
 def faceclassifier_cmdline(parser):

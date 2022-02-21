@@ -364,7 +364,7 @@ def facedetection_cmdline(parser):
                      choices=['LibFaceDetection', 'OcvCnnFacedetector'],
                      help='''face detection module to be used:
                          LibFaceDetection can take advantage of GPU acceleration and has a higher recall.
-                         OcvCnnFaceDetector is embed in OpenCV. It is faster for large resolutions since it first resize input frames to 300*300. It may miss small faces''')
+                         OcvCnnFacedetector is embedded in OpenCV. It is faster for large resolutions since it first resize input frames to 300*300. It may miss small faces''')
 
     da.add_argument('--face_detection_confidence', type=float,
                     help='''minimal confidence threshold to be used for face detection.
@@ -377,7 +377,7 @@ def facedetection_cmdline(parser):
 
     da.add_argument('--min_face_size_percent', default=0, type=float, dest='size_prct',
                     help='''minimal relative size (percentage between 0 and 1) of the
-                    faces to be considered for the analysis with repect to image frames
+                    faces to be considered for the analysis with respect to image frames
                     minimal dimension (generally height for videos)''')
 
     da.add_argument('--face_detection_padding', default=None, type=float, dest='face_detection_padding',
