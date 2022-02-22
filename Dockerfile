@@ -35,16 +35,19 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY setup.py setup.cfg  LICENSE README.md test_inaFaceAnalyzer.py versioneer.py ./
+COPY setup.py setup.cfg  LICENSE MANIFEST.in README.md test_inaFaceAnalyzer.py versioneer.py ./
 COPY inaFaceAnalyzer /app/inaFaceAnalyzer
 COPY tests /app/tests
 COPY media /app/media
 COPY scripts /app/scripts
+COPY tutorial_API_notebooks /app/tutorial_API_notebooks
+# required for keeping track of version - only 12 Mo
+COPY .git ./.git
 
 
-RUN pip install --upgrade pip && pip install . && pip cache purge
+RUN pip install --upgrade pip && pip install . && pip install jupyter && pip cache purge
 
 # This line is non mandatory
 # it's usefull for docker containers without internet access (it may happen)
 # removing this line allows to save 500 Mo in the image
-RUN echo "from inaFaceAnalyzer.remote_utils import download_all; download_all()" | python
+# RUN echo "from inaFaceAnalyzer.remote_utils import download_all; download_all()" | python
