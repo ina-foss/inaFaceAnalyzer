@@ -46,6 +46,20 @@ apt-get install cmake ffmpeg libgl1-mesa-glx
 pip install inaFaceAnalyzer
 ```
 
+### Using docker image
+```
+# download latest docker image from dockerhub
+docker pull inafoss/inafaceanalyzer
+# run docker image. setting --gpu argument allows to take advantage of
+# GPU acceleration (non mandatory)
+docker run -it --gpus=all inafoss/inafaceanalyzer /bin/bash
+# lauch unit tests (non mandatory but recommended)
+python test_inaFaceAnalyzer.py
+# use any program or API
+ina_face_analyzer.py -h
+```
+
+
 ## Using inaFaceAnalyzer command line programs
 Several scripts are provided with the distribution:
 * <code>ina_face_analyzer.py</code> : can perform the most common processings provided by the framework
