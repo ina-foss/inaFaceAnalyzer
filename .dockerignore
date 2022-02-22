@@ -1,4 +1,5 @@
-.*
+.github
+.dockerignore
 build
 dist
 __pycache__
