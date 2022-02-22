@@ -32,6 +32,7 @@ import os
 import socket
 from collections import namedtuple
 import pandas as pd
+import time
 import inaFaceAnalyzer.commandline_utils as ifacu
 from inaFaceAnalyzer.display_utils import ass_subtitle_export, video_export
 
@@ -93,21 +94,27 @@ if __name__ == '__main__':
 
         ret = ''
         if not os.path.exists(dst):
-            os.makedirs(os.path.dirname(dst), exist_ok=True)
-            df = engine(src, **dargs)
-            df.to_csv(dst, index=False)
-            ret += '%s done ' % dst
+            try:
+                b = time.time()
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                df = engine(src, **dargs)
+                df.to_csv(dst, index=False)
+                ret += '%s done in %.1f sec' % (dst, time.time() - b)
+            except:
+                ret += 'problem with %s' % dst
+                continue
 
         if dst_ass and (dst_ass == dst_ass) and (not os.path.exists(dst_ass)):
+            b = time.time()
             os.makedirs(os.path.dirname(dst_ass), exist_ok=True)
             if df is None:
                 df = pd.read_csv(dst)
             ass_subtitle_export(src, df, dst_ass, analysis_fps=args.fps)
-            ret += '%s done ' % dst_ass
+            ret += '%s done in %.1f sec' % (dst_ass, time.time() - b)
 
         if dst_mp4 and (dst_mp4 == dst_mp4) and (not os.path.exists(dst_mp4)):
             os.makedirs(os.path.dirname(dst_mp4), exist_ok=True)
             if df is None:
                 df = pd.read_csv(dst)
             video_export(src, df, dst_mp4, analysis_fps=args.fps)
-            ret += '%s done ' % dst_mp4
+            ret += '%s done in %.1f sec' % (dst_mp4, time.time() -b)
