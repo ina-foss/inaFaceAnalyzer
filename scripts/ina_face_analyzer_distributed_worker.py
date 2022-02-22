@@ -98,14 +98,14 @@ if __name__ == '__main__':
             df.to_csv(dst, index=False)
             ret += '%s done ' % dst
 
-        if dst_ass == dst_ass and not os.path.exists(dst_ass):
+        if dst_ass and (dst_ass == dst_ass) and (not os.path.exists(dst_ass)):
             os.makedirs(os.path.dirname(dst_ass), exist_ok=True)
             if df is None:
                 df = pd.read_csv(dst)
             ass_subtitle_export(src, df, dst_ass, analysis_fps=args.fps)
             ret += '%s done ' % dst_ass
 
-        if dst_mp4 == dst_mp4 and not os.path.exists(dst_mp4):
+        if dst_mp4 and (dst_mp4 == dst_mp4) and (not os.path.exists(dst_mp4)):
             os.makedirs(os.path.dirname(dst_mp4), exist_ok=True)
             if df is None:
                 df = pd.read_csv(dst)
