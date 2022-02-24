@@ -45,7 +45,7 @@ COPY tutorial_API_notebooks /app/tutorial_API_notebooks
 COPY .git ./.git
 
 
-RUN pip install --upgrade pip && pip install . && pip install jupyter && pip cache purge
+RUN pip install --upgrade pip && pip install . && pip cache purge
 
 # This line is non mandatory
 # it's usefull for docker containers without internet access (it may happen)
