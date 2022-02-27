@@ -43,8 +43,8 @@ Source Software (submission in progress).
 def new_parser(description):
     parser = ArgumentParser(description=description,
                             epilog=epilog,
-                            formatter_class= ArgumentDefaultsHelpFormatter)# ,
-                            #add_help=False)
+                            formatter_class= ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--version', action='version', version='%(prog)s ' + ifa.__version__)
     return parser
 
 hfps = '''Amount of video frames to be processed per second.
