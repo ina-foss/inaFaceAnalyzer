@@ -49,7 +49,22 @@ RUN chmod +x /root/
 RUN chmod +r /root/.keras/inaFaceAnalyzer/*
 
 WORKDIR /app
-COPY setup.py setup.cfg  LICENSE MANIFEST.in README.md test_inaFaceAnalyzer.py versioneer.py ./
+COPY .dockerignore \
+     .gitattributes \
+     CODE_OF_CONDUCT.md \
+     Dockerfile \
+     buildpaper.sh \
+     paper.bib \
+     paper.md \
+     setup.py \
+     setup.cfg  \
+     LICENSE \
+     MANIFEST.in \
+     README.md \
+     test_inaFaceAnalyzer.py \
+     versioneer.py \
+     ./
+
 COPY inaFaceAnalyzer /app/inaFaceAnalyzer
 COPY tests /app/tests
 COPY media /app/media
@@ -57,6 +72,7 @@ COPY scripts /app/scripts
 COPY tutorial_API_notebooks /app/tutorial_API_notebooks
 # required for keeping track of version - only 12 Mo
 COPY .git ./.git
+COPY .github ./.github
 
 
 RUN pip install --upgrade pip && pip install . && pip cache purge
