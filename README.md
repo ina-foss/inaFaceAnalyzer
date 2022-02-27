@@ -160,7 +160,7 @@ Workers need to have writing permissions in the destination paths (mounted with 
 # dest_csv (mandatory output csv)
 # dest_ass: to be used for exporting results to ass subtitles
 # dest_mp4: to be used for exporting incrusted MP4 video
-cat test.scv
+cat test.csv
 >> source_path,dest_csv,dest_ass,dest_mp4
 >> /home/ddoukhan/git_repos/inaFaceAnalyzer/media/pexels-artem-podrez-5725953.mp4,/tmp/csv/test1.csv,/tmp/ass/test1.ass,/tmp/mp4/test1.mp4
 >> https://github.com/ina-foss/inaFaceAnalyzer/raw/master/media/pexels-artem-podrez-5725953.mp4,/tmp/csv/test2.csv,,

@@ -21,20 +21,93 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.# -*- coding: utf-8 -*-
-
-
+# THE SOFTWARE.
 
 
 import Pyro4
-import sys
 import os
 import socket
 from collections import namedtuple
-import pandas as pd
+import traceback
 import time
 import inaFaceAnalyzer.commandline_utils as ifacu
 from inaFaceAnalyzer.display_utils import ass_subtitle_export, video_export
+
+
+class IfaWorker:
+    def __init__(self, server_uri, batch_size, name_suffix=''):
+        # setup network configuration
+        self.hostname = hostname = (socket.gethostname() + name_suffix)
+        self.jobserver = jobserver = Pyro4.Proxy(server_uri)
+
+        # get processing settings from server, and update with command line arguments
+        server_args = jobserver.get_analysis_args('initializing ' + hostname)
+        print('recieved args', server_args)
+        server_args['batch_size'] = batch_size
+        nt = namedtuple('inaFaceAnalyzerArgs', server_args)
+        args = nt(**server_args)
+
+        # to be used at engine inference
+        self.fps = args.fps
+
+        ## perform engine instantiation
+        self.engine = ifacu.engine_factory(args)
+        self.msg = 'first call'
+
+    def __call__(self):
+        # ask for a job
+        # return False if no more jobs are available, else True
+        try:
+            msg = '%s: %s' % (self.hostname, self.msg)
+            src, dst_csv, dst_ass, dst_mp4 = self.jobserver.get_job(msg)
+        except StopIteration:
+            print('all jobs are done')
+            return False
+
+        # init process
+        print('received job', src, dst_csv, dst_ass, dst_mp4)
+        self.msg = ''
+        df = None
+
+        # taskid values: 0 for main analysis, 1 for ass export, 2 for mp4 export
+        for taskid, dst in enumerate([dst_csv, dst_ass, dst_mp4]):
+
+            # test if destination path is provided: not None and not Nan
+            if not (dst and (dst == dst)):
+                continue
+
+            # skip if file already exists
+            if os.path.exists(dst):
+                self.msg += '%s already exists' % dst
+                continue
+
+            # do the job
+            b = time.time()
+            try:
+                # create output directory if needed
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+
+                # task specific action
+                if taskid == 0:
+                    df = self.engine(src, fps = self.fps)
+                    df.to_csv(dst, index=False, float_format='%.2f')
+                else:
+                    if df is None:
+                        df = dst_csv
+                    if taskid == 1:
+                        print(src, dst, self.fps, df)
+                        ass_subtitle_export(src, df, dst, analysis_fps = self.fps)
+                    elif taskid == 2:
+                        video_export(src, df, dst, analysis_fps = self.fps)
+                    else:
+                        raise NotImplementedError()
+
+                self.msg += '%s done in %.1f sec' % (dst, time.time() - b)
+            except BaseException:
+                self.msg += 'problem with %s\n' % dst
+                self.msg += traceback.format_exc()
+
+        return True
 
 
 description = '''Worker in charge of analyzing documents and receive orders
@@ -52,69 +125,15 @@ Sample URI: PYRO:obj_25e3ee9d312848fcaf0784c2b80933c4@blahtop:44175
 
 
 if __name__ == '__main__':
-
     # parse command line arguments
     parser = ifacu.new_parser(description)
     parser.add_argument(dest='server_uri', help=hserver_uri)
     ifacu.add_batchsize(parser)
     args = parser.parse_args()
 
-    # setup network configuration
-    hostname = socket.gethostname()
-    jobserver = Pyro4.Proxy(args.server_uri)
+    # create worker instance
+    worker = IfaWorker(args.server_uri, args.batch_size)
 
-    # get processing settings from server, and update with command line arguments
-    server_args = jobserver.get_analysis_args('initializing ' + hostname)
-    print('recieved args', server_args)
-    server_args['batch_size'] = args.batch_size
-    nt = namedtuple('inaFaceAnalyzerArgs', server_args)
-    args = nt(**server_args)
-
-    # to be used at engine inference
-    dargs = {}
-    if args.fps:
-        dargs = {'fps': args.fps}
-
-    ## perform engine instantiation
-    engine = ifacu.engine_factory(args)
-
-
-    ret = 'first call'
-    stopit = False
-    while not stopit:
-        try:
-            src, dst, dst_ass, dst_mp4 = jobserver.get_job('%s %s' % (hostname, ret))
-        except StopIteration:
-            print('all jobs are done')
-            stopit = True
-            sys.exit(0)
-
-        print('received job', src, dst, dst_ass, dst_mp4)
-        df = None
-
-        ret = ''
-        if not os.path.exists(dst):
-            try:
-                b = time.time()
-                os.makedirs(os.path.dirname(dst), exist_ok=True)
-                df = engine(src, **dargs)
-                df.to_csv(dst, index=False)
-                ret += '%s done in %.1f sec' % (dst, time.time() - b)
-            except:
-                ret += 'problem with %s' % dst
-                continue
-
-        if dst_ass and (dst_ass == dst_ass) and (not os.path.exists(dst_ass)):
-            b = time.time()
-            os.makedirs(os.path.dirname(dst_ass), exist_ok=True)
-            if df is None:
-                df = pd.read_csv(dst)
-            ass_subtitle_export(src, df, dst_ass, analysis_fps=args.fps)
-            ret += '%s done in %.1f sec' % (dst_ass, time.time() - b)
-
-        if dst_mp4 and (dst_mp4 == dst_mp4) and (not os.path.exists(dst_mp4)):
-            os.makedirs(os.path.dirname(dst_mp4), exist_ok=True)
-            if df is None:
-                df = pd.read_csv(dst)
-            video_export(src, df, dst_mp4, analysis_fps=args.fps)
-            ret += '%s done in %.1f sec' % (dst_mp4, time.time() -b)
+    # iterate while jobs are available
+    while worker():
+        pass

@@ -31,9 +31,6 @@ from inaFaceAnalyzer.face_classifier import faceclassifier_cmdline
 
 import warnings
 
-#from collections import namedtuple
-
-
 @Pyro4.expose
 class JobServer(object):
     def __init__(self, args):
@@ -69,24 +66,20 @@ class JobServer(object):
 
         print('setting jobs')
         print('random job record example:', next(df.itertuples()))
-        print('Total number of files to process:', len(df))
+        self.nbjobs = len(df)
+        print('Total number of files to process:', self.nbjobs)
         self.jobiterator = enumerate(df.itertuples())
-        #nt = namedtuple('serverargs', args.__dict__)
-        self.args = args.__dict__ #nt(*args.__dict__)
-        #self.args = args
+        self.args = args.__dict__
 
     def get_analysis_args(self, msg):
         print(msg)
         return self.args
 
     def get_job(self, msg):
-        #try:
+        print('receiving message: ' + msg)
         ijob, job = next(self.jobiterator)
-        print('job %d: %s' % (ijob, msg))
-        print(job)
-
         ret = (job.source_path, job.dest_csv, job.dest_ass, job.dest_mp4)
-        print (ret)
+        print ('sending job %d/%d: %s' % (ijob+1, self.nbjobs, ret))
         return ret
 
     # to be implemented - only usefull for image collections
@@ -130,29 +123,31 @@ and are more robust than frame-isolated predictions.
 video analysis sumary, but is is associated to a non uniform frame sampling rate.
 '''
 
-parser = ifacu.new_parser(description)
+if __name__ == '__main__':
 
-parser.add_argument(dest='host_address', help = hhostaddress)
-parser.add_argument(help = hjoblist, dest='joblist_csv')
+    parser = ifacu.new_parser(description)
+
+    parser.add_argument(dest='host_address', help = hhostaddress)
+    parser.add_argument(help = hjoblist, dest='joblist_csv')
 
 
-parser.add_argument('--engine', choices=['video', 'videotracking', 'videokeyframes'],
-            required=True, help=hengine)
+    parser.add_argument('--engine', choices=['video', 'videotracking', 'videokeyframes'],
+                required=True, help=hengine)
 
-faceclassifier_cmdline(parser)
-ifacu.add_fps(parser)
-ifacu.add_tracking(parser)
-facedetection_cmdline(parser)
+    faceclassifier_cmdline(parser)
+    ifacu.add_fps(parser)
+    ifacu.add_tracking(parser)
+    facedetection_cmdline(parser)
 
-#### OPTION SKIP IF EXIST
+    #### OPTION SKIP IF EXIST
 
-# parse command line arguments
-args = parser.parse_args()
+    # parse command line arguments
+    args = parser.parse_args()
 
-# full name of the host to be used by remote clients
-Pyro4.config.HOST = args.host_address
-daemon = Pyro4.Daemon()
+    # full name of the host to be used by remote clients
+    Pyro4.config.HOST = args.host_address
+    daemon = Pyro4.Daemon()
 
-uri = daemon.register(JobServer(args))
-print("Provide the following objet URI to remote ina_face_analyzer_distributed_workers: ", uri)
-daemon.requestLoop()
+    uri = daemon.register(JobServer(args))
+    print("Provide the following objet URI to remote ina_face_analyzer_distributed_workers: ", uri)
+    daemon.requestLoop()
