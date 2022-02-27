@@ -34,6 +34,20 @@ RUN apt-get update \
     && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/*
 
+# download models to be used by default
+# this part is non mandatory, costs 500 Mo, and ease image usage
+ARG u='https://github.com/ina-foss/inaFaceAnalyzer/releases/download/models/'
+ADD ${u}opencv_face_detector_uint8.pb \
+    ${u}opencv_face_detector.pbtxt \
+    ${u}shape_predictor_68_face_landmarks.dat \
+    ${u}keras_resnet50_fairface_GRA.h5 \
+    ${u}libfacedetection-yunet.onnx \
+    /root/.keras/inaFaceAnalyzer/
+
+# make models available to non-root users
+RUN chmod +x /root/
+RUN chmod +r /root/.keras/inaFaceAnalyzer/*
+
 WORKDIR /app
 COPY setup.py setup.cfg  LICENSE MANIFEST.in README.md test_inaFaceAnalyzer.py versioneer.py ./
 COPY inaFaceAnalyzer /app/inaFaceAnalyzer
@@ -46,8 +60,3 @@ COPY .git ./.git
 
 
 RUN pip install --upgrade pip && pip install . && pip cache purge
-
-# This line is non mandatory
-# it's usefull for docker containers without internet access (it may happen)
-# removing this line allows to save 500 Mo in the image
-# RUN echo "from inaFaceAnalyzer.remote_utils import download_all; download_all()" | python

@@ -23,6 +23,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import os
 from tensorflow.keras.utils import get_file
 
 # inaFaceAnalyzer models are stored remotely within github releases
@@ -30,6 +31,8 @@ from tensorflow.keras.utils import get_file
 
 r1_url = 'https://github.com/ina-foss/inaFaceAnalyzer/releases/download/models/'
 
+
+# TODO: define RC MALLI MODEL ALSO HERE
 dmodels = {
     # These 2 models are provided for face detection in opencv
     # https://raw.githubusercontent.com/opencv/opencv_3rdparty/dnn_samples_face_detector_20180220_uint8/opencv_face_detector_uint8.pb
@@ -51,11 +54,13 @@ dmodels = {
     'libfacedetection-yunet.onnx' : r1_url}
 
 def get_remote(model_fname):
+    # if in a docker image, try to get the file in /root/.keras
+    rootpath = '/root/.keras/inaFaceAnalyzer/' + model_fname
+    if os.access(rootpath, os.R_OK):
+        return rootpath
+
+    # standard keras get file
+    # check if the file is in /home/$USER/.keras/inaFaceAnalyzer/ and download it if required
     url = dmodels[model_fname]
     return get_file(model_fname, url + model_fname, cache_subdir='inaFaceAnalyzer')
 
-#TODO - download RC MALLI MODEL ALSO HERE
-def download_all():
-    # usefull at the initalisation of a Docker image
-    for k in dmodels:
-        get_remote(k)

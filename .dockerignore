@@ -1,5 +1,7 @@
 .github
 .dockerignore
+.eggs
+env
 build
 dist
 __pycache__
