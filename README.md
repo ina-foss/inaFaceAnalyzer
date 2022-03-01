@@ -14,7 +14,7 @@ Results can be exported as tables, augmented video streams, or rich ASS subtitle
 The trained age and gender classification model provided is based on a `ResNet50` architecture.
 Evaluation results are highly competitive with respect to the current state-of-the-art, and appear to reduce gender, age and racial biases.
 
-Should you need further details regarding this work, please refer to the following [paper](https://github.com/openjournals/joss-papers/blob/joss.04195/joss.04195/10.21105.joss.04195.pdf):
+Should you need further details regarding this work, please refer to the following [paper](https://github.com/openjournals/joss-papers/blob/joss.04210/joss.04210/10.21105.joss.04210.pdf):
 
 ```bibtex
 @journal{doukhan2022joss,
