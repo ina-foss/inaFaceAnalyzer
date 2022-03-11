@@ -7,6 +7,8 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/inafoss/inafaceanalyzer)](https://hub.docker.com/r/inafoss/inafaceanalyzer)
 [![status](https://joss.theoj.org/papers/47086151f746f32165c72870978c1398/status.svg)](https://joss.theoj.org/papers/47086151f746f32165c72870978c1398)
 
+## About
+
 `inaFaceAnalyzer` is a Python toolbox designed for large-scale analysis of faces in image or video streams.
 It provides a modular processing pipeline allowing to predict age and gender from faces.
 Results can be exported as tables, augmented video streams, or rich ASS subtitles.
@@ -26,6 +28,23 @@ Should you need further details regarding this work, please refer to the followi
 ```
 
 Have a look to sibling project [inaSpeechSegmenter](https://github.com/ina-foss/inaSpeechSegmenter).
+
+## Statement of need
+
+`inaFaceAnalyzer` is a Python framework aimed at extracting facial attribute information from massive video and image streams.
+This information can be used in a wide range of applications including biometrics, human-computer interaction, multimedia indexation, digital humanities and media monitoring.
+
+`inaFaceAnalyzer` was realized to meet the needs of French National Audiovisual Institute ([INA](https://www.ina.fr)), in charge of archiving and providing access to more than 22 million hours of TV and radio programs.
+The emergence of computational digital humanities and data journalism has increased the need of INA's users to access meta-data obtained from automatic information extraction methods.
+
+Since 2018, INA has realized several large-scale studies (up to 1 million hours of program analyzed) in the context of Gender Equality Monitor project, which aims at describing men and women representation differences in media based on [speech time](http://doi.org/10.18146/2213-0969.2018.jethc156), [TV text incrustations](https://larevuedesmedias.ina.fr/etude-coronavirus-information-television-bandeaux-femmes-hommes) or [facial attributes](https://inatheque.hypotheses.org/20616).
+
+Since 2022, `inaFaceAnalyzer` is used in ARCOM's (French Regulatory Authority for Audiovisual and Digital Communication) annual [report on Women representation in TV and radio](https://www.arcom.fr/mediatheque/la-representation-des-femmes-la-television-et-la-radio-rapport-sur-lexercice-2021).
+Channels statements of women representation in TV and radio are described jointly with `inaFaceAnalyzer`'s automatic facial attribute estimates and [inaSpeechSegmenter](https://github.com/ina-foss/inaSpeechSegmenter)'s speech-time estimates.
+
+With respect to the high social impact associated to the studies using this software, `inaFaceAnalyzer` provide high accuracy prediction models.
+Being aimed at describing the representation of under-represented categories of people in media, it should minimize gender, age or racial biases that are known to also affect machine learning datasets and softwares.
+It is highly configurable, allowing to define trade-offs between accuracy and processing time depending on the scale of the analyses to be performed and on the available computational resources.
 
 
 ## Installation
