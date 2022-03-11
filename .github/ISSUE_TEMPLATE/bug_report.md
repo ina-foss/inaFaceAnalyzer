@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 **Describe the bug**
-A clear and concise description of what the bug is.
+<!-- A clear and concise description of what the bug is. -->
 
 **To Reproduce**
  - provide the lines of code that produce an unexpected behavior or the command line program used together with the commandline arguments
