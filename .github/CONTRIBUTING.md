@@ -29,7 +29,7 @@ python test_inaFaceAnalyzer.py
 
 You can then make your changes and experiment freely. Once you're done, remember to check that the tests still run. If you've added a new feature, add tests!
 
-Then finally, you're more than welcome to create a [Pull Request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request-from-a-fork) in **inaFaceAnalyzer** main repo. We will look at it as soon as possible and eventually integrate your changes in the project.
+Then finally, you're more than welcome to create a [Pull Request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request-from-a-fork) in `inaFaceAnalyzer` main repo. We will look at it as soon as possible and eventually integrate your changes in the project.
 
 ## PR requirements
 
