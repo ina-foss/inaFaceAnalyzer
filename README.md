@@ -196,10 +196,15 @@ When using colab platform, we recommend to [take advantage of GPU acceleration](
 * [Image Analysis Quick-Start](https://colab.research.google.com/github/ina-foss/inaFaceAnalyzer/blob/master/tutorial_API_notebooks/quick_start-image.ipynb): inaFaceAnalyzer is used to process image files. Final and intermediate results are displayed and exported to CSV.
 * [Advanced tutorial](https://colab.research.google.com/github/ina-foss/inaFaceAnalyzer/blob/master/tutorial_API_notebooks/advanced_tutorial.ipynb): define a custom analysis pipeline by defining 3 core parametric elements: face detection, face classification and image or video processing engine.
 
+## Contributing
+Please feel free to open issues if you have any questions or suggestions, or if you want to contribute to `inaFaceAnalyzer` development.
+Every contribution is very welcome!
+Please read [CONTRIBUTING.md](https://github.com/ina-foss/inaFaceAnalyzer/blob/master/.github/CONTRIBUTING.md) for more details.
+
 ## CREDITS
 This work has been partially funded by the French National Research Agency (project GEM : Gender Equality Monitor : ANR-19-CE38-0012) and by European Union's Horizon 2020 research and innovation programme (project [MeMAD](https://memad.eu) : H2020 grant agreement No 780069).
 
-We acknowledge contributions from [Zohra Rezgui](https://github.com/ZohraRezgui) who trained first models and wrote the first piece of code that lead to inaFaceAnalyzer during her internship at INA.
+We acknowledge contributions from [Zohra Rezgui](https://github.com/ZohraRezgui) who trained first models and wrote the first piece of code that lead to `inaFaceAnalyzer` during her internship at INA.
 ```bibtex
 @techreport{rezgui2019carthage,
   type = {Msc. Thesis},
