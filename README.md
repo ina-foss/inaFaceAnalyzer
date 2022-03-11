@@ -39,8 +39,8 @@ The emergence of computational digital humanities and data journalism has increa
 
 Since 2018, INA has realized several large-scale studies (up to 1 million hours of program analyzed) in the context of Gender Equality Monitor project, which aims at describing men and women representation differences in media based on [speech time](http://doi.org/10.18146/2213-0969.2018.jethc156), [TV text incrustations](https://larevuedesmedias.ina.fr/etude-coronavirus-information-television-bandeaux-femmes-hommes) or [facial attributes](https://inatheque.hypotheses.org/20616).
 
-Since 2022, `inaFaceAnalyzer` is used in ARCOM's (French Regulatory Authority for Audiovisual and Digital Communication) annual [report on Women representation in TV and radio](https://www.arcom.fr/mediatheque/la-representation-des-femmes-la-television-et-la-radio-rapport-sur-lexercice-2021).
-Channels statements of women representation in TV and radio are described jointly with `inaFaceAnalyzer`'s automatic facial attribute estimates and [inaSpeechSegmenter](https://github.com/ina-foss/inaSpeechSegmenter)'s speech-time estimates.
+Since 2022, `inaFaceAnalyzer` is used in [ARCOM](https://en.wikipedia.org/wiki/Regulatory_Authority_for_Audiovisual_and_Digital_Communication)'s (French Regulatory Authority for Audiovisual and Digital Communication) annual [report on Women representation in TV and radio](https://www.arcom.fr/mediatheque/la-representation-des-femmes-la-television-et-la-radio-rapport-sur-lexercice-2021).
+Channels statements are described jointly with `inaFaceAnalyzer`'s automatic facial attribute estimates and [inaSpeechSegmenter](https://github.com/ina-foss/inaSpeechSegmenter)'s speech-time estimates.
 
 With respect to the high social impact associated to the studies using this software, `inaFaceAnalyzer` provide high accuracy prediction models.
 Being aimed at describing the representation of under-represented categories of people in media, it should minimize gender, age or racial biases that are known to also affect machine learning datasets and softwares.
