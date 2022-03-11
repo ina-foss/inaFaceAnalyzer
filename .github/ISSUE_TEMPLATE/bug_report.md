@@ -23,9 +23,16 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Version [e.g. 22]
+**System information**
+ - OS and distribution (eg: Linux Ubuntu 20.04)
+ - Python version
+ - Tensorflow version
+ - output of command `pip freeze`
+ - Amount of available RAM
+ - Running on GPU or CPU
+ - output of command `nvidia-smi` (if GPU is used)
+ - installation type (from sources, from pypi, from dockerhub ?)
+ - inaFaceAnalyzer version
 
 **Additional context**
 Add any other context about the problem here.
