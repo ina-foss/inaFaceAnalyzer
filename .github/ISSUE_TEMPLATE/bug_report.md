@@ -11,17 +11,16 @@ assignees: ''
 A clear and concise description of what the bug is.
 
 **To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+ - provide the lines of code that produce an unexpected behavior or the command line program used together with the commandline arguments
+ - downloadable link to the input data associated (images, videos) to the unexpected behavior
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+**Current behavior**
+Tell us what happens instead of the expected behavior.
+Include any log/backtrace here.
+
 
 **System information**
  - OS and distribution (eg: Linux Ubuntu 20.04)
@@ -31,6 +30,7 @@ If applicable, add screenshots to help explain your problem.
  - Amount of available RAM
  - Running on GPU or CPU
  - output of command `nvidia-smi` (if GPU is used)
+ - CUDA and CuDNN versions (if GPU is used)
  - installation type (from sources, from pypi, from dockerhub ?)
  - inaFaceAnalyzer version
 
