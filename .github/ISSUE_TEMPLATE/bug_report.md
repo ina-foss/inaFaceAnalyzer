@@ -7,13 +7,18 @@ assignees: ''
 
 ---
 
+Make sure you ran the unit tests before submitting a bug report and tell us if and where they fail.
+You can use the program `test_inaFaceAnalyzer.py` at the root of this repository.
+
+
 ## Describe the bug
 A clear and concise description of what the bug is.
 
 
 ## To Reproduce
- - provide the lines of code that produce an unexpected behavior or the command line program used together with the commandline arguments
- - downloadable link to the input data associated (images, videos) to the unexpected behavior
+ - provide the code that produce an unexpected behavior
+ - (altenative) provide the command line program and the commandline arguments that produce the unexpected behavior
+ - provide the input data associtated to the unexpected behaviors (image or video)
 
 ## Expected behavior
 
