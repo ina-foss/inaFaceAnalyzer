@@ -13,6 +13,7 @@ API documentation
 .. toctree::
    :maxdepth: 2
 
+   analyzer
    classifier
 
 
