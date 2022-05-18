@@ -23,6 +23,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+"""
+This is the documentation of module face_classifier.py
+"""
+
 import numpy as np
 import pandas as pd
 import numbers
@@ -216,6 +220,15 @@ def _fairface_agedec2age(age_dec):
 
 
 class Resnet50FairFaceGRA(Resnet50FairFace):
+    """
+    Resnet50FairFaceGRA predicts age and gender and is the most accurate proposed.
+    It uses Resnet50 architecture and is trained to predict gender, age and race on FairFace.
+    After consultation of French CNIL (French data protection authority) and
+    DDD (French Rights Defender), racial classification layers were erased
+    from this public distribution in order to prevent their use for non ethical purposes.
+    These models can however be provided for free after examination of each demand.
+    """
+    
     def __init__(self):
         m = keras.models.load_model(get_remote('keras_resnet50_fairface_GRA.h5'), compile=False)
         self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs + [m.layers[-5].output])

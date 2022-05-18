@@ -23,6 +23,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+"""
+inaFaceAnalyzer module implements media analyzer classes allowing to process
+video or image streams.
+
+Analysis classes inherits from abstract class FaceAnalyzer.
+Custom face detection,  face classifier, eye detection and image preprocessing strategies can be provided in the constructor.
+
+>>> from inaFaceAnalyzer.inaFaceAnalyzer import VideoAnalyzer
+>>> # a video analyzer instance with default parameters
+>>> va = VideoAnalyzer()
+
+Analysis classes are designed as `*functions objects* or *functors* <https://en.wikipedia.org/wiki/Function_object>`_ :
+instances of these objects can be used as functions, executing the code
+implemented in `__call__` methods.
+__call__ method first argument is the path to the media to analyze.
+It returns a pandas DataFrame.
+
+>>> df = va(sample_vid)
+"""
+
+
 import pandas as pd
 from abc import ABC, abstractmethod
 from .opencv_utils import video_iterator, image_iterator, analysisFPS2subsamp_coeff
