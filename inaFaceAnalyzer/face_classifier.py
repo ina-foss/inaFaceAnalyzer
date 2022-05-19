@@ -24,7 +24,26 @@
 # THE SOFTWARE.
 
 """
-This is the documentation of module face_classifier.py
+Face Classification objects, embedding pretrained DNN models,
+are implemented in module :mod:`inaFaceAnalyzer.face_classifier`.
+
+Face Classification classes inherits from abstract class :class:`FaceClassifier`.
+They assume
+
+They implement implement a :meth:`FaceClassifier.preprocessed_img_list` method,
+allowing.
+
+:meth:`FaceClassifier.__call__` method.
+
+
+>>> from inaFaceAnalyzer.face_classifier import Resnet50FairFaceGRA
+>>> classif = Resnet50FairFaceGRA()
+>>> classif.preprocessed_img_list(['./media/diallo224.jpg', './media/knuth224.jpg'])
+                filename  sex_decfunc  age_decfunc sex_label  age_label
+0  ./media/diallo224.jpg    -5.632371     3.072337         f  25.723367
+1   ./media/knuth224.jpg     7.255364     6.689072         m  61.890717
+
+sdfsdf
 """
 
 import numpy as np
@@ -103,21 +122,16 @@ class FaceClassifier(ABC):
         already detected, cropped, aligned and scaled to classifier's input
         dimensions (for now: 224*224 pixels)
 
-        Parameters
-        ----------
-        lfiles : list
-            list of image paths
-        return_features : bool, optional
-            Not yet implemented. The default is False.
-        batch_len : input, optional
-            Larger batch sizes results in faster processing times.
-            Batch lenght is dependent on available GPU memory
-            The default is 32 (suitable for a laptop GPU).
+        Args:
+            lfiles (list): list of image paths: ['/path/to/img1', '/path/to/img2']
+            return_features (bool, optional): to be removed. Defaults to False.
+            batch_len (int, optional): DNN batch size. Larger batch_len results
+                in faster processing times.
+                Batch lenght is dependent on available GPU memory.
+                Defaults to 32 (suitable for a laptop GPU).
 
-        Returns
-        -------
-        df : pandas.DataFrame
-            a pandas dataframe with one record for each input image
+        Returns:
+            pandas.DataFrame. a DataFrame with one record for each input image
         """
         assert len(lfiles) > 0
 
@@ -135,6 +149,7 @@ class FaceClassifier(ABC):
         df.insert(0, 'filename', lfiles)
         return df
 
+    # TODO: remove the return_features argument here and in preprocessed_img_list
     def __call__(self, limg, return_features, verbose=False):
         """
         Classify a list of images
@@ -228,7 +243,7 @@ class Resnet50FairFaceGRA(Resnet50FairFace):
     from this public distribution in order to prevent their use for non ethical purposes.
     These models can however be provided for free after examination of each demand.
     """
-    
+
     def __init__(self):
         m = keras.models.load_model(get_remote('keras_resnet50_fairface_GRA.h5'), compile=False)
         self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs + [m.layers[-5].output])
