@@ -73,11 +73,12 @@ class FaceAnalyzer(ABC):
     def __init__(self, face_detector = None, face_classifier = None, batch_len=32, verbose = False):
         """
         Constructor
+
         Parameters
         ----------
-        face_detector : instance of face_detector.FaceDetector or None
+        face_detector : instance of :class:`inaFaceAnalyzer.face_detector.FaceDetector` or None
             if None, LibFaceDetection is used by default
-        face_classifier: instance of face_classifier.FaceClassifier or None
+        face_classifier: instance of :class:`inaFaceAnalyzer.face_classifier.FaceClassifier` or None
             if None, Resnet50FairFaceGRA is used by default (gender & age)
         verbose : boolean
             If True, will display several usefull intermediate images and results

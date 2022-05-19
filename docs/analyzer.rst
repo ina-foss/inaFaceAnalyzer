@@ -7,6 +7,8 @@ Abstract Media Analyzer Class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: inaFaceAnalyzer.inaFaceAnalyzer.FaceAnalyzer
+    :members:
+    :special-members:
 
 ImageAnalyzer
 ^^^^^^^^^^^^^
