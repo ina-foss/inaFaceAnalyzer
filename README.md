@@ -6,6 +6,8 @@
 [![PyPI version](https://badge.fury.io/py/inaFaceAnalyzer.svg)](https://badge.fury.io/py/inaFaceAnalyzer)
 [![Docker Pulls](https://img.shields.io/docker/pulls/inafoss/inafaceanalyzer)](https://hub.docker.com/r/inafoss/inafaceanalyzer)
 [![status](https://joss.theoj.org/papers/47086151f746f32165c72870978c1398/status.svg)](https://joss.theoj.org/papers/47086151f746f32165c72870978c1398)
+[![Documentation Status](https://readthedocs.org/projects/inafaceanalyzer/badge/?version=latest)](https://inafaceanalyzer.readthedocs.io/en/latest/?badge=latest)
+
 
 ## About
 
