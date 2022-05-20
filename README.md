@@ -104,7 +104,7 @@ mkdir my_output_directory
 # -i is followed by the list of video to analyze, and -o is followed by the name of the output_directory
 ina_face_analyzer.py --engine video -i ./media/pexels-artem-podrez-5725953.mp4 -o ./my_output_directory
 # displaying the first 2 lines of the resulting CSV
-head -n 2 ./my_output_directory/pexels-artem-podrez-5725953.csv 
+head -n 2 ./my_output_directory/pexels-artem-podrez-5725953.csv
 >> frame,bbox,detect_conf,sex_decfunc,age_decfunc,sex_label,age_label
 >> 0,"(945, -17, 1139, 177)",0.999998927116394,8.408014,3.9126961,m,34.12696123123169
 # using remote urls is also an option
@@ -152,7 +152,7 @@ ina_face_analyzer.py --engine videotracking --fps 10 --detect_period 2 --mp4_exp
 # display the resulting video
 vlc ./my_output_directory/pexels-artem-podrez-5725953.mp4
 # display the original video with the resulting subtitle files
-vlc media/pexels-artem-podrez-5725953.mp4 --sub-file my_output_directory/pexels-artem-podrez-5725953.ass 
+vlc media/pexels-artem-podrez-5725953.mp4 --sub-file my_output_directory/pexels-artem-podrez-5725953.ass
 ```
 
 ### Processing list of images
@@ -208,7 +208,9 @@ CUDA_AVAILABLE_DEVICES=2 ina_face_analyzer_distributed_worker.py PYRO:obj_4c027f
 
 ## Using inaFaceAnalyzer API
 
-`inaFaceAnalyzer`'s API documentation is based on several tutorial notebooks stored in directory [`tutorial_API_notebooks`](https://github.com/ina-foss/inaFaceAnalyzer/tree/master/tutorial_API_notebooks):
+`inaFaceAnalyzer`'s API documentation is available on [readthedocs.io](https://readthedocs.org/projects/inafaceanalyzer/).
+
+Several tutorial notebooks stored in directory [`tutorial_API_notebooks`](https://github.com/ina-foss/inaFaceAnalyzer/tree/master/tutorial_API_notebooks):
 
 We provide below a brief description of these notebooks, together with links allowing to run them remotely in Google's colab platform.
 When using colab platform, we recommend to [take advantage of GPU acceleration](https://www.tutorialspoint.com/google_colab/google_colab_using_free_gpu.htm).
