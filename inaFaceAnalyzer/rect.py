@@ -23,9 +23,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+"""
+Rect class is an internal data structure allowing to manipulate rectangle shapes
+"""
+
+
 from typing import NamedTuple
 import dlib
-import numpy as np
 
 class Rect(NamedTuple):
     x1 : float # left

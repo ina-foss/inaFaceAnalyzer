@@ -37,22 +37,16 @@ class TestClassifiers(unittest.TestCase):
     def test_single_image_single_output_vgg16(self):
         mat = np.zeros((224,224,3), dtype=np.uint8)
         c = Vggface_LSVM_YTF()
-        ret = c(mat, True)
-        self.assertEqual(len(ret), 2)
-        feats, rett = ret
+        ret = c(mat)
 
-        self.assertIsInstance(feats, np.ndarray)
-        self.assertIsInstance(rett.sex_label, str)
-        self.assertIsInstance(rett.sex_decfunc, float)
+        self.assertIsInstance(ret.sex_label, str)
+        self.assertIsInstance(ret.sex_decfunc, float)
 
     def test_2images_single_output_vgg16(self):
         mat = np.zeros((224,224,3), dtype=np.uint8)
         c = Vggface_LSVM_YTF()
-        ret = c([mat, mat], True)
-        self.assertEqual(len(ret), 2)
-        feats, retdf = ret
+        retdf = c([mat, mat])
 
-        self.assertIsInstance(feats, np.ndarray)
         [self.assertIsInstance(e, str) for e in retdf.sex_label]
         [self.assertIsInstance(e, float) for e in retdf.sex_decfunc]
 
@@ -60,16 +54,14 @@ class TestClassifiers(unittest.TestCase):
     def test_single_image_single_output_res50(self):
         mat = np.zeros((224,224,3), dtype=np.uint8)
         c = Resnet50FairFace()
-        feats ,ret = c(mat, True)
-        self.assertIsInstance(feats, np.ndarray)
+        ret = c(mat)
         self.assertIsInstance(ret.sex_label, str)
         self.assertIsInstance(ret.sex_decfunc, float)
 
     def test_single_image_multi_output(self):
         mat = np.zeros((224,224,3), dtype=np.uint8)
         c = Resnet50FairFaceGRA()
-        feats, ret = c(mat, True)
-        self.assertIsInstance(feats, np.ndarray)
+        ret = c(mat)
         self.assertIsInstance(ret.sex_label, str)
         self.assertIsInstance(ret.age_label, float, type(ret.age_label))
         self.assertIsInstance(ret.age_decfunc, float, type(ret.age_label))
@@ -94,13 +86,13 @@ class TestClassifiers(unittest.TestCase):
 
     def test_preprocessed_img_list_singleoutput(self):
         c = Vggface_LSVM_YTF()
-        df = c.preprocessed_img_list(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], False, batch_len=2)
+        df = c.preprocessed_img_list(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], batch_len=2)
         self.assertSequenceEqual(['f', 'm', 'f'], list(df.sex_label))
         np.testing.assert_almost_equal([-3.1886155, 6.7310688, -3.1886155], df.sex_decfunc, decimal=5)
 
     def test_preprocessed_img_list_multioutput(self):
         c = Resnet50FairFaceGRA()
-        df = c.preprocessed_img_list(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], False, batch_len=2)
+        df = c.preprocessed_img_list(['./media/diallo224.jpg', './media/knuth224.jpg', './media/diallo224.jpg'], batch_len=2)
         ref_genderL = ['f', 'm', 'f']
         ref_ageL =[25.723361, 61.890726, 25.723361]
         ref_genderD = [-5.632368, 7.2553654, -5.632368]
@@ -114,7 +106,7 @@ class TestClassifiers(unittest.TestCase):
         # test if image position in batch has an impact on decision value
         limg = [imread_rgb('./media/diallo224.jpg'), imread_rgb('./media/knuth224.jpg')] * 32
         c = Resnet50FairFace()
-        retdf = c(limg, False)
+        retdf = c(limg)
         d1 = retdf.sex_decfunc[::2].reset_index(drop=True)
         d2 = retdf.sex_decfunc[1::2].reset_index(drop=True)
         np.testing.assert_almost_equal([d1[0]] * 32, d1, decimal=3)

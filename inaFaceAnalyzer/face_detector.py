@@ -23,6 +23,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+"""
+Face Detection engines implement :class:`FaceDetector` interface and return
+list of :class:`Detection` instances corresponding to the position of faces
+found in input stream.
+
+"""
+
+
 from abc import ABC, abstractmethod
 from typing import NamedTuple
 import cv2
@@ -36,7 +44,12 @@ from .libfacedetection_priorbox import PriorBox
 
 
 class Detection(NamedTuple):
+    """
+    Atomic structure returned by face dection engines
+    """
+    #: position of the detected face in the image
     bbox : Rect
+    #: face detection confidence (0 = lowest confidence, 1 = highest confidence)
     detect_conf : float
 
 class DetectionEyes(NamedTuple):

@@ -172,13 +172,13 @@ class FaceAnalyzer(ABC):
 
             # if enough faces were found, process a batch of faces
             while len(lbatch_img) > self.batch_len:
-                df = self.classifier(lbatch_img[:self.batch_len], False, verbose=self.verbose)
+                df = self.classifier(lbatch_img[:self.batch_len], verbose=self.verbose)
                 ldf.append(df)
                 lbatch_img = lbatch_img[self.batch_len:]
 
 
         if len(lbatch_img) > 0:
-            df = self.classifier(lbatch_img, False, verbose=self.verbose)
+            df = self.classifier(lbatch_img, verbose=self.verbose)
             ldf.append(df)
 
         if len(ldf) == 0:

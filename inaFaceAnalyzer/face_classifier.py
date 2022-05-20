@@ -115,7 +115,7 @@ class FaceClassifier(ABC):
     # TODO : Keras trick for async READ ?
     # bench execution time : time spent in read/exce . CPU vs GPU
     # TODO: add progress bar with verbose option
-    def preprocessed_img_list(self, lfiles, return_features=False, batch_len=32):
+    def preprocessed_img_list(self, lfiles, batch_len=32):
         """
         Performs classification on a list of preprocessed face images
         Preprocessed face images are assumed to contain a single face which is
@@ -124,7 +124,6 @@ class FaceClassifier(ABC):
 
         Args:
             lfiles (list): list of image paths: ['/path/to/img1', '/path/to/img2']
-            return_features (bool, optional): to be removed. Defaults to False.
             batch_len (int, optional): DNN batch size. Larger batch_len results
                 in faster processing times.
                 Batch lenght is dependent on available GPU memory.
@@ -134,9 +133,6 @@ class FaceClassifier(ABC):
             pandas.DataFrame. a DataFrame with one record for each input image
         """
         assert len(lfiles) > 0
-
-        if return_features:
-            raise NotImplementedError()
 
         lbatchret = []
 
@@ -149,8 +145,7 @@ class FaceClassifier(ABC):
         df.insert(0, 'filename', lfiles)
         return df
 
-    # TODO: remove the return_features argument here and in preprocessed_img_list
-    def __call__(self, limg, return_features, verbose=False):
+    def __call__(self, limg, verbose=False):
         """
         Classify a list of images
         images are supposed to be preprocessed faces: aligned, cropped
@@ -175,7 +170,7 @@ class FaceClassifier(ABC):
             limg = [limg]
 
         assert np.all([e.shape == self.input_shape for e in limg])
-        batch_ret_feats, batch_ret_preds = self.inference(self.list2batch(limg))
+        batch_ret_preds = self.inference(self.list2batch(limg))
         batch_ret_preds = self.decisionfunction2labels(batch_ret_preds)
 
         if verbose:
@@ -184,29 +179,25 @@ class FaceClassifier(ABC):
                 print('prediction', pred)
 
         if islist:
-            if return_features:
-                return batch_ret_feats, batch_ret_preds
             return batch_ret_preds
 
         ret = next(batch_ret_preds.itertuples(index=False, name='FaceClassifierResult'))
-        if return_features:
-            return  batch_ret_feats[0, :], ret
         return ret
 
 class Resnet50FairFace(FaceClassifier):
 
     def __init__(self):
         m = keras.models.load_model(get_remote('keras_resnet50_fairface.h5'), compile=False)
-        self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs + [m.layers[-3].output])
+        self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs)
 
     def list2batch(self, limg):
         x = np.concatenate([np.expand_dims(img_to_array(e), axis=0) for e in limg])
         return tensorflow.keras.applications.resnet50.preprocess_input(x)
 
     def inference(self, x):
-        decisions, feats = self.model.predict(x)
+        decisions = self.model.predict(x)
         df = pd.DataFrame(decisions.ravel(), columns=['sex_decfunc'])
-        return feats, df
+        return df
 
     def decisionfunction2labels(self, df):
         df['sex_label'] = df.sex_decfunc.map(lambda x: 'm' if x > 0 else 'f' )
@@ -246,12 +237,12 @@ class Resnet50FairFaceGRA(Resnet50FairFace):
 
     def __init__(self):
         m = keras.models.load_model(get_remote('keras_resnet50_fairface_GRA.h5'), compile=False)
-        self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs + [m.layers[-5].output])
+        self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs)
 
     def inference(self, x):
-        gender, _, age, feats = self.model.predict(x)
+        gender, _, age = self.model.predict(x)
         df = pd.DataFrame(zip(gender.ravel(), age.ravel()), columns=['sex_decfunc', 'age_decfunc'])
-        return feats, df
+        return df
 
     def decisionfunction2labels(self, df):
         df = super().decisionfunction2labels(df)
@@ -295,7 +286,7 @@ class OxfordVggFace(FaceClassifier):
         return self.vgg_feature_extractor(x)
 
     def inference(self, x):
-        return np.array(x), pd.DataFrame(self.gender_svm.decision_function(x), columns=['sex_decfunc'])
+        return pd.DataFrame(self.gender_svm.decision_function(x), columns=['sex_decfunc'])
 
 class Vggface_LSVM_YTF(OxfordVggFace):
     def __init__(self):

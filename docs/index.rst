@@ -14,8 +14,8 @@ API documentation
    :maxdepth: 2
 
    analyzer
+   detector
    classifier
-
 
 
 
