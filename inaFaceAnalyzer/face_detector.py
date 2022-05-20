@@ -24,10 +24,43 @@
 # THE SOFTWARE.
 
 """
-Face Detection engines implement :class:`FaceDetector` interface and return
-list of :class:`Detection` instances corresponding to the position of faces
-found in input stream.
+Face detection classes are in charge of finding faces in image frames.
 
+Two face detection classes are provided :
+
+- :class:`LibFaceDetection` (default) :\
+    is the most recent face detection engine integrated. \
+    It can take advantage of GPU acceleration and is able de detect the smallest faces.\
+    It may be slow when used with high resolution images.
+- :class:`OcvCnnFaceDetector` : is based on OpenCV CNN face detection model. \
+    Images are fist resized to 300*300 pixels, which may result in missing the smallest faces. \
+    It is definitely faster.
+
+Face detection classes inherits from abstract class :class:`FaceDetector` and share a common interface.
+They are designed as `*functions objects* or *functors* <https://en.wikipedia.org/wiki/Function_object>`_.
+Face Detection instances can be used as functions, with 1st parameter
+corresponding to the image frame to analyze, and 2nd optional verbose parameter
+allowing to display intermediate results. They return a list of :class:`Detection`
+instances corresponding to the position of faces found in the image together with a face detection confidence estimate.
+
+
+>>> from inaFaceAnalyzer.opencv_utils import imread_rgb
+>>> from inaFaceAnalyzer.face_detector import LibFaceDetection
+>>> # read image
+>>> img = imread_rgb('./media/dknuth.jpg')
+>>> # instantiate a detector (costly - to be done a single time)
+>>> detector = LibFaceDetection()
+>>> #call the detector instance as a function - setting verbose to True is slower, but display intermediate results
+>>> ldetections = detector(img, verbose=True)
+>>> print(ldetections)
+[DetectionEyes(bbox=Rect(x1=113.9406801111573, y1=63.12627956950275, x2=287.63299981285394, y2=280.43775060093793), detect_conf=0.9999985098838806, eyes=Rect(x1=196.77388191223145, y1=154.74553787708282, x2=254.44469165802005, y2=153.04755902290344))]
+
+4 parameters can be defined in face detection constructors :
+
+- minconf : the minimal face detection confidence for being returned (default values dependent on the face detection class choosen).
+- min_size_px : minimal face size in pixels (default 30): better classification results requires face sizes above 75 pixels
+- min_size_prct : minimal face size as a percentage of image frame minimal dimension. Allow to focus on the most relevant faces.
+- padd_prc : percentage of black padding pixels to be applied on images before detection (default values are set or each detection class).
 """
 
 
@@ -52,14 +85,15 @@ class Detection(NamedTuple):
     #: face detection confidence (0 = lowest confidence, 1 = highest confidence)
     detect_conf : float
 
-class DetectionEyes(NamedTuple):
-    """
-    Contains a detection (Rect bounding box & detection confidence)
-    + eyes coordinates (x1, y1, x2, y2) for left eye and right eye
-    """
-    bbox : Rect
-    detect_conf : float
-    eyes : Rect
+# Currently, we wish to use the same eye detection procedure for all detection engines
+# class DetectionEyes(NamedTuple):
+#     """
+#     Contains a detection (Rect bounding box & detection confidence)
+#     + eyes coordinates (x1, y1, x2, y2) for left eye and right eye
+#     """
+#     bbox : Rect
+#     detect_conf : float
+#     eyes : Rect
 
 
 class FaceDetector(ABC):
@@ -282,7 +316,8 @@ class LibFaceDetection(FaceDetector):
     See: https://github.com/ShiqiYu/libfacedetection
     """
 
-    output_type = DetectionEyes
+    # output_type = DetectionEyes
+    output_type = Detection
 
     def __init__(self, minconf=.98, min_size_px=30, min_size_prct=0, padd_prct=0):
         super().__init__(minconf, min_size_px, min_size_prct, padd_prct)
@@ -344,8 +379,9 @@ class LibFaceDetection(FaceDetector):
             score = dets[i,-1]
             x1, y1, w, h = dets[i,:4]
             bbox = Rect(x1, y1, x1 + w, y1 + h)
-            eyes = Rect(*dets[i, 4:8])
-            lret.append(DetectionEyes(bbox, score, eyes))
+            #eyes = Rect(*dets[i, 4:8])
+            #lret.append(DetectionEyes(bbox, score, eyes))
+            lret.append(Detection(bbox, score))
 
         return lret
 

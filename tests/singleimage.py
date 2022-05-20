@@ -64,7 +64,7 @@ class TestImageAnalyzer(unittest.TestCase):
     def test_image_knuth(self):
         gi = ImageAnalyzer(face_detector = OcvCnnFacedetector(padd_prct=0.),
                          face_classifier = Vggface_LSVM_YTF())
-        df = gi('./media/20091020222328!KnuthAtOpenContentAlliance.jpg')
+        df = gi('./media/dknuth.jpg')
         self.assertEqual(len(df), 1)
         e = next(df.itertuples(index=False, name = 'useless'))
         self.assertEqual(e.bbox, (79, 47, 322, 290))
