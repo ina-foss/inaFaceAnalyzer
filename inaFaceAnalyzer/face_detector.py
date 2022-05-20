@@ -26,23 +26,12 @@
 """
 Face detection classes are in charge of finding faces in image frames.
 
-Two face detection classes are provided :
+Two face detection classes are provided : :class:`LibFaceDetection` (default) and :class:`OcvCnnFacedetector`.
 
-- :class:`LibFaceDetection` (default) :\
-    is the most recent face detection engine integrated. \
-    It can take advantage of GPU acceleration and is able de detect the smallest faces.\
-    It may be slow when used with high resolution images.
-- :class:`OcvCnnFaceDetector` : is based on OpenCV CNN face detection model. \
-    Images are fist resized to 300*300 pixels, which may result in missing the smallest faces. \
-    It is definitely faster.
 
 Face detection classes inherits from abstract class :class:`FaceDetector` and share a common interface.
-They are designed as `*functions objects* or *functors* <https://en.wikipedia.org/wiki/Function_object>`_.
-Face Detection instances can be used as functions, with 1st parameter
-corresponding to the image frame to analyze, and 2nd optional verbose parameter
-allowing to display intermediate results. They return a list of :class:`Detection`
-instances corresponding to the position of faces found in the image together with a face detection confidence estimate.
-
+They are designed as `*functions objects* or *functors* <https://en.wikipedia.org/wiki/Function_object>`_
+using image frame inputs and returning list of :class:`Detection` instances.
 
 >>> from inaFaceAnalyzer.opencv_utils import imread_rgb
 >>> from inaFaceAnalyzer.face_detector import LibFaceDetection
@@ -53,14 +42,8 @@ instances corresponding to the position of faces found in the image together wit
 >>> #call the detector instance as a function - setting verbose to True is slower, but display intermediate results
 >>> ldetections = detector(img, verbose=True)
 >>> print(ldetections)
-[DetectionEyes(bbox=Rect(x1=113.9406801111573, y1=63.12627956950275, x2=287.63299981285394, y2=280.43775060093793), detect_conf=0.9999985098838806, eyes=Rect(x1=196.77388191223145, y1=154.74553787708282, x2=254.44469165802005, y2=153.04755902290344))]
+[Detection(bbox=Rect(x1=113.9406801111573, y1=63.12627956950275, x2=287.63299981285394, y2=280.43775060093793), detect_conf=0.9999985098838806)]
 
-4 parameters can be defined in face detection constructors :
-
-- minconf : the minimal face detection confidence for being returned (default values dependent on the face detection class choosen).
-- min_size_px : minimal face size in pixels (default 30): better classification results requires face sizes above 75 pixels
-- min_size_prct : minimal face size as a percentage of image frame minimal dimension. Allow to focus on the most relevant faces.
-- padd_prc : percentage of black padding pixels to be applied on images before detection (default values are set or each detection class).
 """
 
 
@@ -78,9 +61,9 @@ from .libfacedetection_priorbox import PriorBox
 
 class Detection(NamedTuple):
     """
-    Atomic structure returned by face dection engines
+    Atomic element returned by face detection classes
     """
-    #: position of the detected face in the image
+    #: position of the detected face in the image in pixels
     bbox : Rect
     #: face detection confidence (0 = lowest confidence, 1 = highest confidence)
     detect_conf : float
@@ -98,6 +81,16 @@ class Detection(NamedTuple):
 
 class FaceDetector(ABC):
     def __init__(self, minconf, min_size_px, min_size_prct, padd_prct):
+        """
+        Common face detection constructor
+
+        Args:
+            minconf (float between 0 and 1): the minimal face detection confidence being returned (default values dependent on the face detection class choosen).
+            min_size_px (int): minimal face size in pixels (default 30): better classification results requires face sizes above 75 pixels.
+            min_size_prct (float between 0 and 1): minimal face size as a percentage of image frame minimal dimension. Allow to focus on the most relevant faces.
+            padd_prct (float between 0 and 1): percentage of black padding pixels to be applied on images before detection (default values are set or each detection class).
+
+        """
         self.minconf = minconf
         self.min_size_px = min_size_px
         self.min_size_prct = min_size_prct
@@ -139,29 +132,28 @@ class FaceDetector(ABC):
 
         return lret
 
-    @classmethod
-    @abstractmethod
-    def output_type() : pass
+#    @classmethod
+#    @abstractmethod
+#    def output_type() : pass
+    output_type = Detection
 
     @abstractmethod
     def _call_imp(self, frame): pass
 
     def most_central_face(self, frame, contain_center=True, verbose=False):
         """
-        This method returns the detected face which is closest from the center
-        if contain_center == True, the returned face MUST include image center
-        Usefull for preprocessign face datasets containing several faces per image
-        Parameters
-        ----------
-        frame : nd.array (height, width, 3)
-            RGB image data.
-        verbose : boolean, optional
-            Display detected faces. The default is False.
-        Returns
-        -------
-        A Detection named tuple if a face maching the conditions has been detected else None
-        """
+        This method returns the detected face which is closest from the center of the image frame
+        Usefull for preprocessing ML face datasets containing several faces per image
 
+        Args:
+            frame (numpy.ndarray (height, width, 3)): RGB image data.
+            contain_center (bool, optional): if True, the returned face MUST include image center. Defaults to True.
+            verbose (bool, optional): Display detected faces. Defaults to False.
+
+        Returns:
+            Detection: if a face matching the conditions has been detected, else None
+
+        """
         frame_center = (frame.shape[1] / 2, frame.shape[0] / 2)
 
         # keep faces containing image center
@@ -236,9 +228,13 @@ def _blackpadd(frame, paddpercent):
 
 class OcvCnnFacedetector(FaceDetector):
     """
-    opencv default CNN face detector
+    This class wraps OpenCV default CNN face detection model.
+    Images are fist resized to 300*300 pixels, which may result in missing the
+    smallest faces but allows to get fast detection time.
+
+    Contructor is documented  in :meth:`FaceDetector.__init__`
     """
-    output_type = Detection
+    #output_type = Detection
 
     def __init__(self, minconf=0.65, min_size_px=30, min_size_prct=0, padd_prct=0.15):
         """
@@ -303,21 +299,20 @@ class OcvCnnFacedetector(FaceDetector):
         return faces_data
 
 
-class IdentityFaceDetector(FaceDetector):
-    output_type = Detection
-    def __init__(self):
-        super().__init__(0, 0, 0, 0)
-    def _call_imp(self, frame):
-        return [Detection(Rect(0, 0, frame.shape[1], frame.shape[0]), np.NAN)]
-
 class LibFaceDetection(FaceDetector):
     """
-    This class wraps the detection model provided in libfacedetection
-    See: https://github.com/ShiqiYu/libfacedetection
+    This class wraps the face detection model provided in
+    `libfacedetection <https://github.com/ShiqiYu/libfacedetection>`_ :
+    a recent face detection library (2021) that
+    can take advantage of GPU acceleration and is able de detect the smallest faces.
+    It may be slow when used with high resolution images.
+
+    For more details, please refer to :
+    Peng, H., & Yu, S. (2021). A systematic iou-related method: Beyond simplified regression for better localization. IEEE Transactions on Image Processing, 30, 5032-5044.
     """
 
     # output_type = DetectionEyes
-    output_type = Detection
+    #output_type = Detection
 
     def __init__(self, minconf=.98, min_size_px=30, min_size_prct=0, padd_prct=0):
         super().__init__(minconf, min_size_px, min_size_prct, padd_prct)
@@ -385,8 +380,22 @@ class LibFaceDetection(FaceDetector):
 
         return lret
 
+class IdentityFaceDetector(FaceDetector):
+    """
+    This class do not detect faces and return bouding boxes corresponding to
+    the whole image frame.
+    It should be used for processing images or videos corresponding to
+    already-detected cropped faces.
+    """
+    #output_type = Detection
+    def __init__(self):
+        super().__init__(0, 0, 0, 0)
+    def _call_imp(self, frame):
+        return [Detection(Rect(0, 0, frame.shape[1], frame.shape[0]), np.NAN)]
+
+
 class PrecomputedDetector(FaceDetector):
-    output_type = Detection
+    #output_type = Detection
     def __init__(self, lbbox = []):
         super().__init__(0, 0, 0, 0)
         self.lbbox = lbbox.copy()

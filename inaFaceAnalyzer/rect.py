@@ -23,43 +23,62 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-"""
-Rect class is an internal data structure allowing to manipulate rectangle shapes
-"""
-
 
 from typing import NamedTuple
 import dlib
 
 class Rect(NamedTuple):
+    """
+    This class is an internal data structure allowing to manipulate rectangle shapes
+    """
+
+    #: left
     x1 : float # left
+    #: top
     y1 : float # top
+    #: right
     x2 : float # right
+    #: bottom
     y2 : float # bottom
+
     @property
     def w(self):
-        """ returns Rect width """
+        """ Rect width """
         return self.x2 - self.x1
+
     @property
     def h(self):
-        """ returns Rect height """
+        """ Rect height """
         return self.y2 - self.y1
+
     @property
     def center(self):
-        """ returns center (x,y) of Rect (x1, y1, x2, y2) """
+        """ Center (x,y) of Rect (x1, y1, x2, y2) """
         x1, y1, x2, y2 = self
         return ((x1 + x2) / 2), ((y1 + y2) / 2)
+
     @property
     def area(self):
+        """ Surface area """
         return self.w * self.h
+
     @property
     def max_dim_len(self):
-        """ Return max of Rect width and height """
+        """ max (width, height)"""
         return max(self.h, self.w)
-    def transpose(self, x, y):
-        """ Returns a transposed Rect"""
+
+    def transpose(self, xoffset, yoffset):
+        """
+        Translation
+        Args:
+            xoffset (float): horizontal offset.
+            yoffset (float): vertical offset.
+        Returns:
+            Rect : translated Rect
+        """
         x1, y1, x2, y2 = self
-        return Rect(x1 + x, y1 + y, x2 + x, y2 + y)
+        return Rect(x1 + xoffset, y1 + yoffset, x2 + xoffset, y2 + yoffset)
+
     def mult(self, x, y):
         x1, y1, x2, y2 = self
         return Rect(x1 * x, y1 * y, x2 * x, y2 * y)
@@ -86,12 +105,15 @@ class Rect(NamedTuple):
 
     @staticmethod
     def from_dlib(x):
+        """ Import to internal data structure dlib's native rectangle"""
         return Rect(x.left(), x.top(), x.right(), x.bottom())
 
     def to_dlibInt(self):
+        """ Convert internal data structure to dlib's int rectangle"""
         return dlib.rectangle(*[e for e in self.to_int()])
 
     def to_dlibFloat(self):
+        """ Convert internal data structure to dlib's float rectangle"""
         return dlib.drectangle(*self)
 
     @property

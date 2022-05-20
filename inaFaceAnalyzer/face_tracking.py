@@ -31,9 +31,16 @@ from .opencv_utils import disp_frame_shapes
 
 
 class TrackDetection(NamedTuple):
+    """
+    Atomic element returned by face tracking and detection classes
+    """
+    #: bounding box
     bbox : Rect
+    #: detected face numerical identifier
     face_id : int
+    #: face detection confidence
     detect_conf : float
+    #: tracking confidence
     track_conf : float
 
 def _matrix_argmax(m):
