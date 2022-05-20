@@ -47,3 +47,10 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # a list of builtin themes.
 #
 html_theme = 'sphinx_rtd_theme'
+
+
+autodoc_default_options = {
+    'member-order': 'bysource',
+#    'undoc-members': True,
+    'show-inheritance' : True
+}
