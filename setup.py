@@ -78,6 +78,7 @@ setup(
     install_requires=['opencv-contrib-python', 'dlib', 'pandas', 'sklearn',
                       'h5py', 'matplotlib', 'onnxruntime-gpu', 'cheetah3',
                       'av', 'tensorflow>=2.6', 'pyro4'],
+    extras_require={'doc': ['sphinx-toolbox']},    
     url = "https://github.com/ina-foss/inaFaceAnalyzer",
     packages=['inaFaceAnalyzer'],
     keywords = KEYWORDS,
