@@ -23,6 +23,30 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+"""
+Module :mod:`inaFaceAnalyzer.display_utils` contains functions allowing to
+export video analysis results to formats allowing to display incrusted face
+detection bounding boxes and classification estimates.
+
+- :func:`ass_subtitle_export` allows to export results as ASS subtitles (faster).
+- :func:`video_export` generate a new video with incrusted information (longer).
+
+Display functions are currenly limited to the results obtained
+with :class:`inaFaceAnalyzer.inaFaceAnalyzer.VideoAnalyzer` and
+:class:`inaFaceAnalyzer.inaFaceAnalyzer.VideoTracking` analysis pipelines.
+
+>>> from inaFaceAnalyzer.inaFaceAnalyzer import VideoAnalyzer
+>>> from inaFaceAnalyzer.display_utils import ass_subtitle_export
+>>> va = VideoAnalyzer()
+>>> input_vid = './media/pexels-artem-podrez-5725953.mp4'
+>>> # define analysis_fps=2 in order to process 2 image frames per second of video
+>>> # analysis_fps should be used for analysis AND subtitle export
+>>> analysis_fps = 2
+>>> df = va(input_vid, fps=analysis_fps)
+>>> # export results to ass subtitle
+>>> ass_subtitle_export(vid_src, df, './mysubtitle.ass', analysis_fps=analysis_fps)
+"""
+
 import cv2
 import tempfile
 import os
@@ -30,7 +54,6 @@ import pandas as pd
 from Cheetah.Template import Template
 import datetime
 from .opencv_utils import video_iterator, get_video_properties, analysisFPS2subsamp_coeff
-
 
 def _hex2rgb(hx):
     return (int(hx[0:2],16), int(hx[2:4],16), int(hx[4:6],16))
@@ -80,28 +103,33 @@ def _analysis2displaydf(df, fps, subsamp_coeff, text_pat = None, cols=None):
     ret['text'] = df.apply(lambda x: text_pat % tuple([x[e] for e in cols]), axis=1)
     return ret
 
-def ass_subtitle_export(vid_src, result_df, subtitle_dst, analysis_fps=None):
+def ass_subtitle_export(vid_src, result_df, ass_dst, analysis_fps=None):
     """
-    Export inaFaceAnalyzer results to an ASS subtitle file allowing to display
-    faces bounding boxes and other analysis information
-    ASS subtitles can be displayed using VLC or Aegisub
+    Export inaFaceAnalyzer results to
+    `ASS subtitles <https://en.wikipedia.org/wiki/SubStation_Alpha>`_ .
+    ASS can embed complex shapes such as annotated face bounding boxes and
+    classification predictions.
 
-    Parameters
-    ----------
-    vid_src : str
-        path to the input video.
-    result_df : str or pandas.DataFrame
-        path to the csv or pandas DataFrame corresponding to the analysis of the input video.
-    subtitle_dst : str
-        output path which will store the resulting subtitle file.
-        Must have ass extension
-    analysis_fps: numeric or None
-        The amount of frames per second which were analyzed
-        if set to None, then consider that all video frames were processed
+    Subtitles are a good option for sharing results, since they do not require
+    a large amount of storage size, and do not alter original videos.
+    Ass subtitles can be  displayed in `VLC <https://www.videolan.org/vlc/>`_,
+    `Aegisub <http://www.aegisub.org/>`_
+    or `ELAN <https://archive.mpi.nl/tla/elan>`_ annotation software.
+
+    >>> # displaying mysample_FP2.ass subtitle with vlc
+    >>> vlc --sub-file ./mysample_FPS2.ass ./sample_vid.mp4
+
+    Args:
+        vid_src (str): path to the input video.
+        result_df (str or pandas.DataFrame): video analysis result provided as :class:`pandas.DataFrame` or path to saved csv.
+        ass_dst (str): output filepath used to save the resulting subtitle. Must have ass extension.
+        analysis_fps (numeric or None, optional): Amount of frames per second which were analyzed \
+            (fps analysis argument) \
+            if set to None, then consider that all video frames were processed. Defaults to None.
     """
 
 
-    assert subtitle_dst[-4:].lower() == '.ass', subtitle_dst
+    assert ass_dst[-4:].lower() == '.ass', ass_dst
 
     video_props = get_video_properties(vid_src)
     fps, width, height = [video_props[e] for e in ['fps', 'width', 'height']]
@@ -122,27 +150,23 @@ def ass_subtitle_export(vid_src, result_df, subtitle_dst, analysis_fps=None):
     # text font size set to 4% video height
     t.text_font_size = int(0.04 * height)
 
-    with open(subtitle_dst, 'wt') as fid:
+    with open(ass_dst, 'wt') as fid:
         print(t, file=fid)
 
 
 def video_export(vid_src, result_df, vid_dst, analysis_fps=None):
     """
     Export inaFaceAnalyzer results to a video with incrusted faces bounding
-    boxes and other analysis information
+    boxes and other analysis information.
 
-    Parameters
-    ----------
-    vid_src : str
-        path to the input video.
-    result_df : str or pandas.DataFrame
-        path to the csv or pandas DataFrame corresponding to the analysis of the input video.
-    vid_dst : str
-        output path which will store the corresponding video.
-        Must have MP4 extension
-    analysis_fps: numeric or None
-        The amount of frames per second which were analyzed
-        if set to None, then consider that all video frames were processed
+    Args:
+        vid_src (str): path to the input video.
+        result_df (str or pandas.DataFrame): video analysis result provided as \
+            :class:`pandas.DataFrame` or path to saved csv.
+        vid_dst (str): output path of the resulting video. Must have MP4 extension.
+        analysis_fps (int, optional): Amount of frames per second which were analyzed \
+            (fps analysis argument). If set to None, then consider that all \
+                video frames were processed. Defaults to None.
     """
     assert vid_dst[-4:].lower() == '.mp4', vid_dst
 
@@ -182,21 +206,3 @@ def video_export(vid_src, result_df, vid_dst, analysis_fps=None):
         out.release()
         os.system('ffmpeg -y -i %s -i %s -map 0:v:0 -map 1:a? -vcodec libx264 -acodec copy %s' % (tmpout, vid_src, vid_dst))
 
-try:
-    # To be used only in ipython/collab environments
-    from IPython.core.display import display
-    from IPython.display import HTML
-    from base64 import b64encode
-
-    def notebook_display_remote_vid(fname, width=600):
-        data = '<div align="middle"> <video width=%d controls> <source src=%s> </video></div>' % (width, fname)
-        display(HTML(data))
-
-    def notebook_display_local_vid(video_path, width = 600):
-      # thanks https://androidkt.com/how-to-capture-and-play-video-in-google-colab/
-      video_file = open(video_path, "r+b").read()
-      video_url = f"data:video/mp4;base64,{b64encode(video_file).decode()}"
-      return HTML(f"""<video width={width} controls><source src="{video_url}"></video>""")
-
-except:
-    pass
