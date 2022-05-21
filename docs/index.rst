@@ -25,9 +25,6 @@ API documentation
 
 
 
-.. include :: authors.rst
-
-
 
 
 Indices and tables
