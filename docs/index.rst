@@ -16,6 +16,7 @@ API documentation
    analyzer
    detector
    classifier
+   export
    data_structures
 
 

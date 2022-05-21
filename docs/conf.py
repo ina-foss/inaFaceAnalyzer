@@ -50,7 +50,7 @@ html_theme = 'sphinx_rtd_theme'
 
 
 autodoc_default_options = {
-    'member-order': 'bysource',
+#    'member-order': 'bysource',
 #    'undoc-members': True,
     'show-inheritance' : True
 }
