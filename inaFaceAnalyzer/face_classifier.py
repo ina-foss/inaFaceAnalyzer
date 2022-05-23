@@ -42,7 +42,7 @@ They can be used with methods  :
 - :meth:`FaceClassifier.__call__` for processing list of image frames.
 
 .. warning :: Face classifiers assume input images contain a single detected,
-    centered, scaled and preprocessed face of dimensions 224*224 pixels
+    centered, eye-aligned, scaled and preprocessed face of dimensions 224*224 pixels
 
 
 >>> from inaFaceAnalyzer.face_classifier import Resnet50FairFaceGRA
@@ -80,7 +80,7 @@ class FaceClassifier(ABC):
     # in future, they may be defined separately for each classifier using
     # abstract properties
 
-    #: input image dimensions required by the classifier (width, height, depth)
+    #: input image dimensions required by the classifier (height, width, depth)
     input_shape = (224, 224, 3)
 
     #: implemented classifiers are optimized for a given scale factor to be
@@ -153,7 +153,7 @@ class FaceClassifier(ABC):
         df.insert(0, 'filename', lfiles)
         return df
 
-    def __call__(self, limg, verbose=False):
+    def __call__(self, limg, verbose=False):        
         """
         Classify a list of images
         images are supposed to be preprocessed faces: aligned, cropped
@@ -170,6 +170,25 @@ class FaceClassifier(ABC):
         decision_value : float
             decision function value (negative for female, positive for male)
         """
+
+        # """
+        # Classify a list of images
+        # images are supposed to be preprocessed faces: aligned, cropped
+        
+        # Args:
+        #     limg (list): list of images (224*224*3), a single image can also be used 
+        #     verbose (TYPE, optional): display intermediate prediction results. Defaults to False.
+
+        # Returns:
+        #     :class:`pandas.DataFrame` : a dataframe with one row per image.
+        #         column names are of the form <information>_<output_type> with
+        #         - <information> in {gender, age} corresponding to the information being predicted
+        #         - <output_type> in {decfunc,label}  with decfunc
+
+        # """
+        
+        
+
 
         if isinstance(limg, list):
             islist = True
@@ -193,7 +212,11 @@ class FaceClassifier(ABC):
         return ret
 
 class Resnet50FairFace(FaceClassifier):
-
+    """
+    Resnet50FairFace uses Resnet50 architecture trained to predict gender on
+    `FairFace <https://github.com/joojs/fairface>`_.
+    """
+    
     def __init__(self):
         m = keras.models.load_model(get_remote('keras_resnet50_fairface.h5'), compile=False)
         self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs)
@@ -236,7 +259,8 @@ def _fairface_agedec2age(age_dec):
 class Resnet50FairFaceGRA(Resnet50FairFace):
     """
     Resnet50FairFaceGRA predicts age and gender and is the most accurate proposed.
-    It uses Resnet50 architecture and is trained to predict gender, age and race on FairFace.
+    It uses Resnet50 architecture and is trained to predict gender, age and race on
+    `FairFace <https://github.com/joojs/fairface>`_.
     After consultation of French CNIL (French data protection authority) and
     DDD (French Rights Defender), racial classification layers were erased
     from this public distribution in order to prevent their use for non ethical purposes.
@@ -263,17 +287,19 @@ class OxfordVggFace(FaceClassifier):
     pretrained using a triplet loss paradigm allowing to obtain face neural
     representation, that we use to train linear SVM classification systems.
 
-    The approach used is fully described in Zohra Rezgui's internship report at INA:
-    Détection et classification de visages pour la description de l’égalité
-    femme-homme dans les archives télévisuelles, Higher School of Statistics
-    and Information Analysis, University of Carthage, 2019
-
     This class takes advantage of Refik Can Malli's keras-vggface module,
     providing pretrained VGG16 models
     https://github.com/rcmalli/keras-vggface
     '''
 
     def __init__(self, hdf5_svm=None):
+        """
+        Constructor 
+
+        Args:
+            hdf5_svm (str, optional): path to serialized SVM . Defaults to None.
+
+        """
         # Face feature extractor from aligned and detected faces
         self.vgg_feature_extractor = keras_vggface.VGG16(self.input_shape)
         # SVM trained on VGG neural features
@@ -297,12 +323,24 @@ class OxfordVggFace(FaceClassifier):
         return pd.DataFrame(self.gender_svm.decision_function(x), columns=['sex_decfunc'])
 
 class Vggface_LSVM_YTF(OxfordVggFace):
+    """
+    Vggface_LSVM_FairFace predict gender from face using pretrained Oxford VGG16
+    facial embedings used to train a Linear SVM on `Youtube Faces DB <https://www.cs.tau.ac.il/~wolf/ytfaces/>`_.
 
+    This method is fully described in Zohra Rezgui's internship report at INA:
+    Détection et classification de visages pour la description de l’égalité
+    femme-homme dans les archives télévisuelles, Higher School of Statistics
+    and Information Analysis, University of Carthage, 2019    
+    """
     def __init__(self):
         OxfordVggFace.__init__(self, get_remote('svm_ytf_zrezgui.hdf5'))
 
 
 class Vggface_LSVM_FairFace(OxfordVggFace):
+    """
+    Vggface_LSVM_FairFace predict gender from face using pretrained Oxford VGG16
+    facial embedings used to train a Linear SVM on `FairFace <https://github.com/joojs/fairface>`_.
+    """
     def __init__(self):
         OxfordVggFace.__init__(self, get_remote('svm_vgg16_fairface.hdf5'))
 

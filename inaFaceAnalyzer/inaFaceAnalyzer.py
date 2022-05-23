@@ -24,28 +24,28 @@
 # THE SOFTWARE.
 
 """
-inaFaceAnalyzer module implements four media analyzer engines allowing to process
+inaFaceAnalyzer module implements four analysis engines allowing to process
 video or image streams :
 
-    - :class:`ImageAnalyzer` : to be used with image files (jpg, png, etc...)
-    - :class:`VideoAnalyzer` : default choice to be used with video files (MP4, avi, etc..)
+    - :class:`ImageAnalyzer` : default choice for image files (jpg, png, etc...)
+    - :class:`VideoAnalyzer` : default choice for video files (MP4, avi, etc..)
     - :class:`VideoKeyframes` : do process only video `keyframes <https://en.wikipedia.org/wiki/Video_compression_picture_types>`_ (faster decoding)
     - :class:`VideoTracking` : Face detection is combined with face tracking
 
+
+
 Media analyzer classes share a common interface inherited from abstract class :class:`FaceAnalyzer`.
+They are designed as `*functions objects* or *functors* <https://en.wikipedia.org/wiki/Function_object>`_ 
+and can be used as functions, executing the code implemented in `__call__` methods,
+with first argument corresponding to the media to analyze and returning :class:`pandas.DataFrame`
+
+
 
 Custom face detection,  face classifier, eye detection and image preprocessing strategies can be provided in the constructor.
 
 >>> from inaFaceAnalyzer.inaFaceAnalyzer import VideoAnalyzer
 >>> # a video analyzer instance with default parameters
 >>> va = VideoAnalyzer()
-
-Analysis classes are designed as `*functions objects* or *functors* <https://en.wikipedia.org/wiki/Function_object>`_ :
-instances of these objects can be used as functions, executing the code
-implemented in `__call__` methods.
-__call__ method first argument is the path to the media to analyze.
-It returns a pandas DataFrame.
-
 >>> df = va(sample_vid)
 """
 
@@ -78,7 +78,9 @@ class FaceAnalyzer(ABC):
 
     def __init__(self, face_detector = None, face_classifier = None, batch_len=32, verbose = False):
         """
-        Constructor
+        Construct a face processing pipeline composed of a face detector, 
+            a face preprocessing strategy and a face classifier.
+            The face preprocessing strategy is defined based on the classifier's properties.
 
         Args:
             face_detector (:class:`inaFaceAnalyzer.face_detector.FaceDetector` or None, optional): \
@@ -139,10 +141,15 @@ class FaceAnalyzer(ABC):
         src : str or list
             path to the video/image to be analyzed
             May also be a list of images
+            
         Returns
         -------
-        Results stored in a pandas DataFrame
+        Results stored in a :class:`pandas.DataFrame`
         """
+        
+        
+        
+        
         pass
 
     def _process_stream(self, stream_iterator, detector):
@@ -211,6 +218,18 @@ class FaceAnalyzer(ABC):
 class ImageAnalyzer(FaceAnalyzer):
     """
     ImageAnalyzer instances allow to detect and classify faces from images
+    
+    ====  ===================================  ====================  =============  =============  =============  ===========  ===========
+      ..  frame                                bbox                    detect_conf    sex_decfunc    age_decfunc  sex_label      age_label
+    ====  ===================================  ====================  =============  =============  =============  ===========  ===========
+       0  ./media/dknuth.jpg                   (81, 52, 320, 291)         0.999999        7.24841        6.68495  m                61.8495
+       1  ./media/800px-India_(236650352).jpg  (193, 194, 494, 495)       1               9.96501        5.76855  m                52.6855
+       2  ./media/800px-India_(236650352).jpg  (472, 113, 694, 336)       0.999992       15.1933         4.09797  m                35.9797
+       3  ./media/800px-India_(236650352).jpg  (40, 32, 109, 101)         0.999967       11.3448         4.35364  m                38.5364
+       4  ./media/800px-India_(236650352).jpg  (384, 54, 458, 127)        0.999964       11.3798         4.36526  m                38.6526
+       5  ./media/800px-India_(236650352).jpg  (217, 67, 301, 151)        0.999899        9.78476        4.8296   m                43.296
+    ====  ===================================  ====================  =============  =============  =============  ===========  ===========
+    
     """
     def __call__(self, img_paths):
         """
@@ -294,9 +313,9 @@ class VideoTracking(FaceAnalyzer):
 
         Parameters
         ----------
-        detection_period : int
-            the face detection algorithm (costly) will be used once every
-            'detection_period' analyzed frames.
+        detection_period : int \
+            the face detection algorithm (costly) will be used once every \
+            'detection_period' analyzed frames. \
             Ie: if set to 5, face detection will occur for 1/5 frames and the
             remaining 4/5 faces will be detected through a tracking procedure
                 if set to 1: face detection will occur for each frame. Face
