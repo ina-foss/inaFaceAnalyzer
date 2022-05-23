@@ -24,16 +24,25 @@
 # THE SOFTWARE.
 
 """
-Face Classification objects, embedding pretrained DNN models,
-are implemented in module :mod:`inaFaceAnalyzer.face_classifier`.
+Module :mod:`inaFaceAnalyzer.face_classifier` define classes providing
+pretrained DNN face classification models allowing to predict gender and/or age from faces.
 
-Face Classification classes inherits from abstract class :class:`FaceClassifier`.
-They assume
+Four classes are currently proposed :
 
-They implement implement a :meth:`FaceClassifier.preprocessed_img_list` method,
-allowing.
+- :class:`Resnet50FairFaceGRA` predicts age and gender from faces, and is \
+    associated to the best classification performances. It should be used by default.
+- :class:`Resnet50FairFace`, :class:`Vggface_LSVM_YTF` and \
+    :class:`Vggface_LSVM_FairFace` are provided for reproducibility reasons \
+    and predict gender only.
 
-:meth:`FaceClassifier.__call__` method.
+Face classification classes share a common interface defined in abstracty class :class:`FaceClassifier`.
+They can be used with methods  :
+
+- :meth:`FaceClassifier.preprocessed_img_list` for processing image lists stored on disk
+- :meth:`FaceClassifier.__call__` for processing list of image frames.
+
+.. warning :: Face classifiers assume input images contain a single detected,
+    centered, scaled and preprocessed face of dimensions 224*224 pixels
 
 
 >>> from inaFaceAnalyzer.face_classifier import Resnet50FairFaceGRA
@@ -43,7 +52,6 @@ allowing.
 0  ./media/diallo224.jpg    -5.632371     3.072337         f  25.723367
 1   ./media/knuth224.jpg     7.255364     6.689072         m  61.890717
 
-sdfsdf
 """
 
 import numpy as np
@@ -72,16 +80,16 @@ class FaceClassifier(ABC):
     # in future, they may be defined separately for each classifier using
     # abstract properties
 
-    # input image dimensions required by the classifier (width, height, depth)
+    #: input image dimensions required by the classifier (width, height, depth)
     input_shape = (224, 224, 3)
 
-    # implemented classifiers are optimized for a given scale factor to be
-    # applied on face bounding boxes to be defined here
+    #: implemented classifiers are optimized for a given scale factor to be
+    #: applied on face bounding boxes to be defined here
     bbox_scale = 1.1
 
-    # implemented face classifiers may require a preprocessing step consisting
-    # to extend the face bounding box such as the resulting box is the smallest
-    # square containing the detected face
+    #: implemented face classifiers may require a preprocessing step consisting
+    #: to extend the face bounding box such as the resulting box is the smallest
+    #: square containing the detected face
     bbox2square = True
 
 
@@ -251,7 +259,7 @@ class Resnet50FairFaceGRA(Resnet50FairFace):
 
 class OxfordVggFace(FaceClassifier):
     '''
-    OxfordVggFace instances are based on pretrained VGG16 architectures
+    OxfordVggFace instances are based on VGG16 architectures
     pretrained using a triplet loss paradigm allowing to obtain face neural
     representation, that we use to train linear SVM classification systems.
 
@@ -289,6 +297,7 @@ class OxfordVggFace(FaceClassifier):
         return pd.DataFrame(self.gender_svm.decision_function(x), columns=['sex_decfunc'])
 
 class Vggface_LSVM_YTF(OxfordVggFace):
+
     def __init__(self):
         OxfordVggFace.__init__(self, get_remote('svm_ytf_zrezgui.hdf5'))
 

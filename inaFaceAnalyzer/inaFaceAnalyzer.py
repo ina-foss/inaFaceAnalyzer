@@ -24,10 +24,16 @@
 # THE SOFTWARE.
 
 """
-inaFaceAnalyzer module implements media analyzer classes allowing to process
-video or image streams.
+inaFaceAnalyzer module implements four media analyzer engines allowing to process
+video or image streams :
 
-Analysis classes inherits from abstract class FaceAnalyzer.
+    - :class:`ImageAnalyzer` : to be used with image files (jpg, png, etc...)
+    - :class:`VideoAnalyzer` : default choice to be used with video files (MP4, avi, etc..)
+    - :class:`VideoKeyframes` : do process only video `keyframes <https://en.wikipedia.org/wiki/Video_compression_picture_types>`_ (faster decoding)
+    - :class:`VideoTracking` : Face detection is combined with face tracking
+
+Media analyzer classes share a common interface inherited from abstract class :class:`FaceAnalyzer`.
+
 Custom face detection,  face classifier, eye detection and image preprocessing strategies can be provided in the constructor.
 
 >>> from inaFaceAnalyzer.inaFaceAnalyzer import VideoAnalyzer
@@ -74,14 +80,23 @@ class FaceAnalyzer(ABC):
         """
         Constructor
 
-        Parameters
-        ----------
-        face_detector : instance of :class:`inaFaceAnalyzer.face_detector.FaceDetector` or None
-            if None, LibFaceDetection is used by default
-        face_classifier: instance of :class:`inaFaceAnalyzer.face_classifier.FaceClassifier` or None
-            if None, Resnet50FairFaceGRA is used by default (gender & age)
-        verbose : boolean
-            If True, will display several usefull intermediate images and results
+        Args:
+            face_detector (:class:`inaFaceAnalyzer.face_detector.FaceDetector` or None, optional): \
+                face detection object to be used. \
+                If None, create a new instance of :class:`inaFaceAnalyzer.face_detector.LibFaceDetection`. \
+                Defaults to None.
+            face_classifier (:class:`inaFaceAnalyzer.face_classifier.FaceClassifier` or None, optional): \
+                Face classification object to be used.\
+                if None, create a new instance of :class:`inaFaceAnalyzer.face_classifier.Resnet50FairFaceGRA`. \
+                    Defaults to None.
+            batch_len (int, optional): Size of batches to be sent to the GPU. \
+                Larger batches allow faster processing results but require more GPU memory. \
+                batch_len balue should be set according to the available hardware. \
+                Defaults to 32.
+            verbose (bool, optional): if True, display several intermediate \
+                images and results - usefull for debugging but should be avoided \
+                    in production. Defaults to False.
+
         """
 
         # face detection system

@@ -3,7 +3,7 @@ Media Analyzer Classes
 
 .. automodule:: inaFaceAnalyzer.inaFaceAnalyzer
 
-Abstract Media Analyzer Class 
+Abstract Media Analyzer Class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: inaFaceAnalyzer.inaFaceAnalyzer.FaceAnalyzer
@@ -16,7 +16,8 @@ ImageAnalyzer
 
 .. autoclass:: inaFaceAnalyzer.inaFaceAnalyzer.ImageAnalyzer
     :members:
-    :special-members:
+    :special-members: __init__,__call__
+    :inherited-members: __init__
 
 .. autoclass:: inaFaceAnalyzer.inaFaceAnalyzer.VideoAnalyzer
 
