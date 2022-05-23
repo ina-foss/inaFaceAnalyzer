@@ -26,7 +26,9 @@
 """
 Face detection classes are in charge of finding faces in image frames.
 
-Two face detection classes are provided : :class:`LibFaceDetection` (default) and :class:`OcvCnnFacedetector`.
+Two face detection classes are provided : 
+    - :class:`LibFaceDetection` (default) 
+    - :class:`OcvCnnFacedetector`.
 
 
 Face detection classes inherits from abstract class :class:`FaceDetector` and share a common interface.
@@ -68,6 +70,7 @@ class Detection(NamedTuple):
     #: face detection confidence (0 = lowest confidence, 1 = highest confidence)
     detect_conf : float
 
+
 # Currently, we wish to use the same eye detection procedure for all detection engines
 # class DetectionEyes(NamedTuple):
 #     """
@@ -80,6 +83,13 @@ class Detection(NamedTuple):
 
 
 class FaceDetector(ABC):
+    
+    #    @classmethod
+    #    @abstractmethod
+    #    def output_type() : pass
+    output_type = Detection
+
+    
     def __init__(self, minconf, min_size_px, min_size_prct, padd_prct):
         """
         Common face detection constructor
@@ -97,7 +107,17 @@ class FaceDetector(ABC):
         self.padd_prct = padd_prct
 
     def __call__(self, frame, verbose=False):
+        """
+        Perform face detection on image frames
 
+        Args:
+            frame (:class:`numpy.ndarray`): RGB image frame (height, width, 3).
+            verbose (bool, optional): display intermediate results such as detected faces Not to be used in production. Defaults to False.
+
+        Returns:
+            list of :class:`Detection` instances
+        """        
+        
         tmpframe = frame
 
         if self.padd_prct:
@@ -132,21 +152,20 @@ class FaceDetector(ABC):
 
         return lret
 
-#    @classmethod
-#    @abstractmethod
-#    def output_type() : pass
-    output_type = Detection
 
     @abstractmethod
     def _call_imp(self, frame): pass
 
     def most_central_face(self, frame, contain_center=True, verbose=False):
         """
+        To be used for processing ML datasets and training new face classification models.
+        
+        Some ML face corpora images containing several faces, with the target annotated face at the center.
+        
         This method returns the detected face which is closest from the center of the image frame
-        Usefull for preprocessing ML face datasets containing several faces per image
 
         Args:
-            frame (numpy.ndarray (height, width, 3)): RGB image data.
+            frame (:class:`numpy.ndarray`): RGB image frame (height, width, 3)
             contain_center (bool, optional): if True, the returned face MUST include image center. Defaults to True.
             verbose (bool, optional): Display detected faces. Defaults to False.
 
@@ -173,13 +192,26 @@ class FaceDetector(ABC):
 
     def get_closest_face(self, frame, ref_bbox, min_iou=.7, squarify=True, verbose=False):
         """
-        Some face corpora may contain pictures with several faces
-        together with the reference bounding box of annotated faces
-        This function is aimed at preprocessing such face corpora
-        Automatic face detection is used, and the detected face with the largest
-        iou with the reference bounding box is returned
-        if no detected face corresponds to this IOU criteria, returns None
+        To be used for processing ML datasets and training new face classification models.
+    
+        Some face corpora images may contain several annotated faces.
+        This method return the detected face having the largest IOU with target ref_box.
+        The IOU must be > to min_iou.
+
+        Args:
+            frame (:class:`numpy.ndarray`): RGB image frame (height, width, 3).
+            ref_bbox (tuple or Rect): reference face bounding box (x1, y1, x2, y2).
+            min_iou (float, optional): minimal acceptable intersection over union between
+                the detected face to be returned and the reference bounding box. Defaults to .7.
+            squarify (TYPE, optional): if True, returns the smallest square
+                bounding box containing the detected face. If False returns the
+                original detected face bounding box. Defaults to True.
+            verbose (TYPE, optional): display intermediate results. Defaults to False.
+
+        Returns:
+            :class:`Detection` or None: detected face matching the criteria (largest IOU with ref_bbox and IOU > min_iou), else None
         """
+        
         if not isinstance(ref_bbox, Rect):
             ref_bbox = Rect(*ref_bbox)
 
@@ -231,22 +263,11 @@ class OcvCnnFacedetector(FaceDetector):
     This class wraps OpenCV default CNN face detection model.
     Images are fist resized to 300*300 pixels, which may result in missing the
     smallest faces but allows to get fast detection time.
-
-    Contructor is documented  in :meth:`FaceDetector.__init__`
     """
     #output_type = Detection
 
     def __init__(self, minconf=0.65, min_size_px=30, min_size_prct=0, padd_prct=0.15):
-        """
-        Parameters
-        ----------
-        minconf : float, optional
-           minimal face detection confidence. The default is 0.65.
-        paddpercent : float, optional
-            input frame is copy passted within a black image with black pixel
-            padding. the resulting dimensions is width * (1+2*paddpercent)
 
-        """
         super().__init__(minconf, min_size_px, min_size_prct, padd_prct)
 
         fpb = get_remote('opencv_face_detector_uint8.pb')
@@ -314,7 +335,7 @@ class LibFaceDetection(FaceDetector):
     # output_type = DetectionEyes
     #output_type = Detection
 
-    def __init__(self, minconf=.98, min_size_px=30, min_size_prct=0, padd_prct=0):
+    def __init__(self, minconf=.98, min_size_px=30, min_size_prct=0, padd_prct=0): 
         super().__init__(minconf, min_size_px, min_size_prct, padd_prct)
         model_src = get_remote('libfacedetection-yunet.onnx')
         try:
@@ -389,6 +410,9 @@ class IdentityFaceDetector(FaceDetector):
     """
     #output_type = Detection
     def __init__(self):
+        """
+        IdentityFaceDetector Constructor does not require arguments
+        """
         super().__init__(0, 0, 0, 0)
     def _call_imp(self, frame):
         return [Detection(Rect(0, 0, frame.shape[1], frame.shape[0]), np.NAN)]
