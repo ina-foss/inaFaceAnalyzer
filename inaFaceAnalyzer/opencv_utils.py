@@ -125,6 +125,8 @@ def imwrite_rgb(dst, img):
 
 def imread_rgb(img_path, verbose=False):
     img = cv2.imread(img_path)
+    if img is None:
+        raise ValueError('%s do not have a supported image format. For a detailled listing of supported image formats, see opencv.imread documentation.' % img_path)
     frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     if verbose:
         print('raw image ' + img_path)
