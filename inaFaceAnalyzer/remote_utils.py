@@ -44,6 +44,7 @@ dmodels = {
     'shape_predictor_68_face_landmarks.dat' : r1_url,
     # Resnet50 architectures trained on FairFace database
     'keras_resnet50_fairface_GRA.h5' : r1_url,
+    'keras_resnet50_fairface_GRA-full.h5' : r1_url,    
     'keras_resnet50_fairface.h5' : r1_url,
     # linear SVM trained on Youtube Faces VGG16 face embeddings
     'svm_ytf_zrezgui.hdf5' : r1_url,
