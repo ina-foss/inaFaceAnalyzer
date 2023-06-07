@@ -253,9 +253,6 @@ def _fairface_agedec2age(age_dec):
     age_label = ages_mean[idec] + (age_dec - idec) * ages_range[idec]
     return age_label
 
-
-
-
 class Resnet50FairFaceGRA(Resnet50FairFace):
     """
     Resnet50FairFaceGRA predicts age and gender and is the most accurate proposed.
@@ -280,6 +277,48 @@ class Resnet50FairFaceGRA(Resnet50FairFace):
         df = super().decisionfunction2labels(df)
         df['age_label'] = _fairface_agedec2age(df.age_decfunc)
         return df
+
+# Fair Face Dataset class labels
+# Classification model can be provided upon request
+_race_cols = ['black_decfunc',
+              'eastasian_decfunc',
+              'indian_decfunc',
+              'latinohispanic_decfunc',
+              'middleeastern_decfunc',
+              'southeastasian_decfunc',
+              'white_decfunc']
+
+class Resnet50FairFaceGRAFull(Resnet50FairFaceGRA):
+    """
+    Resnet50FairFaceGRAFull predicts age, gender and perceived origin (race).
+    It uses Resnet50 architecture trained on `FairFace <https://github.com/joojs/fairface>`_.
+    After consultation of French CNIL (French data protection authority) and
+    DDD (French Rights Defender), model weights cannot be made publicly available
+    in order to prevent its use for non ethical purposes. They can be provided
+    for free after examination of each demand.
+    The current class will throw an exception if used without the models.
+    """
+    def __init__(self):
+        try:
+            m = keras.models.load_model(get_remote('keras_resnet50_fairface_GRA-full.h5'), compile=False)
+        except:
+            msg = """Racial classification models are not publicly available.
+            Please contact maintainers or use another classification model.
+            """
+            raise Exception(msg)
+        self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs)
+
+    def inference(self, x):
+        gender, race, age = self.model.predict(x)
+        tmp = np.concatenate([gender, age, race], axis=1)
+        return pd.DataFrame(tmp, columns= ['sex_decfunc', 'age_decfunc'] + _race_cols)
+
+    def decisionfunction2labels(self, df):
+        df = super().decisionfunction2labels(df)
+        racedf = df[_race_cols]
+        df['race_label'] = racedf.idxmax(axis='columns').map(lambda x: x.split('_')[0])
+        return df
+
 
 class OxfordVggFace(FaceClassifier):
     '''
