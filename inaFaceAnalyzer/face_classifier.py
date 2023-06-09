@@ -226,7 +226,7 @@ class Resnet50FairFace(FaceClassifier):
         return tensorflow.keras.applications.resnet50.preprocess_input(x)
 
     def inference(self, x):
-        decisions = self.model.predict(x)
+        decisions = self.model.predict(x, verbose=0)
         df = pd.DataFrame(decisions.ravel(), columns=['sex_decfunc'])
         return df
 
@@ -269,7 +269,7 @@ class Resnet50FairFaceGRA(Resnet50FairFace):
         self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs)
 
     def inference(self, x):
-        gender, _, age = self.model.predict(x)
+        gender, _, age = self.model.predict(x, verbose=0)
         df = pd.DataFrame(zip(gender.ravel(), age.ravel()), columns=['sex_decfunc', 'age_decfunc'])
         return df
 
@@ -309,7 +309,7 @@ class Resnet50FairFaceGRAFull(Resnet50FairFaceGRA):
         self.model = tensorflow.keras.Model(inputs=m.inputs, outputs=m.outputs)
 
     def inference(self, x):
-        gender, race, age = self.model.predict(x)
+        gender, race, age = self.model.predict(x, verbose=0)
         tmp = np.concatenate([gender, age, race], axis=1)
         return pd.DataFrame(tmp, columns= ['sex_decfunc', 'age_decfunc'] + _race_cols)
 
