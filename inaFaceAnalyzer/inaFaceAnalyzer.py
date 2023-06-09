@@ -52,7 +52,7 @@ Custom face detection,  face classifier, eye detection and image preprocessing s
 
 import pandas as pd
 from abc import ABC, abstractmethod
-from .opencv_utils import video_iterator, image_iterator, analysisFPS2subsamp_coeff
+from .opencv_utils import video_iterator, image_iterator, analysisFPS2subsamp_coeff, imwrite_rgb
 from .pyav_utils import video_keyframes_iterator
 from .face_tracking import TrackerDetector
 from .face_detector import LibFaceDetection, PrecomputedDetector
@@ -297,6 +297,32 @@ class VideoKeyframes(FaceAnalyzer):
         """
         stream = video_keyframes_iterator(video_path, verbose=self.verbose)
         return self._process_stream(stream, self.face_detector)
+
+    def extract_faces(self, df, video_path, output_dir, oshape=None, bbox_scale=None, ext='png'):
+        '''
+        Extract faces found with keyframe analysis to directory output_dir
+        '''
+        
+        if oshape is None:
+            oshape = self.classifier.input_shape[:-1]
+        if bbox_scale is None:
+            bbox_scale = self.bbox_scale
+
+
+        vki = video_keyframes_iterator(video_path, verbose=self.verbose)
+        iframe, frame = next(vki)
+
+        detector = PrecomputedDetector(list(df.bbox))
+        
+        for ituple, t in enumerate(df.itertuples()):
+            while iframe != t.frame:
+                iframe, frame = next(vki)
+            detection = detector(frame)
+            assert len(detection) == 1, len(detection)
+            detection = detection[0]
+            img, _ = preprocess_face(frame, detection, self.bbox2square, bbox_scale, self.face_alignment, oshape, False)
+            imwrite_rgb('%s/%08d.%s' % (output_dir, ituple, ext), img)
+
 
 
 class VideoTracking(FaceAnalyzer):
