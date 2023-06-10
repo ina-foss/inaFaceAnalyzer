@@ -58,7 +58,8 @@ def video_iterator(src, time_unit='frame', start=None, stop=None, subsamp_coeff=
         if stop is not None and cap.get(unit) > stop:
             break
 
-        ret, frame = cap.read()
+        #ret, frame = cap.read()
+        ret = cap.grab()
         if not ret:
             break
 
@@ -67,7 +68,9 @@ def video_iterator(src, time_unit='frame', start=None, stop=None, subsamp_coeff=
         if iframe % subsamp_coeff != 0:
             continue
 
-
+        ret, frame = cap.retrieve()
+        if not ret:
+            break
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         if verbose:
