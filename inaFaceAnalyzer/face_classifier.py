@@ -56,6 +56,7 @@ They can be used with methods  :
 
 import numpy as np
 import pandas as pd
+import re
 import numbers
 from abc import ABC, abstractmethod
 import tensorflow
@@ -109,16 +110,22 @@ class FaceClassifier(ABC):
             self._output_cols = list(self(fake_input, False).columns)
         return self._output_cols
 
-    def average_results(self, df):
+    def average_results(self, df, groupcol='face_id'):
         if len(df) == 0:
             for c in self.output_cols:
                 df[c] = []
 
+        # remove pre-existing averages (in case of re-clustering)
+        for k in df.columns:
+            if re.match('.*_avg$', k):
+                del df[k]
+
+        # columns to be averaged end with _decfunc (decision functions)
         cols = [e for e in df.columns if e.endswith('_decfunc')]
-        gbm = df.groupby('face_id')[cols].mean()
+        gbm = df.groupby(groupcol)[cols].mean()
         gbm = self.decisionfunction2labels(gbm)
 
-        return df.join(gbm, on='face_id', rsuffix='_avg')
+        return df.join(gbm, on=groupcol, rsuffix='_avg')
 
     # TODO : Keras trick for async READ ?
     # bench execution time : time spent in read/exce . CPU vs GPU
