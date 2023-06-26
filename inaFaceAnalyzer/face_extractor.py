@@ -29,6 +29,7 @@ extract detected faces to image directories and to apply face preprocessing
 methods on resulting images.
 """
 
+import glob
 from .face_detector import PrecomputedDetector
 from .face_preprocessing import preprocess_face
 from .opencv_utils import imwrite_rgb
@@ -44,9 +45,13 @@ def face_extractor(df, stream, output_dir, oshape, bbox2square, bbox_scale, face
         for ituple, t in enumerate(df.itertuples()):
             while iframe != t.frame:
                 iframe, frame = next(stream)
-                print(iframe, t.frame)
             detection = detector(frame)
             assert len(detection) == 1, len(detection)
             detection = detection[0]
             img, _ = preprocess_face(frame, detection, bbox2square, bbox_scale, face_aligner, oshape, False)
-            imwrite_rgb('%s/%08d.%s' % (output_dir, ituple, ext), img)
+            dst = '%s/%08d.%s' % (output_dir, ituple, ext)
+            if verbose:
+                print(dst)
+            imwrite_rgb(dst, img)
+        df['fname'] = sorted(glob.glob(output_dir + '/*.' + ext))
+        return df
