@@ -77,7 +77,7 @@ setup(
     license = "MIT",
     install_requires=['opencv-contrib-python', 'dlib', 'pandas', 'scikit-learn',
                       'h5py', 'matplotlib', 'onnxruntime-gpu', 'cheetah3',
-                      'av', 'tensorflow>=2.6', 'pyro4', 'xlsxwriter'],
+                      'av', 'tensorflow>=2.6,<2.16.0', 'pyro4', 'xlsxwriter'],
     extras_require={'doc': ['sphinx-toolbox']},    
     url = "https://github.com/ina-foss/inaFaceAnalyzer",
     packages=['inaFaceAnalyzer'],
