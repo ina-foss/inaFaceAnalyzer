@@ -98,6 +98,9 @@ def _analysis2displaydf(df, fps, subsamp_coeff, text_pat = None, cols=None):
             if 'age_label' in df.columns:
                 text_pat += '- age: %.1f'
                 cols += ['age_label']
+            if 'race_label' in df.columns:
+                text_pat += ' - race: %s'
+                cols += ['race_label']
 
     ret['bgr_color'] = ret.rgb_color.map(lambda x: x[4:] + x[2:4] + x[:2])
     ret['text'] = df.apply(lambda x: text_pat % tuple([x[e] for e in cols]), axis=1)
